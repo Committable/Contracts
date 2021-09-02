@@ -9,7 +9,6 @@ const { ZERO_ADDRESS } = constants;
 
 
 exports.transferWasSuccessful = (tokenId) => {
-  console.log(global.x)
   it('transfers the ownership of the given tokenID to the given address', async () => {
     expect(await this.tokenProxy.ownerOf(tokenId)).to.equal(this.recipient.address);
   })

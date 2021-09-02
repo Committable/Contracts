@@ -18,8 +18,16 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
 
     ProxyController proxyController;
 
-    event orderMatched(LibOrder.Order buyOrder, LibOrder.Order sellOrder);
-    event orderCancelled(LibOrder.Order, address indexed maker);
+    event OrderMatched(
+        bytes32 buyOrderHash,
+        bytes32 sellOrderHash,
+        address indexed buyer,
+        address indexed seller,
+        uint256 indexed tokenId,
+        bool isAuction,
+        uint256 price
+    );
+    event OrderCancelled(bytes32 orderHash, address indexed maker);
 
     constructor(address _address) {
         proxyController = ProxyController(_address);
@@ -31,7 +39,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      * Requirements:
      * - The `msg.sender` must be the order maker.
      *
-     * Emits an {orderCancelled} event.
+     * Emits an {OrderCancelled} event.
      */
     function cancelOrder(LibOrder.Order memory order) external {
         require(
@@ -39,19 +47,15 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "order must be cancelled by its maker"
         );
         isCancelledOrFinished[LibOrder.hash(order)] = true;
-        emit orderCancelled(order, msg.sender);
+        emit OrderCancelled(LibOrder.hash(order), msg.sender);
     }
 
     /**
      * @dev check whether given order is cancelled or finished
-     * @param order - the order to check
+     * @param orderHash - the hash value of order to check
      */
-    function checkOrderStatus(LibOrder.Order memory order)
-        external
-        view
-        returns (bool)
-    {
-        if (!isCancelledOrFinished[LibOrder.hash(order)]) {
+    function checkOrderStatus(bytes32 orderHash) external view returns (bool) {
+        if (!isCancelledOrFinished[orderHash]) {
             return true;
         } else {
             return false;
@@ -114,17 +118,6 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             buyOrder.isAuction == sellOrder.isAuction,
             "order transaction type does not match"
         );
-        if (buyOrder.isAuction == true) {
-            require(
-                msg.sender == sellOrder.maker,
-                "auction transaction must be executed by the seller"
-            );
-        } else {
-            require(
-                msg.sender == buyOrder.maker,
-                "non-auction transaction must be executed by the buyer"
-            );
-        }
         require(
             buyOrder.buyAsset.assetClass == sellOrder.buyAsset.assetClass,
             "order buyAsset assetClass does not match"
@@ -136,7 +129,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         );
         require(
             buyOrder.buyAsset.value >= sellOrder.buyAsset.value,
-            "buyOrder bid price must be no less than the seller's ask price"
+            "buyOrder bid price must be no less than the seller ask price"
         );
         require(
             buyOrder.nftAsset.contractAddress ==
@@ -148,7 +141,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "order tokenId does not match"
         );
         require(
-            buyOrder.end >= block.timestamp && sellOrder.end >= block.timestamp,
+            buyOrder.start < block.timestamp && sellOrder.start < block.timestamp,
+            "either order has not started"
+        );
+        require(
+            buyOrder.end > block.timestamp && sellOrder.end > block.timestamp,
             "either order has expired"
         );
         require(
@@ -156,6 +153,18 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 isCancelledOrFinished[LibOrder.hash(sellOrder)] == false,
             "either order has been cancelled or finishd"
         );
+
+        if (buyOrder.isAuction == true) {
+            require(
+                msg.sender == sellOrder.maker,
+                "auction transaction must be executed by the seller"
+            );
+        } else {
+            require(
+                msg.sender == buyOrder.maker,
+                "non-auction transaction must be executed by the buyer"
+            );
+        }
     }
 
     function _afterExecute(
@@ -176,7 +185,15 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             );
         }
 
-        emit orderMatched(buyOrder, sellOrder);
+        emit OrderMatched(
+            LibOrder.hash(buyOrder),
+            LibOrder.hash(sellOrder),
+            buyOrder.maker,
+            sellOrder.maker,
+            sellOrder.nftAsset.tokenId,
+            sellOrder.isAuction,
+            buyOrder.buyAsset.value
+        );
     }
 
     function _executeOrder(
@@ -191,6 +208,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         uint256 patentFee = patentFeeOf[nftContract][tokenId];
         // pay by ether (non-auction only)
         if (buyOrder.buyAsset.assetClass == bytes4(keccak256("ETH"))) {
+            require(
+                buyOrder.isAuction == false,
+                "sending ether only allowed in non-auction type"
+            );
             require(
                 msg.value == amountToPay,
                 "ether amount does not match buy order value"
