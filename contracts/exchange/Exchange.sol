@@ -25,7 +25,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address indexed seller,
         uint256 indexed tokenId,
         bool isAuction,
-        uint256 price
+        bytes4 assetClass,
+        address contractAddress,
+        uint256 price,
+        uint256 platformFee,
+        uint256 patentFee
     );
     event OrderCancelled(bytes32 orderHash, address indexed maker);
 
@@ -61,6 +65,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             return false;
         }
     }
+
     /**
      * @dev match orders and execute
      * Requirements:
@@ -141,7 +146,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "order tokenId does not match"
         );
         require(
-            buyOrder.start < block.timestamp && sellOrder.start < block.timestamp,
+            buyOrder.start < block.timestamp &&
+                sellOrder.start < block.timestamp,
             "either order has not started"
         );
         require(
@@ -167,35 +173,6 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         }
     }
 
-    function _afterExecute(
-        LibOrder.Order memory buyOrder,
-        LibOrder.Order memory sellOrder
-    ) internal {
-        isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
-        isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
-        // if the seller of the nft is creator, he can change the patent fee rate
-        address creator = IOxERC721Upgradeable(
-            sellOrder.nftAsset.contractAddress
-        ).creatorOf(sellOrder.nftAsset.tokenId);
-        if (sellOrder.maker == creator) {
-            _changePatentFee(
-                sellOrder.nftAsset.contractAddress,
-                sellOrder.nftAsset.tokenId,
-                sellOrder.nftAsset.patentFee
-            );
-        }
-
-        emit OrderMatched(
-            LibOrder.hash(buyOrder),
-            LibOrder.hash(sellOrder),
-            buyOrder.maker,
-            sellOrder.maker,
-            sellOrder.nftAsset.tokenId,
-            sellOrder.isAuction,
-            buyOrder.buyAsset.value
-        );
-    }
-
     function _executeOrder(
         LibOrder.Order memory buyOrder,
         LibOrder.Order memory sellOrder
@@ -203,29 +180,29 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address nftContract = sellOrder.nftAsset.contractAddress;
         address tokenContract = buyOrder.buyAsset.contractAddress;
         uint256 tokenId = sellOrder.nftAsset.tokenId;
-        address creator = IOxERC721Upgradeable(nftContract).creatorOf(tokenId);
-        uint256 amountToPay = buyOrder.buyAsset.value;
-        uint256 patentFee = patentFeeOf[nftContract][tokenId];
+        uint256 _platformFee = (buyOrder.buyAsset.value / 10000) * platformFee;
+        uint256 _patentFee = (buyOrder.buyAsset.value / 10000) *
+            patentFeeOf[nftContract][tokenId];
+
         // pay by ether (non-auction only)
+
         if (buyOrder.buyAsset.assetClass == bytes4(keccak256("ETH"))) {
             require(
                 buyOrder.isAuction == false,
-                "sending ether only allowed in non-auction type"
+                "invalid orders: ETH not allowed in auction"
             );
             require(
-                msg.value == amountToPay,
+                msg.value == buyOrder.buyAsset.value,
                 "ether amount does not match buy order value"
             );
-            uint256 remainValue = amountToPay;
+            uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
-            if (platformFee != 0) {
-                uint256 _platformFee = (amountToPay / 10000) * platformFee;
+            if (_platformFee != 0) {
                 payable(recipient).transfer(_platformFee);
-                remainValue = amountToPay - _platformFee;
+                remainValue = remainValue - _platformFee;
             }
             // transfer patent fee
-            if (patentFee != 0) {
-                uint256 _patentFee = (amountToPay / 10000) * patentFee;
+            if (_patentFee != 0) {
                 payable(IOxERC721Upgradeable(nftContract).creatorOf(tokenId))
                     .transfer(_patentFee);
                 remainValue = remainValue - _patentFee;
@@ -238,25 +215,23 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         //  pay by erc20 (non-auction and auction)
         else if (buyOrder.buyAsset.assetClass == bytes4(keccak256("ERC20"))) {
             require(msg.value == 0, "sending ether not allowed in ERC20 order");
-            uint256 remainValue = amountToPay;
+            uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
-            if (platformFee != 0) {
-                uint256 _platformFee = (amountToPay / 10000) * platformFee;
+            if (_platformFee != 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,
                     recipient,
                     _platformFee
                 );
-                remainValue = amountToPay - _platformFee;
+                remainValue = remainValue - _platformFee;
             }
             // transfer patent fee
-            if (patentFee != 0) {
-                uint256 _patentFee = (amountToPay / 10000) * patentFee;
+            if (_patentFee != 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,
-                    creator,
+                    IOxERC721Upgradeable(nftContract).creatorOf(tokenId),
                     _patentFee
                 );
                 remainValue = remainValue - _patentFee;
@@ -281,5 +256,37 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             buyOrder.maker,
             sellOrder.nftAsset.tokenId
         );
+        emit OrderMatched(
+            LibOrder.hash(buyOrder),
+            LibOrder.hash(sellOrder),
+            buyOrder.maker,
+            sellOrder.maker,
+            sellOrder.nftAsset.tokenId,
+            sellOrder.isAuction,
+            buyOrder.buyAsset.assetClass,
+            buyOrder.buyAsset.contractAddress,
+            buyOrder.buyAsset.value,
+            _platformFee,
+            _patentFee
+        );
+    }
+
+    function _afterExecute(
+        LibOrder.Order memory buyOrder,
+        LibOrder.Order memory sellOrder
+    ) internal {
+        isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
+        isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
+        // if the seller of the nft is creator, he can change the patent fee rate
+        address creator = IOxERC721Upgradeable(
+            sellOrder.nftAsset.contractAddress
+        ).creatorOf(sellOrder.nftAsset.tokenId);
+        if (sellOrder.maker == creator) {
+            _changePatentFee(
+                sellOrder.nftAsset.contractAddress,
+                sellOrder.nftAsset.tokenId,
+                sellOrder.nftAsset.patentFee
+            );
+        }
     }
 }

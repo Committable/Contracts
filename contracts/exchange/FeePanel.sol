@@ -10,6 +10,9 @@ contract FeePanel is Ownable {
     mapping(address => mapping(uint256 => uint256))  patentFeeOf;
     address recipient;
 
+    event PatentFeeChanged(address indexed contractAddress, uint256 indexed tokenId, uint256 originalFee, uint256 newFee);
+    event PlatformFeeChanged(uint256 originalFee, uint256 newFee);
+    event RecipientChanged(address originalRecipient, address newRecipient);
     constructor() {
         recipient = msg.sender;
     }
@@ -27,18 +30,26 @@ contract FeePanel is Ownable {
     }
 
     function changePlatformFee(uint256 _fee) external onlyOwner {
+        uint256 originalPlatformFee = platformFee;
         require(_fee <= 10000, 'invalid platform fee rate: must no larger than 100%');
         platformFee = _fee;
+        emit PlatformFeeChanged(originalPlatformFee, _fee);
     }
 
     function _changePatentFee(address contractAddress, uint256 tokenId, uint256 _fee) internal {
+        uint256 originalPatentFee = patentFeeOf[contractAddress][tokenId];
         require(_fee <= 10000, 'invalid patent fee rate: must no larger than 100%');
         patentFeeOf[contractAddress][tokenId] = _fee;
+        emit PatentFeeChanged(contractAddress, tokenId, originalPatentFee, _fee);
     }
 
     function changeRecipient(address _recipient) external onlyOwner {
-        require(_recipient != address(0));
+        require(_recipient != address(0), 'zero address not allowed');
+        require(_recipient != recipient, 'same address not allowed');
+
+        address originalRecipient = recipient;
         recipient = _recipient;
+        emit RecipientChanged(originalRecipient, _recipient);
     }
 
 }
