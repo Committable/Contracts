@@ -2,23 +2,23 @@
 pragma solidity ^0.8.0;
 
 import "./ProxyController.sol";
-abstract contract ERC721 {
+
+interface ERC721 {
     function safeTransferFrom(
         address from,
         address to,
         uint256 tokenId
-    ) external virtual;
+    ) external;
 }
 
 contract TransferProxy {
     mapping(address => bool) public isDisabled;
     ProxyController public proxyController;
-    event proxyDisabled(address indexed _address, bool);
+    event ProxyDisabled(address indexed _address, bool);
 
     constructor(address _address) {
         proxyController = ProxyController(_address);
     }
-    
 
     function safeTransferFrom(
         address _token,
@@ -27,7 +27,10 @@ contract TransferProxy {
         uint256 tokenId
     ) external {
         require(!isDisabled[_from], "token owner has disabled transfer proxy");
-        require(proxyController.contracts(msg.sender), "only registered address can visit this proxy");
+        require(
+            proxyController.contracts(msg.sender),
+            "only registered address can visit this proxy"
+        );
         ERC721(_token).safeTransferFrom(_from, _to, tokenId);
     }
 
@@ -37,6 +40,6 @@ contract TransferProxy {
      */
     function disable(bool _bool) external {
         isDisabled[msg.sender] = _bool;
-        emit proxyDisabled(msg.sender, _bool);
+        emit ProxyDisabled(msg.sender, _bool);
     }
 }

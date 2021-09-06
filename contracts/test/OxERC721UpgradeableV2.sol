@@ -51,7 +51,8 @@ contract OxERC721UpgradeableV2 is OxERC721Tradable, IOxERC721Upgradeable {
      *
      * Requirements:
      *
-     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
+     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, 
+     which is called upon a safe transfer.
      * set current totalySupply as tokenId
      * Emits a {Transfer} event.
      */

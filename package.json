@@ -1,10 +1,15 @@
 {
-  "name": "committable_sc_hardhat",
+  "name": "committable-contracts",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "hardhat test",
+    "lint:js": "eslint './test/*.js'",
+    "lint:js:fix": "eslint './test/*.js' --fix",
+    "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
+    "lint:sol:fix": "prettier --write \"contracts/**/*.sol\"",
+    "solhint": "solhint 'contracts/**/*.sol'"
   },
   "keywords": [],
   "author": "",
@@ -19,8 +24,13 @@
     "bn.js": "^5.2.0",
     "buffer-xor": "^2.0.2",
     "chai": "^4.3.4",
+    "eslint": "^7.32.0",
+    "eslint-plugin-mocha": "^9.0.0",
     "ethereum-waffle": "^3.4.0",
     "ethers": "^5.4.5",
-    "hardhat": "^2.6.1"
-  }
+    "hardhat": "^2.6.1",
+    "prettier": "^2.3.2",
+    "prettier-plugin-solidity": "^1.0.0-beta.17"
+  },
+  "dependencies": {}
 }

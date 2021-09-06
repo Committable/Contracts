@@ -35,10 +35,8 @@ contract SigCheck {
     function getRecover(LibOrder.Order memory order, bytes memory signature)
         external
         pure
-        returns(address)
+        returns (address)
     {
         return LibSignature.recover(LibOrder.hash(order), signature);
     }
-
- 
 }

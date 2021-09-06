@@ -81,7 +81,7 @@ library LibSignature {
             );
             signer = ecrecover(toEthSignedMessageHash(hash), v - 4, r, s);
         } else {
-            if( v == 0 || v == 1) {
+            if (v == 0 || v == 1) {
                 v = v + 27;
             }
             require(v == 27 || v == 28, "ECDSA: invalid signature 'v' value");

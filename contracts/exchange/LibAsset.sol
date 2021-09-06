@@ -8,7 +8,6 @@ library LibAsset {
     bytes4 public constant ERC721_ASSET_CLASS = bytes4(keccak256("ERC721"));
     bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
 
-
     struct Asset {
         bytes4 assetClass;
         address contractAddress;
@@ -27,14 +26,11 @@ library LibAsset {
                 abi.encode(asset.assetClass, asset.contractAddress, asset.value)
             );
     }
-     function hash(NFT memory nft) internal pure returns (bytes32) {
-        return  
+
+    function hash(NFT memory nft) internal pure returns (bytes32) {
+        return
             keccak256(
                 abi.encode(nft.contractAddress, nft.tokenId, nft.patentFee)
             );
-    }
-
-    function __hash(Asset memory asset) external pure returns(bytes32) {
-        return hash(asset);
     }
 }

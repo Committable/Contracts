@@ -7,13 +7,14 @@ import "../ProxyController.sol";
 import "../TransferProxy.sol";
 
 contract OxERC721Tradable is ERC721EnumerableUpgradeable {
-    ProxyController proxyController;
+    ProxyController _proxyController;
 
-    function __ERC721Tradable_init_unchained(address _proxyController)
+    // solhint-disable-next-line
+    function __ERC721Tradable_init_unchained(address proxyController)
         internal
         initializer
     {
-        proxyController = ProxyController(_proxyController);
+        _proxyController = ProxyController(proxyController);
     }
 
     function isApprovedForAll(address owner, address operator)
@@ -23,7 +24,7 @@ contract OxERC721Tradable is ERC721EnumerableUpgradeable {
         returns (bool)
     {
         {
-            if (proxyController.transferProxy() == operator) {
+            if (_proxyController.transferProxy() == operator) {
                 return true;
             }
         }

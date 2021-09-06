@@ -10,15 +10,13 @@ const secondTokenId = '0x79217';
 const nonExistentTokenId = '13';
 const fourthTokenId = 4;
 
-describe('TokenProxy', () => {
+describe('TokenProxy', function () {
   let oxERC721Upgradeable, proxyController, tokenProxy, signers;
-  context("initilizing", async () => {
-    signers = await ethers.getSigners();
-    [owner, recipient, approved, operator, ...others] = signers;
-  })
+  context('with minted tokens and initialized values', function () {
+    beforeEach(async function () {
+      // get signers
+      [owner, recipient, approved, operator, ...others] = await ethers.getSigners();
 
-  context('with minted tokens and initialized values', () => {
-    beforeEach(async () => {
       // deploy contracts here
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
@@ -41,24 +39,24 @@ describe('TokenProxy', () => {
       tx = await tokenProxy['safeMint(address,uint256)'](owner.address, secondTokenId);
       await tx.wait();
     })
-    context("when initialized", () => {
-      it("returns the correct name and symbol", async () => {
+    context("when initialized", function () {
+      it("returns the correct name and symbol", async function () {
         expect(await tokenProxy.name()).to.equal(NAME);
         expect(await tokenProxy.symbol()).to.equal(SYMBOL);
       })
     })
-    context('when the given address owns some tokens', () => {
-      it("returns the amount of tokens owned by the given address", async () => {
+    context('when the given address owns some tokens', function () {
+      it("returns the amount of tokens owned by the given address", async function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('2');
       })
     })
-    context('when the given address does not own any tokens', () => {
-      it('returns 0', async () => {
+    context('when the given address does not own any tokens', function () {
+      it('returns 0', async function () {
         expect(await tokenProxy.balanceOf(approved.address)).to.equal('0');
       })
     })
-    context('when querying the zero address', () => {
-      it('throw', async () => {
+    context('when querying the zero address', function () {
+      it('throw', async function () {
         try {
           await tokenProxy.balanceOf(ZERO_ADDRESS);
           throw null;
@@ -68,15 +66,15 @@ describe('TokenProxy', () => {
       })
     })
 
-    context('when the given token ID was tracked by this token', () => {
+    context('when the given token ID was tracked by this token', function () {
       const tokenId = firstTokenId;
-      it('returns the owner of the given token Id', async () => {
+      it('returns the owner of the given token Id', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(owner.address);
       })
     })
-    context('when the given token ID was not tracked by this token', () => {
+    context('when the given token ID was not tracked by this token', function () {
       const tokenId = nonExistentTokenId;
-      it('revert', async () => {
+      it('revert', async function () {
         try {
           await tokenProxy.ownerOf(tokenId);
           throw null;
@@ -86,74 +84,74 @@ describe('TokenProxy', () => {
       })
     })
 
-    context('with the given token ID being sent by owner', () => {
+    context('with the given token ID being sent by owner', function () {
       const tokenId = firstTokenId;
       const data = '0x42';
-      beforeEach(async () => {
+      beforeEach(async function () {
         let tx = await tokenProxy.transferFrom(owner.address, recipient.address, tokenId);
         await tx.wait();
       })
 
-      it('transfers the ownership of the given tokenID to the given address', async () => {
+      it('transfers the ownership of the given tokenID to the given address', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(recipient.address);
       })
-      it('adjust owner balance and recipient balance', async () => {
+      it('adjust owner balance and recipient balance', async function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async () => {
+      it('adjust owners and recipient tokens by index', async function () {
         expect(await tokenProxy.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
         expect(await tokenProxy.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
       })
-      it('clears the approval for the tokenId', async () => {
+      it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
     })
 
-    context('with the given token ID being sent by approved address', () => {
+    context('with the given token ID being sent by approved address', function () {
       const tokenId = firstTokenId;
       const data = '0x42';
-      beforeEach(async () => {
+      beforeEach(async function () {
         let tx = await tokenProxy.approve(approved.address, tokenId);
         await tx.wait();
         tx = await tokenProxy.connect(approved).transferFrom(owner.address, recipient.address, tokenId);
       })
-      it('transfers the ownership of the given tokenID to the given address', async () => {
+      it('transfers the ownership of the given tokenID to the given address', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(recipient.address);
       })
-      it('adjust owner balance and recipient balance', async () => {
+      it('adjust owner balance and recipient balance', async function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async () => {
+      it('adjust owners and recipient tokens by index', async function () {
         expect(await tokenProxy.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
         expect(await tokenProxy.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
       })
-      it('clears the approval for the tokenId', async () => {
+      it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
     })
 
-    context('with the given token ID being sent by operator', () => {
+    context('with the given token ID being sent by operator', function () {
       const tokenId = firstTokenId;
       const data = '0x42';
-      beforeEach(async () => {
+      beforeEach(async function () {
         let tx = await tokenProxy.setApprovalForAll(operator.address, true);
         await tx.wait();
         tx = await tokenProxy.connect(operator).transferFrom(owner.address, recipient.address, tokenId);
       })
-      it('transfers the ownership of the given tokenID to the given address', async () => {
+      it('transfers the ownership of the given tokenID to the given address', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(recipient.address);
       })
-      it('adjust owner balance and recipient balance', async () => {
+      it('adjust owner balance and recipient balance', async function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async () => {
+      it('adjust owners and recipient tokens by index', async function () {
         expect(await tokenProxy.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
         expect(await tokenProxy.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
       })
-      it('clears the approval for the tokenId', async () => {
+      it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
     })
@@ -161,7 +159,7 @@ describe('TokenProxy', () => {
 
 
 
-    
+
 
   })
 

@@ -14,9 +14,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
-    mapping(bytes32 => bool) private isCancelledOrFinished;
+    mapping(bytes32 => bool) private _isCancelledOrFinished;
 
-    ProxyController proxyController;
+    ProxyController _proxyController;
 
     event OrderMatched(
         bytes32 buyOrderHash,
@@ -31,10 +31,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         uint256 platformFee,
         uint256 patentFee
     );
+
     event OrderCancelled(bytes32 orderHash, address indexed maker);
 
     constructor(address _address) {
-        proxyController = ProxyController(_address);
+        _proxyController = ProxyController(_address);
     }
 
     /**
@@ -50,7 +51,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             order.maker == msg.sender,
             "order must be cancelled by its maker"
         );
-        isCancelledOrFinished[LibOrder.hash(order)] = true;
+        _isCancelledOrFinished[LibOrder.hash(order)] = true;
         emit OrderCancelled(LibOrder.hash(order), msg.sender);
     }
 
@@ -59,7 +60,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      * @param orderHash - the hash value of order to check
      */
     function checkOrderStatus(bytes32 orderHash) external view returns (bool) {
-        if (!isCancelledOrFinished[orderHash]) {
+        if (!_isCancelledOrFinished[orderHash]) {
             return true;
         } else {
             return false;
@@ -71,14 +72,14 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      * Requirements:
      * - buy order and sell order must pass signature verification
      * - buy order and sell order must match with each other
-     * - The 'msg.sender' must be order maker according to transaction type
+     * - The 'msg.sender' must be one of the order maker according to transaction type
      * Emits an {orderMatched} event.
      */
     function matchAndExecuteOrder(
-        LibOrder.Order memory buyOrder,
-        bytes memory buyOrderSig,
-        LibOrder.Order memory sellOrder,
-        bytes memory sellOrderSig
+        LibOrder.Order calldata buyOrder,
+        bytes calldata buyOrderSig,
+        LibOrder.Order calldata sellOrder,
+        bytes calldata sellOrderSig
     ) external payable nonReentrant {
         _signatureValidation(buyOrder, buyOrderSig, sellOrder, sellOrderSig);
         _orderValidation(buyOrder, sellOrder);
@@ -155,8 +156,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "either order has expired"
         );
         require(
-            isCancelledOrFinished[LibOrder.hash(buyOrder)] == false &&
-                isCancelledOrFinished[LibOrder.hash(sellOrder)] == false,
+            _isCancelledOrFinished[LibOrder.hash(buyOrder)] == false &&
+                _isCancelledOrFinished[LibOrder.hash(sellOrder)] == false,
             "either order has been cancelled or finishd"
         );
 
@@ -180,9 +181,9 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address nftContract = sellOrder.nftAsset.contractAddress;
         address tokenContract = buyOrder.buyAsset.contractAddress;
         uint256 tokenId = sellOrder.nftAsset.tokenId;
-        uint256 _platformFee = (buyOrder.buyAsset.value / 10000) * platformFee;
-        uint256 _patentFee = (buyOrder.buyAsset.value / 10000) *
-            patentFeeOf[nftContract][tokenId];
+        uint256 platformFee = (buyOrder.buyAsset.value / 10000) * _platformFee;
+        uint256 patentFee = (buyOrder.buyAsset.value / 10000) *
+            _patentFeeOf[nftContract][tokenId];
 
         // pay by ether (non-auction only)
 
@@ -197,15 +198,15 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             );
             uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
-            if (_platformFee != 0) {
-                payable(recipient).transfer(_platformFee);
-                remainValue = remainValue - _platformFee;
+            if (platformFee != 0) {
+                payable(_recipient).transfer(platformFee);
+                remainValue = remainValue - platformFee;
             }
             // transfer patent fee
-            if (_patentFee != 0) {
+            if (patentFee != 0) {
                 payable(IOxERC721Upgradeable(nftContract).creatorOf(tokenId))
-                    .transfer(_patentFee);
-                remainValue = remainValue - _patentFee;
+                    .transfer(patentFee);
+                remainValue = remainValue - patentFee;
             }
             if (remainValue != 0) {
                 // transfer asset to the seller
@@ -217,24 +218,24 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             require(msg.value == 0, "sending ether not allowed in ERC20 order");
             uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
-            if (_platformFee != 0) {
+            if (platformFee != 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,
-                    recipient,
-                    _platformFee
+                    _recipient,
+                    platformFee
                 );
-                remainValue = remainValue - _platformFee;
+                remainValue = remainValue - platformFee;
             }
             // transfer patent fee
-            if (_patentFee != 0) {
+            if (patentFee != 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,
                     IOxERC721Upgradeable(nftContract).creatorOf(tokenId),
-                    _patentFee
+                    patentFee
                 );
-                remainValue = remainValue - _patentFee;
+                remainValue = remainValue - patentFee;
             }
             if (remainValue != 0) {
                 // transfer token to the seller
@@ -250,7 +251,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         }
 
         // deliver nft
-        TransferProxy(proxyController.transferProxy()).safeTransferFrom(
+        TransferProxy(_proxyController.transferProxy()).safeTransferFrom(
             sellOrder.nftAsset.contractAddress,
             sellOrder.maker,
             buyOrder.maker,
@@ -266,8 +267,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             buyOrder.buyAsset.assetClass,
             buyOrder.buyAsset.contractAddress,
             buyOrder.buyAsset.value,
-            _platformFee,
-            _patentFee
+            platformFee,
+            patentFee
         );
     }
 
@@ -275,8 +276,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         LibOrder.Order memory buyOrder,
         LibOrder.Order memory sellOrder
     ) internal {
-        isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
-        isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
+        _isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
+        _isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
         // if the seller of the nft is creator, he can change the patent fee rate
         address creator = IOxERC721Upgradeable(
             sellOrder.nftAsset.contractAddress

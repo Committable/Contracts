@@ -5,7 +5,6 @@ pragma solidity ^0.8.0;
 import "./LibAsset.sol";
 
 library LibOrder {
-
     struct Order {
         address exchange;
         bool isBuyer; // true for buy order, false for sell order
