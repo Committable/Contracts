@@ -43,7 +43,7 @@ contract FeePanel is Ownable {
         uint256 originalPlatformFee = _platformFee;
         require(
             _fee <= 10000,
-            "invalid platform fee rate: must no larger than 100%"
+            "invalid platform fee: must no larger than 100%"
         );
         _platformFee = _fee;
         emit PlatformFeeChanged(originalPlatformFee, _fee);
@@ -56,8 +56,8 @@ contract FeePanel is Ownable {
     ) internal {
         uint256 originalPatentFee = _patentFeeOf[contractAddress][tokenId];
         require(
-            _fee <= 10000,
-            "invalid patent fee rate: must no larger than 100%"
+            _fee + _platformFee <= 10000,
+            "invalid patent fee: total fee must no larger than 100%"
         );
         _patentFeeOf[contractAddress][tokenId] = _fee;
         emit PatentFeeChanged(

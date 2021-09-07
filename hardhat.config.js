@@ -1,6 +1,8 @@
 require("@nomiclabs/hardhat-waffle");
+require("hardhat-gas-reporter");
+require("hardhat-tracer");
 
-const {ALCHEMY_API_KEY, ROPSTEN_PRIVATE_KEY, ROPSTEN_MNEMONIC} = require('./.setting.js');
+const {ALCHEMY_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY} = require('./.setting.js');
 
 
 
@@ -25,11 +27,17 @@ module.exports = {
   networks: {
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      gas: 2000000,
+      gas: 1000000,
       // accounts: [`0x${ROPSTEN_PRIVATE_KEY}`],
       accounts: {
         mnemonic: ROPSTEN_MNEMONIC
       }
     },
   },
+  gasReporter: {
+    currency: 'USD',
+    coinmarketcap: COINMARKETCAP_KEY,
+    gasPrice: 100,
+    showTimeSpent: true
+  }
 };

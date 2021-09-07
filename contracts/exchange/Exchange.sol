@@ -76,10 +76,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      * Emits an {orderMatched} event.
      */
     function matchAndExecuteOrder(
-        LibOrder.Order calldata buyOrder,
-        bytes calldata buyOrderSig,
-        LibOrder.Order calldata sellOrder,
-        bytes calldata sellOrderSig
+        LibOrder.Order memory buyOrder,
+        bytes memory buyOrderSig,
+        LibOrder.Order memory sellOrder,
+        bytes memory sellOrderSig
     ) external payable nonReentrant {
         _signatureValidation(buyOrder, buyOrderSig, sellOrder, sellOrderSig);
         _orderValidation(buyOrder, sellOrder);
@@ -208,8 +208,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                     .transfer(patentFee);
                 remainValue = remainValue - patentFee;
             }
+            // transfer asset to the seller
             if (remainValue != 0) {
-                // transfer asset to the seller
                 sellOrder.maker.transfer(remainValue);
             }
         }
@@ -237,8 +237,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 );
                 remainValue = remainValue - patentFee;
             }
+            // transfer token to the seller
             if (remainValue != 0) {
-                // transfer token to the seller
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,

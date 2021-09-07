@@ -19,7 +19,6 @@ let seller, buyer, creator, recipient, newRecipient, operator, others;
 let tokenProxy, exchange, oxERC721Upgradeable, transferProxy, proxyController;
 let buy_order, buy_order_1, buy_order_2, buy_order_tmp, sell_order, sell_order_1, sell_order_2, sell_order_tmp;
 let buy_order_sig, buy_order_sig_1, buy_order_sig_2, buy_order_sig_tmp, sell_order_sig, sell_order_sig_1, sell_order_sig_2, sell_order_sig_tmp;
-
 describe('Exchange', function () {
 
 
@@ -187,7 +186,7 @@ describe('Exchange', function () {
 
     })
 
-    context("with legitimate order behaviors", function () {
+    context.only("with legitimate order behaviors", function () {
       context("check orders hash and signature", function () {
         it('buy_order on-chain and off-chain hash match', async function () {
           expect(await exchange.getOrderHash(buy_order)).to.equal(hashOrder(buy_order));
@@ -221,7 +220,7 @@ describe('Exchange', function () {
           gasPrice = tx.gasPrice;
           gasUsed = (await tx.wait()).gasUsed;
           gasFee = gasPrice.mul(gasUsed);
-
+     
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
@@ -308,6 +307,7 @@ describe('Exchange', function () {
           _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
           await tx.wait();
+
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
@@ -352,6 +352,7 @@ describe('Exchange', function () {
 
           tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
           await tx.wait()
+
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(secondTokenId)).to.equal(buyer.address);
@@ -390,6 +391,7 @@ describe('Exchange', function () {
 
           let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
           await tx.wait();
+
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
@@ -434,6 +436,7 @@ describe('Exchange', function () {
           _patentFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
           tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
           await tx.wait()
+
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(secondTokenId)).to.equal(buyer.address);
@@ -1286,7 +1289,7 @@ describe('Exchange', function () {
             expect(err.message).to.include('sending ether not allowed in ERC20 order');
           }
         })
-        it('revert with invalid patentFee set in ETH non-auction order', async function () {
+        it('revert with invalid patentFee set in ETH non-auction order: patentFee larger than 100%', async function () {
           try {
             let invalid_patentFee = '10001';
             sell_order.nftAsset.patentFee = invalid_patentFee;
@@ -1295,10 +1298,10 @@ describe('Exchange', function () {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid patent fee rate: must no larger than 100%');
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
           }
         })
-        it('revert with invalid patentFee set in ERC20 non-auction order', async function () {
+        it('revert with invalid patentFee set in ERC20 non-auction order: patentFee larger than 100%', async function () {
           try {
             let invalid_patentFee = '10001';
             sell_order_1.nftAsset.patentFee = invalid_patentFee;
@@ -1307,10 +1310,10 @@ describe('Exchange', function () {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid patent fee rate: must no larger than 100%');
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
           }
         })
-        it('revert with invalid patentFee set in ERC20 auction order', async function () {
+        it('revert with invalid patentFee set in ERC20 auction order: patentFee larger than 100%', async function () {
           try {
             let invalid_patentFee = '10001';
             sell_order_2.nftAsset.patentFee = invalid_patentFee;
@@ -1319,7 +1322,103 @@ describe('Exchange', function () {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid patent fee rate: must no larger than 100%');
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
+          }
+        })
+        it('revert with invalid patenFee set in ETH non-auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
+          try {
+            let invalid_patentFee = '9000';
+            sell_order.nftAsset.patentFee = invalid_patentFee;
+            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
+            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, {value: price});
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
+          }
+        })
+        it('revert with invalid patenFee set in ERC20 non-auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
+          try {
+            let invalid_patentFee = '9000';
+            sell_order_1.nftAsset.patentFee = invalid_patentFee;
+            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
+            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
+          }
+        })
+        it('revert with invalid patenFee set in ERC20 auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
+          try {
+            let invalid_patentFee = '9000';
+            sell_order_2.nftAsset.patentFee = invalid_patentFee;
+            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
+            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
+          }
+        })
+        it('revert with ETH non-auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
+          try {
+            // execute a transaction and set patentFee to 10%
+            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
+            await tx.wait();
+            // change platform fee to 95%
+            tx = await exchange.connect(seller).changePlatformFee('9500');
+            await tx.wait();
+            buy_order.nftAsset.tokenId = secondTokenId;
+            buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
+            sell_order.nftAsset.tokenId = secondTokenId;
+            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
+            // in this transaction, throw on failure as sum of fees are larger than 1005
+            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, {value: price});
+            await tx.wait()
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('Transaction reverted:');
+          }
+        })
+        it('revert with ERC20 non-auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
+          try {
+            // execute a transaction and set patentFee to 10%
+            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
+            await tx.wait();
+            // change platform fee to 95%
+            tx = await exchange.connect(seller).changePlatformFee('9500');
+            await tx.wait();
+            buy_order_1.nftAsset.tokenId = secondTokenId;
+            buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
+            sell_order_1.nftAsset.tokenId = secondTokenId;
+            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
+            // in this transaction, throw on failure as sum of fees are larger than 1005
+            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+            await tx.wait()
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('Arithmetic operation underflowed or overflowed outside of an unchecked block');
+          }
+        })
+        it('revert with ERC20 auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
+          try {
+            // execute a transaction and set patentFee to 10%
+            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
+            await tx.wait();
+            // change platform fee to 95%
+            tx = await exchange.connect(seller).changePlatformFee('9500');
+            await tx.wait();
+            buy_order_2.nftAsset.tokenId = secondTokenId;
+            buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
+            sell_order_2.nftAsset.tokenId = secondTokenId;
+            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
+            // in this transaction, throw on failure as sum of fees are larger than 1005
+            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait()
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('Arithmetic operation underflowed or overflowed outside of an unchecked block');
           }
         })
       })
@@ -1446,7 +1545,7 @@ describe('Exchange', function () {
             await tx.wait();
             throw null
           } catch (err) {
-            expect(err.message).to.include("invalid platform fee rate: must no larger than 100%");
+            expect(err.message).to.include("invalid platform fee: must no larger than 100%");
           }
         })
       })

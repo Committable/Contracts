@@ -14,7 +14,7 @@ interface ERC721 {
 contract TransferProxy {
     mapping(address => bool) public isDisabled;
     ProxyController public proxyController;
-    event ProxyDisabled(address indexed _address, bool);
+    event ProxyDisabled(address indexed _address, bool _bool);
 
     constructor(address _address) {
         proxyController = ProxyController(_address);

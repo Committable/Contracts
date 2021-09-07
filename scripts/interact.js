@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
-const proxyController_address = '0x0C859981A20B21ca0c11735f22872FCDAb459F50';
+const proxyController_address = '0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f';
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -27,7 +27,7 @@ async function main() {
   console.log("proxyController deployed to:", proxyController.address);
 
   // do sth
-  let tx = await proxyController.setProxy('0xaa3376682A0fF472c716E23927D4200DB69E8A9C');
+  let tx = await proxyController.grantAuthentication('0xaa3376682A0fF472c716E23927D4200DB69E8A9C');
   console.log(await tx.wait());
   console.log("current transferProxy address is:", await proxyController.transferProxy());
 
