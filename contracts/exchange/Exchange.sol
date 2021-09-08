@@ -8,7 +8,7 @@ import "./SigCheck.sol";
 import "./FeePanel.sol";
 import "../ProxyController.sol";
 import "../TransferProxy.sol";
-import "../ERC721/IOxERC721Upgradeable.sol";
+import "../ERC721/OxIERC721Upgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -202,7 +202,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             }
             // transfer patent fee
             if (patentFee != 0) {
-                payable(IOxERC721Upgradeable(nftContract).creatorOf(tokenId))
+                payable(OxIERC721Upgradeable(nftContract).creatorOf(tokenId))
                     .transfer(patentFee);
             }
             // transfer asset to the seller
@@ -231,7 +231,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),
                     buyOrder.maker,
-                    IOxERC721Upgradeable(nftContract).creatorOf(tokenId),
+                    OxIERC721Upgradeable(nftContract).creatorOf(tokenId),
                     patentFee
                 );
             }
@@ -280,7 +280,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         _isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
         _isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
         // if the seller of the nft is creator, he can change the patent fee rate
-        address creator = IOxERC721Upgradeable(
+        address creator = OxIERC721Upgradeable(
             sellOrder.nftAsset.contractAddress
         ).creatorOf(sellOrder.nftAsset.tokenId);
         if (sellOrder.maker == creator) {

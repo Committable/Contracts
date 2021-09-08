@@ -187,7 +187,7 @@ describe('Exchange', function () {
 
     })
 
-    context.only("with legitimate order behaviors", function () {
+    context("with legitimate order behaviors", function () {
       context("check orders hash and signature", function () {
         it('buy_order on-chain and off-chain hash match', async function () {
           expect(await exchange.getOrderHash(buy_order)).to.equal(hashOrder(buy_order));

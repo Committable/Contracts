@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "../ProxyController.sol";
-import "../TransferProxy.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol"
+import "./OxERC721EnumerableUpgradeable.sol";
+import "../../ProxyController.sol";
+import "../../TransferProxy.sol";
 
-contract OxERC721Tradable is ERC721EnumerableUpgradeable {
+contract OxERC721Tradable is OxERC721EnumerableUpgradeable {
     ProxyController _proxyController;
 
     // solhint-disable-next-line

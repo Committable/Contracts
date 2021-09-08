@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
+import "./extensions/OxIERC721EnumerableUpgradeable.sol";
 
 /**
  * @title ERC-721 Non-Fungible Token Standard, optional enumeration extension
  * @dev See https://eips.ethereum.org/EIPS/eip-721
  */
-interface IOxERC721Upgradeable is IERC721EnumerableUpgradeable {
+interface OxIERC721Upgradeable is OxIERC721EnumerableUpgradeable {
     function initialize(
         string memory _name,
         string memory _symbol,

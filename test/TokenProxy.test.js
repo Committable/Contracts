@@ -15,7 +15,7 @@ describe('TokenProxy', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
       // get signers
-      [owner, recipient, approved, operator, ...others] = await ethers.getSigners();
+      [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
 
       // deploy contracts here
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
@@ -157,7 +157,19 @@ describe('TokenProxy', function () {
     })
 
 
-
+    context('with additional minting tokens', () => {
+      it('return correct creator address array', async () => {
+        let tokenIds = [33,2,4,'0x1'];
+        let tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[0]);
+        await tx.wait();
+         tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[1]);
+        await tx.wait();
+         tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[2]);
+        await tx.wait();
+        expect(await tokenProxy.creatorOfBatch(tokenIds))
+        .deep.to.equal([batchOwner.address, batchOwner.address, batchOwner.address, ZERO_ADDRESS])
+      })
+    })
 
 
 

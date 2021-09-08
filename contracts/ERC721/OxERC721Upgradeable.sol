@@ -2,12 +2,12 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
-import "./IOxERC721Upgradeable.sol";
-import "./OxERC721Tradable.sol";
+// import "./extensions/OxERC721EnumerableUpgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "./OxIERC721Upgradeable.sol";
+import "./extensions/OxERC721Tradable.sol";
 
-contract OxERC721Upgradeable is OxERC721Tradable, IOxERC721Upgradeable {
+contract OxERC721Upgradeable is OxERC721Tradable, OxIERC721Upgradeable {
     mapping(uint256 => address) private _creator;
 
     function initialize(
@@ -29,11 +29,11 @@ contract OxERC721Upgradeable is OxERC721Tradable, IOxERC721Upgradeable {
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721EnumerableUpgradeable)
+        override(IERC165Upgradeable, OxERC721EnumerableUpgradeable)
         returns (bool)
     {
         return
-            interfaceId == type(IOxERC721Upgradeable).interfaceId ||
+            interfaceId == type(OxIERC721Upgradeable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
@@ -79,6 +79,20 @@ contract OxERC721Upgradeable is OxERC721Tradable, IOxERC721Upgradeable {
         returns (address)
     {
         return _creator[tokenId];
+    }
+
+    function creatorOfBatch(uint256[] memory tokenIds)
+        external
+        view
+        virtual
+        returns (address[] memory)
+    {
+        address[] memory batchCreators = new address[](tokenIds.length);
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            batchCreators[i] = _creator[tokenIds[i]];
+        }
+
+        return batchCreators;
     }
 
     uint256[50] private __gap;
