@@ -12,13 +12,13 @@ contract OxERC721UpgradeableV2 is OxERC721Tradable, IOxERC721Upgradeable {
     function initialize(
         string memory _name,
         string memory _symbol,
-        address _proxyController
+        address proxyController
     ) public override initializer {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __ERC721Enumerable_init_unchained();
-        __ERC721Tradable_init_unchained(_proxyController);
+        __ERC721Tradable_init_unchained(proxyController);
     }
 
     /**

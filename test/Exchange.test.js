@@ -15,6 +15,7 @@ const life_span = 60 * 60 * 24 * 7 // one week
 const PATENT_FEE = 1000; // 10 %
 const PLATFORM_FEE = 2000; // 20%
 
+
 let seller, buyer, creator, recipient, newRecipient, operator, others;
 let tokenProxy, exchange, oxERC721Upgradeable, transferProxy, proxyController;
 let buy_order, buy_order_1, buy_order_2, buy_order_tmp, sell_order, sell_order_1, sell_order_2, sell_order_tmp;
@@ -307,7 +308,10 @@ describe('Exchange', function () {
           _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
           await tx.wait();
-
+          // const trace = await hre.network.provider.send("debug_traceTransaction", [
+          //   tx.hash
+          // ]);
+  
         })
         it('owner of nft token changed', async function () {
           expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
@@ -868,43 +872,6 @@ describe('Exchange', function () {
           }
         })
       })
-
-      context('when buy order start time has not reached yet', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          buy_order.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          buy_order_1.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
-        })
-      })
-
       context('when sell order start time has not reached yet', function () {
         it('revert with non-auction orders using ETH', async function () {
           sell_order.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;

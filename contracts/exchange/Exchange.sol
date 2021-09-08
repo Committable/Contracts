@@ -186,8 +186,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             _patentFeeOf[nftContract][tokenId];
 
         // pay by ether (non-auction only)
-
-        if (buyOrder.buyAsset.assetClass == bytes4(keccak256("ETH"))) {
+        // bytes4(keccak256("ETH")) = 0xaaaebeba
+        if (buyOrder.buyAsset.assetClass == 0xaaaebeba) {
             require(
                 buyOrder.isAuction == false,
                 "invalid orders: ETH not allowed in auction"
@@ -196,27 +196,27 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 msg.value == buyOrder.buyAsset.value,
                 "ether amount does not match buy order value"
             );
-            uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
             if (platformFee != 0) {
                 payable(_recipient).transfer(platformFee);
-                remainValue = remainValue - platformFee;
             }
             // transfer patent fee
             if (patentFee != 0) {
                 payable(IOxERC721Upgradeable(nftContract).creatorOf(tokenId))
                     .transfer(patentFee);
-                remainValue = remainValue - patentFee;
             }
             // transfer asset to the seller
+            uint256 remainValue = buyOrder.buyAsset.value -
+                platformFee -
+                patentFee;
             if (remainValue != 0) {
                 sellOrder.maker.transfer(remainValue);
             }
         }
         //  pay by erc20 (non-auction and auction)
-        else if (buyOrder.buyAsset.assetClass == bytes4(keccak256("ERC20"))) {
+        // bytes4(keccak256("ERC20")) = 0x8ae85d84
+        else if (buyOrder.buyAsset.assetClass == 0x8ae85d84) {
             require(msg.value == 0, "sending ether not allowed in ERC20 order");
-            uint256 remainValue = buyOrder.buyAsset.value;
             // transfer platform fee
             if (platformFee != 0) {
                 SafeERC20.safeTransferFrom(
@@ -225,7 +225,6 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                     _recipient,
                     platformFee
                 );
-                remainValue = remainValue - platformFee;
             }
             // transfer patent fee
             if (patentFee != 0) {
@@ -235,9 +234,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                     IOxERC721Upgradeable(nftContract).creatorOf(tokenId),
                     patentFee
                 );
-                remainValue = remainValue - patentFee;
             }
             // transfer token to the seller
+            uint256 remainValue = buyOrder.buyAsset.value -
+                platformFee -
+                patentFee;
             if (remainValue != 0) {
                 SafeERC20.safeTransferFrom(
                     IERC20(tokenContract),

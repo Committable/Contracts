@@ -23,7 +23,15 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.3",
+  solidity: {
+    version: "0.8.3",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  },
   networks: {
     ropsten: {
       url: `https://eth-ropsten.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
@@ -37,7 +45,7 @@ module.exports = {
   gasReporter: {
     currency: 'USD',
     coinmarketcap: COINMARKETCAP_KEY,
-    gasPrice: 100,
-    showTimeSpent: true
-  }
+    gasPrice: 100
+  },
+  
 };

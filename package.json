@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test:logs": "hardhat test --logs",
     "ropsten": "hardhat run --network ropsten",
     "lint:js": "eslint './test/*.js'",
     "lint:js:fix": "eslint './test/*.js' --fix",
