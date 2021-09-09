@@ -9,8 +9,6 @@ import "./FeePanel.sol";
 import "../ProxyController.sol";
 import "../TransferProxy.sol";
 import "../ERC721/OxIERC721Upgradeable.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
@@ -27,9 +25,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         bool isAuction,
         bytes4 assetClass,
         address contractAddress,
-        uint256 price,
-        uint256 platformFee,
-        uint256 patentFee
+        uint256 price
     );
 
     event OrderCancelled(bytes32 orderHash, address indexed maker);
@@ -56,7 +52,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     }
 
     /**
-     * @dev check whether given order is cancelled or finished
+     * @dev check whether given order is cancelled/finished or not
      * @param orderHash - the hash value of order to check
      */
     function checkOrderStatus(bytes32 orderHash) external view returns (bool) {
@@ -65,6 +61,26 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         } else {
             return false;
         }
+    }
+
+    /**
+     * @dev check whether given orders are cancelled/finished or not
+     * @param orderHashs - the hash value array of orders to check
+     */
+    function checkOrderStatusBatch(bytes32[] memory orderHashs)
+        external
+        view
+        returns (bool[] memory)
+    {
+        bool[] memory bools = new bool[](orderHashs.length);
+        for (uint256 i = 0; i < orderHashs.length; ++i) {
+            if (!_isCancelledOrFinished[orderHashs[i]]) {
+                bools[i] = true;
+            } else {
+                bools[i] = false;
+            }
+        }
+        return bools;
     }
 
     /**
@@ -181,10 +197,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address nftContract = sellOrder.nftAsset.contractAddress;
         address tokenContract = buyOrder.buyAsset.contractAddress;
         uint256 tokenId = sellOrder.nftAsset.tokenId;
-        uint256 platformFee = (buyOrder.buyAsset.value / 10000) * _platformFee;
-        uint256 patentFee = (buyOrder.buyAsset.value / 10000) *
-            _patentFeeOf[nftContract][tokenId];
 
+        TransferProxy transferProxy = TransferProxy(
+            _proxyController.transferProxy()
+        );
         // pay by ether (non-auction only)
         // bytes4(keccak256("ETH")) = 0xaaaebeba
         if (buyOrder.buyAsset.assetClass == 0xaaaebeba) {
@@ -196,6 +212,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 msg.value == buyOrder.buyAsset.value,
                 "ether amount does not match buy order value"
             );
+            uint256 platformFee = (buyOrder.buyAsset.value / 10000) *
+                _platformFee;
+            uint256 patentFee = (buyOrder.buyAsset.value / 10000) *
+                _patentFeeOf[nftContract][tokenId];
             // transfer platform fee
             if (platformFee != 0) {
                 payable(_recipient).transfer(platformFee);
@@ -205,7 +225,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 payable(OxIERC721Upgradeable(nftContract).creatorOf(tokenId))
                     .transfer(patentFee);
             }
-            // transfer asset to the seller
+            // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
             uint256 remainValue = buyOrder.buyAsset.value -
                 platformFee -
                 patentFee;
@@ -217,10 +237,14 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         // bytes4(keccak256("ERC20")) = 0x8ae85d84
         else if (buyOrder.buyAsset.assetClass == 0x8ae85d84) {
             require(msg.value == 0, "sending ether not allowed in ERC20 order");
+            uint256 platformFee = (buyOrder.buyAsset.value / 10000) *
+                _platformFee;
+            uint256 patentFee = (buyOrder.buyAsset.value / 10000) *
+                _patentFeeOf[nftContract][tokenId];
             // transfer platform fee
             if (platformFee != 0) {
-                SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
+                transferProxy.transferERC20(
+                    tokenContract,
                     buyOrder.maker,
                     _recipient,
                     platformFee
@@ -228,20 +252,20 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             }
             // transfer patent fee
             if (patentFee != 0) {
-                SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
+                transferProxy.transferERC20(
+                    tokenContract,
                     buyOrder.maker,
                     OxIERC721Upgradeable(nftContract).creatorOf(tokenId),
                     patentFee
                 );
             }
-            // transfer token to the seller
+            // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
             uint256 remainValue = buyOrder.buyAsset.value -
                 platformFee -
                 patentFee;
             if (remainValue != 0) {
-                SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
+                transferProxy.transferERC20(
+                    tokenContract,
                     buyOrder.maker,
                     sellOrder.maker,
                     remainValue
@@ -252,7 +276,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         }
 
         // deliver nft
-        TransferProxy(_proxyController.transferProxy()).safeTransferFrom(
+        transferProxy.transferERC721(
             sellOrder.nftAsset.contractAddress,
             sellOrder.maker,
             buyOrder.maker,
@@ -267,9 +291,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             sellOrder.isAuction,
             buyOrder.buyAsset.assetClass,
             buyOrder.buyAsset.contractAddress,
-            buyOrder.buyAsset.value,
-            platformFee,
-            patentFee
+            buyOrder.buyAsset.value
         );
     }
 

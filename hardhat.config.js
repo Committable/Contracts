@@ -2,7 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("hardhat-tracer");
 
-const {ALCHEMY_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY} = require('./.setting.js');
+const {INFURA_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY} = require('./.config.js');
 
 
 
@@ -34,9 +34,8 @@ module.exports = {
   },
   networks: {
     ropsten: {
-      url: `https://eth-ropsten.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      gas: 1000000,
-      // accounts: [`0x${ROPSTEN_PRIVATE_KEY}`],
+      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+      gas: 3000000,
       accounts: {
         mnemonic: ROPSTEN_MNEMONIC
       }

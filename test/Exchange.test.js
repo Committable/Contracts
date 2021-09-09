@@ -1,9 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
-const { NAME, SYMBOL } = require('../.setting.js');
+const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { BuyAsset, NftAsset, Order, hashOrder } = require("../utils.js");
+const { BuyAsset, NftAsset, Order, hashOrder } = require("./utils.js");
 
 const firstTokenId = 5042;
 const secondTokenId = '0x79217';
@@ -59,10 +59,10 @@ describe('Exchange', function () {
       await tx.wait();
 
       // deploy erc20 and approve for test
-      let ERC20 = await ethers.getContractFactory("USDT");
+      let ERC20 = await ethers.getContractFactory("ERC20Test");
       token = await ERC20.connect(buyer).deploy("Tether", "USDT");
       await token.deployed();
-      tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());
+      tx = await token.approve(transferProxy.address, ethers.utils.parseEther('10000').toString());
       await tx.wait();
       // mint nft to seller
       tx = await tokenProxy['safeMint(address,uint256)'](seller.address, firstTokenId);
@@ -205,6 +205,10 @@ describe('Exchange', function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(true);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(true);
         })
+        it('both orders were flagged as valid via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order)])).
+          to.deep.equal([true, true]);
+        })
       })
 
       context("with non-aution ETH orders executed: seller is creator", function () {
@@ -242,6 +246,10 @@ describe('Exchange', function () {
         it('both orders were flagged as finished', async function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(false);
+        })
+        it('both orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order)])).
+          to.deep.equal([false, false]);
         })
       })
 
@@ -296,6 +304,10 @@ describe('Exchange', function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(false);
         })
+        it('four orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
+          to.deep.equal([false, false, false, false]);
+        })
       })
 
 
@@ -308,9 +320,7 @@ describe('Exchange', function () {
           _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
           await tx.wait();
-          // const trace = await hre.network.provider.send("debug_traceTransaction", [
-          //   tx.hash
-          // ]);
+   
   
         })
         it('owner of nft token changed', async function () {
@@ -331,6 +341,10 @@ describe('Exchange', function () {
         it('both orders were flagged as finished', async function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
+        })
+        it('both orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1)])).
+          to.deep.equal([false, false]);
         })
       })
 
@@ -381,6 +395,10 @@ describe('Exchange', function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
         })
+        it('four orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
+          to.deep.equal([false, false, false, false]);
+        })
       })
 
       context("with aution ERC20 orders executed: seller is creator", function () {
@@ -415,6 +433,10 @@ describe('Exchange', function () {
         it('both orders were flagged as finished', async function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
+        })
+        it('both orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_2), hashOrder(sell_order_2)])).
+          to.deep.equal([false, false]);
         })
       })
 
@@ -465,6 +487,10 @@ describe('Exchange', function () {
           expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
           expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
         })
+        it('four orders were flagged as finished via batch request', async function () {
+          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_2), hashOrder(sell_order_2),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
+          to.deep.equal([false, false, false, false]);
+        })
       })
 
       context('[event test] with non-aution ETH orders executed', function () {
@@ -475,7 +501,7 @@ describe('Exchange', function () {
           let _patentFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
           expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order), hashOrder(sell_order), buyer.address, seller.address, firstTokenId, sell_order.isAuction, buy_order.buyAsset.assetClass, buy_order.buyAsset.contractAddress, buy_order.buyAsset.value, _platformFee, _patentFee);
+            .withArgs(hashOrder(buy_order), hashOrder(sell_order), buyer.address, seller.address, firstTokenId, sell_order.isAuction, buy_order.buyAsset.assetClass, buy_order.buyAsset.contractAddress, buy_order.buyAsset.value);
         })
         it('emit desired tokenProxy event', async function () {
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
@@ -497,7 +523,7 @@ describe('Exchange', function () {
           let _patentFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
           expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, firstTokenId, sell_order_1.isAuction, buy_order_1.buyAsset.assetClass, buy_order_1.buyAsset.contractAddress, buy_order_1.buyAsset.value, _platformFee, _patentFee);
+            .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, firstTokenId, sell_order_1.isAuction, buy_order_1.buyAsset.assetClass, buy_order_1.buyAsset.contractAddress, buy_order_1.buyAsset.value);
         })
         it('emit desired tokenProxy event', async function () {
           let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
@@ -519,7 +545,7 @@ describe('Exchange', function () {
           let _patentFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
           let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
           expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, firstTokenId, sell_order_2.isAuction, buy_order_2.buyAsset.assetClass, buy_order_2.buyAsset.contractAddress, buy_order_2.buyAsset.value, _platformFee, _patentFee);
+            .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, firstTokenId, sell_order_2.isAuction, buy_order_2.buyAsset.assetClass, buy_order_2.buyAsset.contractAddress, buy_order_2.buyAsset.value);
         })
         it('emit desired tokenProxy event', async function () {
           let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1153,7 +1179,7 @@ describe('Exchange', function () {
         })
         it('revert with not approving tokens in erc20 non-auction order', async function () {
           try {
-            let tx = await token.connect(buyer).approve(exchange.address, '0');
+            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
             await tx;
             tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
             await tx.wait();
@@ -1176,7 +1202,7 @@ describe('Exchange', function () {
         })
         it('revert with not approving tokens in erc20 auction order', async function () {
           try {
-            let tx = await token.connect(buyer).approve(exchange.address, '0');
+            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
             await tx;
             tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();

@@ -28,4 +28,20 @@ interface OxIERC721EnumerableUpgradeable is IERC721Upgradeable {
      * Use along with {totalSupply} to enumerate all tokens.
      */
     function tokenByIndex(uint256 index) external view returns (uint256);
+
+    /**
+     * @dev Returns token IDs owned by `owner` at a given array of `index` of its token list.
+     */
+    function tokenOfOwnerByIndexBatch(address owner, uint256[] memory indexes)
+        external
+        view
+        returns (uint256[] memory);
+
+    /**
+     * @dev Returns token IDs at a given arrary of `index` of all the tokens stored by the contract.
+     */
+    function tokenByIndexBatch(uint256[] memory indexes)
+        external
+        view
+        returns (uint256[] memory);
 }

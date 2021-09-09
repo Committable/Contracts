@@ -85,6 +85,7 @@ contract OxERC721Upgradeable is OxERC721Tradable, OxIERC721Upgradeable {
         external
         view
         virtual
+        override
         returns (address[] memory)
     {
         address[] memory batchCreators = new address[](tokenIds.length);
@@ -95,5 +96,5 @@ contract OxERC721Upgradeable is OxERC721Tradable, OxIERC721Upgradeable {
         return batchCreators;
     }
 
-    uint256[50] private __gap;
+    uint256[49] private __gap;
 }

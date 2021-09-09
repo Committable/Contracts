@@ -203,5 +203,43 @@ abstract contract OxERC721EnumerableUpgradeable is
         _allTokens.pop();
     }
 
+    /**
+     * @dev Returns a token ID at a given `index` of all the tokens stored by the contract.
+     * Use along with {totalSupply} to enumerate all tokens.
+     */
+    /**
+     * @dev Returns token IDs owned by `owner` at a given array of `index` of its token list.
+     */
+    function tokenOfOwnerByIndexBatch(address owner, uint256[] memory indexes)
+        external
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        uint256[] memory tokenIds = new uint256[](indexes.length);
+        for (uint256 i = 0; i < indexes.length; ++i) {
+            tokenIds[i] = _ownedTokens[owner][indexes[i]];
+        }
+        return tokenIds;
+    }
+
+    /**
+     * @dev Returns token IDs at a given arrary of `index` of all the tokens stored by the contract.
+     */
+    function tokenByIndexBatch(uint256[] memory indexes)
+        external
+        view
+        virtual
+        override
+        returns (uint256[] memory)
+    {
+        uint256[] memory tokenIds = new uint256[](indexes.length);
+        for (uint256 i = 0; i < indexes.length; ++i) {
+            tokenIds[i] = _allTokens[indexes[i]];
+        }
+        return tokenIds;
+    }
+
     uint256[46] private __gap;
 }

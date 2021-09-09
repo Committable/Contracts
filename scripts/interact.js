@@ -19,7 +19,7 @@ async function main() {
   // console.log(accounts);
   [owner, user] = await ethers.getSigners();
 
-
+  console.log(owner.address)
   // We get the contract to interact
   const ProxyController = await ethers.getContractFactory("ProxyController");
   const proxyController = await ProxyController.attach(proxyController_address);
@@ -27,9 +27,11 @@ async function main() {
   console.log("proxyController deployed to:", proxyController.address);
 
   // do sth
-  let tx = await proxyController.grantAuthentication('0xaa3376682A0fF472c716E23927D4200DB69E8A9C');
-  console.log(await tx.wait());
-  console.log("current transferProxy address is:", await proxyController.transferProxy());
+  let result = await proxyController.transferProxy();
+  console.log("transferProxy address is: ", result);
+  let tx = await proxyController.grantAuthentication(owner.address);
+  await tx.wait();
+  console.log(await proxyController.contracts(owner.address))
 
 }
 

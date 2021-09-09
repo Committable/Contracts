@@ -15,62 +15,7 @@
 
 ## **合约：TokenProxy**
 
-### 接口
-
-#### safeMint(to, tokenId [, _data])
-
-![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
-
-向指定地址铸ERC721代币，将收款地址设置为该代币的创作者，如果收款地址是合约地则尝试调用该合约进行接口检查
-
-> 代币编号重复和收币地址是以太坊零地址时会抛错；若收币地址是合约地址，则尝试调用该合约的onERC721Received(operator, from, tokenId, data)接口，若调用失败或者返回值不等于该接口函数选择器则抛错
-
-**输入**
-
-1. `to` - `地址`：收款地址
-2. `tokenId` - `整型`：代币编号
-3. `_data` - `动态长度字节码`：(optional) 收款地址是合约地址时的传入数据，默认值为""
-
-**释放事件**
-
-1. Transfer
-
-#### transferFrom(from, to, tokenId)  
-
-![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
-
-对指定编号的ERC721代币发起转账
-
-> 收币地址是以太坊零地址会抛错
-
-**输入**
-
-1. `from` - `地址`：代币来源地址
-2. `to` - `地址`：代币收款地址
-3. `tokenId` - `整型`：代币编号
-
-**释放事件**
-
-1. Transfer
-
-#### safeTransferFrom(from, to, tokenId [, calldata])  
-
-![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
-
-对指定编号的ERC721代币发起转账，如果收款地址是合约地址则尝试调用该合约进行接口检查
-
-> 收币地址是以太坊零地址会抛错；若收币地址是合约地址，则尝试调用该合约的onERC721Received(operator, from, tokenId, data)接口，若调用失败或者返回值不等于该接口函数选择器则抛错
-
-**输入**
-
-1. `from` - `地址`：代币来源地址
-2. `to` - `地址`： 收款地址
-3. `tokenId` - `整型`：代币编号
-4. `calldata` - `动态长度字节码`：(optional) 收款地址是合约地址时的传入数据，默认值为""
-
-**释放事件**
-
-1. Transfer
+### 只读接口
 
 #### balanceOf(owner) 
 
@@ -160,6 +105,22 @@
 
 `tokenId` - `整型`：代币编号
 
+#### tokenByIndexBatch(indexes) 
+
+![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+根据索引数组批量查询代币编号
+
+> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
+
+**输入**
+
+1. `indexes` - `整型数组`：代币索引数组
+
+**输出**
+
+`tokenIds` - `整型数组`：代币编号数组
+
 #### tokenOfOwnerByIndex(owner, index)    
 
 ![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
@@ -177,6 +138,23 @@
 
 `tokenId` - `整型`：代币编号
 
+#### tokenOfOwnerByIndexBatch(owner, indexes)    
+
+![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+根据索引数组和代币所有者地址批量查询代币编号
+
+> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
+
+**输入**
+
+1. `owner` - `地址`：所有者
+2. `indexes` - `整型数组`：代币索引数组
+
+**输出**
+
+`tokenIds` - `整型数组`：代币编号数组
+
 #### creatorOf(tokenId) 
 
 ![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
@@ -190,6 +168,20 @@
 输出
 
 `creator` - `地址`：创作者地址
+
+#### creatorOfBatch(tokenIds)    
+
+![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+根据代币编号数组批量查询代币创作者地址
+
+**输入**
+
+1. `tokenIds` - `整型数组`：代币编号数组
+
+**输出**
+
+`addresses` - `地址数组`：创作者地址数组
 
 #### admin() 
 
@@ -212,6 +204,65 @@
 **输出**
 
 `implementation` - `地址`：逻辑合约
+
+### 状态改变接口
+
+#### safeMint(to, tokenId [, _data])
+
+![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+向指定地址铸ERC721代币，将收款地址设置为该代币的创作者，如果收款地址是合约地则尝试调用该合约进行接口检查
+
+> 代币编号重复和收币地址是以太坊零地址时会抛错；若收币地址是合约地址，则尝试调用该合约的onERC721Received(operator, from, tokenId, data)接口，若调用失败或者返回值不等于该接口函数选择器则抛错
+
+**输入**
+
+1. `to` - `地址`：收款地址
+2. `tokenId` - `整型`：代币编号
+3. `_data` - `动态长度字节码`：(optional) 收款地址是合约地址时的传入数据，默认值为""
+
+**释放事件**
+
+1. Transfer
+
+#### transferFrom(from, to, tokenId)  
+
+![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+对指定编号的ERC721代币发起转账
+
+> 收币地址是以太坊零地址会抛错
+
+**输入**
+
+1. `from` - `地址`：代币来源地址
+2. `to` - `地址`：代币收款地址
+3. `tokenId` - `整型`：代币编号
+
+**释放事件**
+
+1. Transfer
+
+#### safeTransferFrom(from, to, tokenId [, calldata])  
+
+![lable](https://img.shields.io/badge/send-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
+
+对指定编号的ERC721代币发起转账，如果收款地址是合约地址则尝试调用该合约进行接口检查
+
+> 收币地址是以太坊零地址会抛错；若收币地址是合约地址，则尝试调用该合约的onERC721Received(operator, from, tokenId, data)接口，若调用失败或者返回值不等于该接口函数选择器则抛错
+
+**输入**
+
+1. `from` - `地址`：代币来源地址
+2. `to` - `地址`： 收款地址
+3. `tokenId` - `整型`：代币编号
+4. `calldata` - `动态长度字节码`：(optional) 收款地址是合约地址时的传入数据，默认值为""
+
+**释放事件**
+
+1. Transfer
+
+
 
 #### changeAdmin(newAdmin)  
 
@@ -256,7 +307,7 @@
 
 1. Upgraded
 
-#### 事件
+### 事件
 
 #### Approval(indexed owner, indexed approved, indexed tokenId)
 
@@ -307,7 +358,33 @@
 
 ## 合约：TransferProxy
 
-### 接口
+### 只读接口
+
+#### isDisabled (address _address) 
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+查询该合约对指定地址的转账权限
+
+**输入**
+
+1. `_address` - `地址`：查询地址
+
+**输出**
+
+`bool` - `布尔值`：该值为true时表示该合约没有对指定地址的转账权限，false表示拥有转账权限
+
+#### proxyController()
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+查询ProxyController合约地址
+
+**输出**
+
+`proxyController` - `地址`：proxyController合约地址
+
+### 状态改变接口
 
 #### safeTransferFrom( _token, _from, _to, tokenId)
 
@@ -344,29 +421,7 @@
 
 1. ProxyDisabled
 
-#### isDisabled (address _address) 
 
-![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
-
-查询该合约对指定地址的转账权限
-
-**输入**
-
-1. `_address` - `地址`：查询地址
-
-**输出**
-
-`bool` - `布尔值`：该值为true时表示该合约没有对指定地址的转账权限，false表示拥有转账权限
-
-#### proxyController()
-
-![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
-
-查询ProxyController合约地址
-
-**输出**
-
-`proxyController` - `地址`：proxyController合约地址
 
 ### 事件
 
@@ -381,7 +436,7 @@
 
 ## 合约：ProxyController
 
-### 接口
+### 只读接口
 
 #### transferProxy()
 
@@ -406,6 +461,46 @@
 **输出**
 
 1. `_bool` - `地址`：该值为true时表示查询地址有权访问TokenProxy合约的safeTransferFrom()函数
+
+#### getProxyImplementation(proxy)
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+查询TokenProxy合约的逻辑合约地址(OxERC721Upgradeable合约)
+
+**输入**
+
+1. `proxy` - `地址`：TokenProxy合约地址
+
+**输出**
+
+`implementation` - `地址`：TokenProxy合约的逻辑合约地址
+
+#### getProxyAdmin(proxy)
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+查询TokenProxy合约的管理员地址
+
+**输入**
+
+1. `proxy` - `地址`：TokenProxy合约地址
+
+**输出**
+
+`admin` - `地址`：TokenProxy合约的管理员地址
+
+#### owner()
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+查询该合约的管理员地址
+
+**输出**
+
+`owner` - `地址`：该合约的管理员地址状态改变接口
+
+### 状态改变接口
 
 #### grantAuthentication(_address)
 
@@ -437,33 +532,7 @@
 
 1. `_address` - `地址`：TransferProxy合约地址
 
-#### getProxyImplementation(proxy)
 
-![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
-
-查询TokenProxy合约的逻辑合约地址(OxERC721Upgradeable合约)
-
-**输入**
-
-1. `proxy` - `地址`：TokenProxy合约地址
-
-**输出**
-
-`implementation` - `地址`：TokenProxy合约的逻辑合约地址
-
-#### getProxyAdmin(proxy)
-
-![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
-
-查询TokenProxy合约的管理员地址
-
-**输入**
-
-1. `proxy` - `地址`：TokenProxy合约地址
-
-**输出**
-
-`admin` - `地址`：TokenProxy合约的管理员地址
 
 #### changeProxyAdmin(proxy, newAdmin)
 
@@ -511,16 +580,6 @@
 
 1. Upgraded：TokenProxy合约
 
-#### owner()
-
-![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
-
-查询该合约的管理员地址
-
-**输出**
-
-`owner` - `地址`：该合约的管理员地址
-
 #### renounceOwnership()
 
 ![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
@@ -558,56 +617,7 @@
 
 ## 合约：Exchange
 
-### 接口
-
-#### cancelOrder(order)
-
-![](https://img.shields.io/badge/send-%E5%85%AC%E5%BC%80-green) 
-
-取消指定订单
-
-**输入**
-
-1. <span id="order">`order`</span> - `对象`：准备取消的订单 
-
-   - `exchange` - `地址`：订单执行的交易合约地址
-
-   - `isBuyer` - `布尔值`：该订单创建人所处的买卖方（true代表买家订单，false代表卖家订单）
-
-   - `isAuction` - `地址`：该订单交易方式（true代表拍卖，false代表直售）
-
-   - `maker` - `地址`：该订单创建者
-
-   - <span id="asset">`buyAsset`</span> - `对象`：支付资产（目前支持使用ETH和ERC20代币进行支付）
-
-     - `assetClass` - `4字节`：资产类型
-
-       目前定义了两种购买使用的资产类型，分别是
-
-       ```javascript
-       const ETH_CLASS = web3.utils.keccak256("ETH").slice(0, 10); // 0xaaaebeba
-       const ERC20_CLASS = web3.utils.keccak256("ERC20").slice(0, 10); // 0x8ae85d84
-       ```
-
-     - `contractAddress` - `地址`：购买支付的资产合约地址，当资产是ETH时，在此处键入以太坊零地址即可
-
-     - `value` - `整型`：数量，单位是wei
-
-   - <span id="nft">`nftAsset`</span> - `对象`：出售资产（目前支持出售ERC721代币）
-
-     - `contractAddress` - `地址`：出售资产的合约地址（即TokenProxy合约地址）
-     - `tokenId` - `整型`：出售资产的编号
-     - `patentFee` - `整型`：设置的专利费率（有效值在0 ~ 10000之间，对应的百分比费率 = 专利费率/100）当卖单的创建者是出售资产的创作者时，在订单交易完成后会更新该出售资产的专利费率。
-
-   - `salt` - `整型`：随机值
-
-   - `start` - `整型`：提交订单时的时间戳，单位是秒，执行交易时如果当前时间戳小于该值则终止交易
-
-   - `end` - `整型`：订单的最后有效时间戳，单位是秒，执行订单交易时如果当前时间戳超过该值则终止交易
-
-**释放事件**
-
-1. OrderCancelled
+### 只读接口
 
 ####  checkOrderStatus(orderHash) 
 
@@ -622,28 +632,6 @@
 **输出**
 
 `bool` - `布尔值`：订单状态（true代币订单可以执行，false代币订单已经执行完毕或者已经被取消）
-
-#### matchAndExecuteOrder(buyOrder, buyOrderSig, sellOrder, sellOrderSig )
-
-![](https://img.shields.io/badge/send-%E4%BB%85%E9%83%A8%E5%88%86%E5%9C%B0%E5%9D%80-yellowgreen) 
-
-检查指定订单状态
-
-> 根据订单交易方式的不同该函数的访问权限也不同，对于订单交易方式是直售的订单，仅订单对应的买方地址可以调用该函数，对于拍卖订单，仅订单对应的卖方地址可以调用该函数
-
-**输入**
-
-1. `buyOrder` - `对象`：买方订单
-2. `buyOrderSig` - `动态长度字节码`：买方订单的签名（签名规则见附录）
-3. `sellOrder` - `对象`：卖方订单
-4. `sellOrderSig` - `动态长度字节码`：买方订单的签名
-
-**释放事件**
-
-1. OrderMatched
-2. Transfer：ERC20代币合约
-3. Transfer：TokenProxy合约
-4. PatentFeeChanged（当卖家是创作者时会释放该事件）
 
 #### getPlatformFee
 
@@ -680,34 +668,6 @@
 
 `recipient` - `地址`：平台费收款地址
 
-#### changePlatformFee(_fee)
-
-![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
-
-更新平台费率
-
-**输入**
-
-1. `_fee` - `整型`：新的平台费率（有效值在0 ~ 10000之间，对应百分比费率为_fee / 100）
-
-**释放事件**
-
-1. PlatformFeeChanged
-
-#### changeRecipient(_recipient)
-
-![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
-
-更新平台费收款地址
-
-**输入**
-
-1. `_recipient` - `地址`：新的平台费收款地址
-
-**释放事件**
-
-1. RecipientChanged
-
 #### owner()
 
 ![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
@@ -717,30 +677,6 @@
 **输出**
 
 `owner` - `地址`：平台管理员地址
-
-#### renounceOwnership()
-
-![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
-
-放弃管理员权限
-
-**释放事件**
-
-1. OwnershipTransferred
-
-#### transferOwnership(newOwner)
-
-![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
-
-转移管理员权限
-
-**输入**
-
-1. `_newOwner` - `地址`：新的管理员地址
-
-**释放事件**
-
-1. OwnershipTransferred
 
 #### <span id="test">getAssetHash(asset)</span>
 
@@ -807,6 +743,131 @@
 
 `signer` - `地址`：根据订单和签名计算出的签名地址
 
+### 状态改变接口
+
+#### cancelOrder(order)
+
+![](https://img.shields.io/badge/send-%E5%85%AC%E5%BC%80-green) 
+
+取消指定订单
+
+**输入**
+
+1. <span id="order">`order`</span> - `对象`：准备取消的订单 
+
+   - `exchange` - `地址`：订单执行的交易合约地址
+
+   - `isBuyer` - `布尔值`：该订单创建人所处的买卖方（true代表买家订单，false代表卖家订单）
+
+   - `isAuction` - `地址`：该订单交易方式（true代表拍卖，false代表直售）
+
+   - `maker` - `地址`：该订单创建者
+
+   - <span id="asset">`buyAsset`</span> - `对象`：支付资产（目前支持使用ETH和ERC20代币进行支付）
+
+     - `assetClass` - `4字节`：资产类型
+
+       目前定义了两种购买使用的资产类型，分别是
+
+       ```javascript
+       const ETH_CLASS = web3.utils.keccak256("ETH").slice(0, 10); // 0xaaaebeba
+       const ERC20_CLASS = web3.utils.keccak256("ERC20").slice(0, 10); // 0x8ae85d84
+       ```
+
+     - `contractAddress` - `地址`：购买支付的资产合约地址，当资产是ETH时，在此处键入以太坊零地址即可
+
+     - `value` - `整型`：数量，单位是wei
+
+   - <span id="nft">`nftAsset`</span> - `对象`：出售资产（目前支持出售ERC721代币）
+
+     - `contractAddress` - `地址`：出售资产的合约地址（即TokenProxy合约地址）
+     - `tokenId` - `整型`：出售资产的编号
+     - `patentFee` - `整型`：设置的专利费率（有效值在0 ~ 10000之间，对应的百分比费率 = 专利费率/100）当卖单的创建者是出售资产的创作者时，在订单交易完成后会更新该出售资产的专利费率。
+
+   - `salt` - `整型`：随机值
+
+   - `start` - `整型`：提交订单时的时间戳，单位是秒，执行交易时如果当前时间戳小于该值则终止交易
+
+   - `end` - `整型`：订单的最后有效时间戳，单位是秒，执行订单交易时如果当前时间戳超过该值则终止交易
+
+**释放事件**
+
+1. OrderCancelled
+
+#### matchAndExecuteOrder(buyOrder, buyOrderSig, sellOrder, sellOrderSig )
+
+![](https://img.shields.io/badge/send-%E4%BB%85%E9%83%A8%E5%88%86%E5%9C%B0%E5%9D%80-yellowgreen) 
+
+检查指定订单状态
+
+> 根据订单交易方式的不同该函数的访问权限也不同，对于订单交易方式是直售的订单，仅订单对应的买方地址可以调用该函数，对于拍卖订单，仅订单对应的卖方地址可以调用该函数
+
+**输入**
+
+1. `buyOrder` - `对象`：买方订单
+2. `buyOrderSig` - `动态长度字节码`：买方订单的签名（签名规则见附录）
+3. `sellOrder` - `对象`：卖方订单
+4. `sellOrderSig` - `动态长度字节码`：买方订单的签名
+
+**释放事件**
+
+1. OrderMatched
+2. Transfer：ERC20代币合约
+3. Transfer：TokenProxy合约
+4. PatentFeeChanged（当卖家是创作者时会释放该事件）
+
+#### changePlatformFee(_fee)
+
+![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
+
+更新平台费率
+
+**输入**
+
+1. `_fee` - `整型`：新的平台费率（有效值在0 ~ 10000之间，对应百分比费率为_fee / 100）
+
+**释放事件**
+
+1. PlatformFeeChanged
+
+#### changeRecipient(_recipient)
+
+![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
+
+更新平台费收款地址
+
+**输入**
+
+1. `_recipient` - `地址`：新的平台费收款地址
+
+**释放事件**
+
+1. RecipientChanged
+
+#### renounceOwnership()
+
+![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
+
+放弃管理员权限
+
+**释放事件**
+
+1. OwnershipTransferred
+
+#### transferOwnership(newOwner)
+
+![](https://img.shields.io/badge/send-%E4%BB%85%E7%AE%A1%E7%90%86%E5%91%98-red) 
+
+转移管理员权限
+
+**输入**
+
+1. `_newOwner` - `地址`：新的管理员地址
+
+**释放事件**
+
+1. OwnershipTransferred
+
 ### 事件
 
 #### OrderCancelled(orderHash, indexed maker)
@@ -818,7 +879,7 @@
 1. `orderHash` - `32字节`：订单哈希值
 2. `maker` - `动态长度字节`：订单创建者（取消者）地址
 
-#### OrderMatched(buyOrderHash, sellOrderHash, indexed buyer, indexed seller, indexed tokenId, isAuction, assetClass, contractAddress, price, platformFee, patentFee)
+#### OrderMatched(buyOrderHash, sellOrderHash, indexed buyer, indexed seller, indexed tokenId, isAuction, assetClass, contractAddress, price)
 
 事件：订单完成
 
@@ -835,8 +896,6 @@
 7. `assetClass` - `4字节`：支付货币类型（目前仅支持ETH和ERC20，具体取值规则是“ETH”和“ERC20”的哈希值的前4个字节）
 8. `contractAddress` - `地址`：支付货币的合约地址
 9. `price` - `整型`：支付价格
-10. `platformFee` - `整型`：该笔交易平台交易费
-11. `patentFee` - `整型`：该笔交易版权费
 
 #### OwnershipTransferred(indexed previousOwner, indexed newOwner)
 

@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
-const { NAME, SYMBOL } = require('../.setting.js');
+const { NAME, SYMBOL } = require('../.config.js');
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command

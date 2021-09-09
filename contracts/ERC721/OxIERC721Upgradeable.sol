@@ -23,4 +23,9 @@ interface OxIERC721Upgradeable is OxIERC721EnumerableUpgradeable {
     ) external;
 
     function creatorOf(uint256 tokenId) external view returns (address);
+
+    function creatorOfBatch(uint256[] memory tokenIds)
+        external
+        view
+        returns (address[] memory);
 }

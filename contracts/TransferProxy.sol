@@ -2,14 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./ProxyController.sol";
-
-interface ERC721 {
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external;
-}
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./ERC721/OxIERC721Upgradeable.sol";
 
 contract TransferProxy {
     mapping(address => bool) public isDisabled;
@@ -20,7 +15,7 @@ contract TransferProxy {
         proxyController = ProxyController(_address);
     }
 
-    function safeTransferFrom(
+    function transferERC721(
         address _token,
         address _from,
         address _to,
@@ -31,7 +26,21 @@ contract TransferProxy {
             proxyController.contracts(msg.sender),
             "only registered address can visit this proxy"
         );
-        ERC721(_token).safeTransferFrom(_from, _to, tokenId);
+        OxIERC721Upgradeable(_token).safeTransferFrom(_from, _to, tokenId);
+    }
+
+    function transferERC20(
+        address _token,
+        address _from,
+        address _to,
+        uint256 amount
+    ) external {
+        require(!isDisabled[_from], "token owner has disabled transfer proxy");
+        require(
+            proxyController.contracts(msg.sender),
+            "only registered address can visit this proxy"
+        );
+        SafeERC20.safeTransferFrom(IERC20(_token), _from, _to, amount);
     }
 
     /**

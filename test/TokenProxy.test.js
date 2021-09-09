@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
-const { NAME, SYMBOL } = require('../.setting.js');
+const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
 
@@ -157,18 +157,43 @@ describe('TokenProxy', function () {
     })
 
 
-    context('with additional minting tokens', () => {
-      it('return correct creator address array', async () => {
-        let tokenIds = [33,2,4,'0x1'];
-        let tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[0]);
-        await tx.wait();
-         tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[1]);
-        await tx.wait();
-         tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[2]);
-        await tx.wait();
-        expect(await tokenProxy.creatorOfBatch(tokenIds))
-        .deep.to.equal([batchOwner.address, batchOwner.address, batchOwner.address, ZERO_ADDRESS])
+    context('when minting additional tokens', function () {
+      // two tokens have been minted to owner address, here we mint addtional four tokens to another address
+      let tokenIds = ['33', '2', '3334', '0x11'];
+
+      context('when minting 4 additional tokens to batchOwner', function () {
+        beforeEach('', async function() {
+          for (let i = 0; i < tokenIds.length; i++) {
+            let tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[i]);
+            await tx.wait();
+          }
+        })
+        it('return batch creator address array', async function() {
+          expect(await tokenProxy.creatorOfBatch(tokenIds))
+            .deep.to.equal([batchOwner.address, batchOwner.address, batchOwner.address, batchOwner.address])
+        })
+        it('return batch old-minted tokenIds sorted by all tokens', async function() {
+          let tokenIds_original_bn = [firstTokenId, secondTokenId].map((tokenId) => { return ethers.BigNumber.from(tokenId) });
+          expect((await tokenProxy.tokenByIndexBatch([0, 1])))
+            .deep.to.equal(tokenIds_original_bn)
+        })
+        it('return batch new-minted tokenIds sorted by all tokens', async function() {
+          let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
+          expect((await tokenProxy.tokenByIndexBatch([2, 3, 4, 5])))
+            .deep.to.equal(tokenIds_bn)
+        })
+        it('return batch old-minted tokenIds sorted by owner', async function() {
+          let tokenIds_original_bn = [firstTokenId, secondTokenId].map((tokenId) => { return ethers.BigNumber.from(tokenId) });
+          expect((await tokenProxy.tokenOfOwnerByIndexBatch(owner.address, [0, 1])))
+          .deep.to.equal(tokenIds_original_bn)
+        })
+        it('return batch new-minted tokenIds sorted by owner', async function() {
+          let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
+          expect((await tokenProxy.tokenOfOwnerByIndexBatch(batchOwner.address, [0, 1, 2, 3])))
+          .deep.to.equal(tokenIds_bn)
+        })
       })
+
     })
 
 
