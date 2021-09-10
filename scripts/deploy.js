@@ -28,7 +28,7 @@ async function main() {
   await proxyController.deployed();
   console.log("proxyController deployed to:", proxyController.address);
 
-  console.log('waiting for deploymentdeployment starts: TokenProxy...')
+  console.log('waiting for deploymentdeployment: TokenProxy...')
   let TokenProxy = await ethers.getContractFactory("TokenProxy");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);

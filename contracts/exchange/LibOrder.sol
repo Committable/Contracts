@@ -8,7 +8,7 @@ library LibOrder {
     struct Order {
         address exchange;
         bool isBuyer; // true for buy order, false for sell order
-        bool isAuction; //true for auction, false for direct pay
+        bool isAuction; //true for auction, false for fixed price
         address payable maker;
         LibAsset.Asset buyAsset;
         LibAsset.NFT nftAsset;
