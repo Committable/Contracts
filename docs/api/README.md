@@ -2,22 +2,22 @@
 
 ## 合约地址
 
-| **合约**                            | **地址**                                                  |
-| :---------------------------------- | --------------------------------------------------------- |
-| **Ropsten测试网**                   |                                                           |
-| ProxyController（控制台合约）       | ~~0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f~~            |
-|                                     | **0x3D1fb0Bf881E64710B4a614E7E2517Dba9D03d7B** (10th Sep) |
-| TokenProxy（代币数据合约）          | ~~0xbb222E8B36E4875e3bdFC4eE4c971A70e7E0A4A7~~            |
-|                                     | **0x02dAbB18416087d26D62cEF630Dc3Dd4DB5754bd** (10th Sep) |
-| TransferProxy（转账代理合约）       | ~~0xf1bc6f255b28390A0794b682B5BB113F2e11CF22~~            |
-|                                     | **0x738555a24f211defa2A771e37f07aC3771F4BD41** (10th Sep) |
-| Exchange（订单交易合约）            | ~~0x7c63d26347dFeaBD11FD93776C6A7D783f57d11f~~            |
-|                                     | ~~0x8f57629e772939B6e83000E95f7230470a0dE314~~            |
-|                                     | **0x37e281C8238FEe521D0592509eCF0Cd44175A9B5** (10th Sep) |
-| USDT（自建测试用ERC20代币）         | 0xEF0656F30a61c37b6fa41E16F7413254A1175037                |
-| OxERC721Upgradeable（代币逻辑合约） | ~~0x4208656F513F50cE6234088b436B0380b587DD54~~            |
-|                                     | **0x3D1fb0Bf881E64710B4a614E7E2517Dba9D03d7B** (10th Sep) |
-| WETH（测试用WETH）                  | 0xc778417E063141139Fce010982780140Aa0cD5Ab                |
+| **合约**                                    | **地址**                                                  |
+| :------------------------------------------ | --------------------------------------------------------- |
+| **Ropsten测试网**                           |                                                           |
+| Controller（控制台合约，原ProxyController） | ~~0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f~~            |
+|                                             | **0x3D1fb0Bf881E64710B4a614E7E2517Dba9D03d7B** (10th Sep) |
+| TokenProxy（代币数据合约）                  | ~~0xbb222E8B36E4875e3bdFC4eE4c971A70e7E0A4A7~~            |
+|                                             | **0x02dAbB18416087d26D62cEF630Dc3Dd4DB5754bd** (10th Sep) |
+| Router（路由合约，原TransferProxy）         | ~~0xf1bc6f255b28390A0794b682B5BB113F2e11CF22~~            |
+|                                             | **0x738555a24f211defa2A771e37f07aC3771F4BD41** (10th Sep) |
+| Exchange（订单交易合约）                    | ~~0x7c63d26347dFeaBD11FD93776C6A7D783f57d11f~~            |
+|                                             | ~~0x8f57629e772939B6e83000E95f7230470a0dE314~~            |
+|                                             | **0x37e281C8238FEe521D0592509eCF0Cd44175A9B5** (10th Sep) |
+| USDT（自建测试用ERC20代币）                 | 0xEF0656F30a61c37b6fa41E16F7413254A1175037                |
+| OxERC721Upgradeable（代币逻辑合约）         | ~~0x4208656F513F50cE6234088b436B0380b587DD54~~            |
+|                                             | **0x3D1fb0Bf881E64710B4a614E7E2517Dba9D03d7B** (10th Sep) |
+| WETH（测试用WETH）                          | 0xc778417E063141139Fce010982780140Aa0cD5Ab                |
 
 ## **合约：TokenProxy**
 
@@ -111,22 +111,6 @@
 
 `tokenId` - `整型`：代币编号
 
-#### tokenByIndexBatch(indexes) 
-
-![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
-
-根据索引数组批量查询代币编号
-
-> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
-
-**输入**
-
-1. `indexes` - `整型数组`：代币索引数组
-
-**输出**
-
-`tokenIds` - `整型数组`：代币编号数组
-
 #### tokenOfOwnerByIndex(owner, index)    
 
 ![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
@@ -143,23 +127,6 @@
 **输出**
 
 `tokenId` - `整型`：代币编号
-
-#### tokenOfOwnerByIndexBatch(owner, indexes)    
-
-![](https://img.shields.io/badge/call-%E4%BB%85%E9%9D%9E%E7%AE%A1%E7%90%86%E5%91%98-yellowgreen) 
-
-根据索引数组和代币所有者地址批量查询代币编号
-
-> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
-
-**输入**
-
-1. `owner` - `地址`：所有者
-2. `indexes` - `整型数组`：代币索引数组
-
-**输出**
-
-`tokenIds` - `整型数组`：代币编号数组
 
 #### creatorOf(tokenId) 
 
@@ -362,9 +329,44 @@
 
 1. `implementation` - `地址`：升级后的逻辑合约地址
 
-## 合约：TransferProxy
+## 合约：Router
 
 ### 只读接口
+
+#### tokenByIndexBatch(contractAddress, indexes) 
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+根据索引数组，批量查询指定ERC721合约的代币编号
+
+> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
+
+**输入**
+
+1. `contractAddress` - `地址`：代币合约地址
+2. `indexes` - `整型数组`：代币索引数组
+
+**输出**
+
+`tokenIds` - `整型数组`：代币编号数组
+
+#### tokenOfOwnerByIndexBatch(contractAddress, owner, indexes)    
+
+![](https://img.shields.io/badge/call-%E5%85%AC%E5%BC%80-green) 
+
+根据索引数组和代币所有者地址，批量查询指定ERC721合约的代币编号
+
+> 索引值从0计数，输入索引数组如[0, 1, 2]返回索引对应的tokenId数组
+
+**输入**
+
+1. `contractAddress` - `地址`：代币合约地址
+2. `owner` - `地址`：所有者
+3. `indexes` - `整型数组`：代币索引数组
+
+**输出**
+
+`tokenIds` - `整型数组`：代币编号数组
 
 #### isDisabled (address _address) 
 
@@ -440,7 +442,7 @@
 1. `_address` - `地址`：用户地址
 2. `_bool` - `布尔值`：取消代理转账功能该值为true，开启代理转账功能该值为false（默认对所有地址开启该功能）
 
-## 合约：ProxyController
+## 合约：Controller
 
 ### 只读接口
 

@@ -5,7 +5,7 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
-const proxyController_address = '0xBb16c643346d17D1330b477789a64316b5ae08C5';
+const controller_address = '0xBb16c643346d17D1330b477789a64316b5ae08C5';
 const exchange_address = '0x37e281C8238FEe521D0592509eCF0Cd44175A9B5'
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -22,14 +22,14 @@ async function main() {
 
   console.log(owner.address)
   // We get the contract to interact
-  const ProxyController = await ethers.getContractFactory("ProxyController");
-  const proxyController = await ProxyController.attach(proxyController_address);
-  console.log("Signer address is: ", proxyController.signer.address);
-  console.log("proxyController deployed to:", proxyController.address);
+  const Controller = await ethers.getContractFactory("Controller");
+  const controller = await Controller.attach(controller_address);
+  console.log("Signer address is: ", controller.signer.address);
+  console.log("controller deployed to:", controller.address);
 
   // do sth
-  console.log("transferProxy address is: ", await proxyController.transferProxy());
-  console.log(`exchange address of ${exchange_address} is: ` ,await proxyController.contracts(exchange_address))
+  console.log("transferProxy address is: ", await controller.transferProxy());
+  console.log(`exchange address of ${exchange_address} is: ` ,await controller.contracts(exchange_address))
 
 }
 

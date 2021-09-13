@@ -2,19 +2,19 @@
 
 pragma solidity ^0.8.0;
 
-import "./LibOrder.sol";
-import "./LibSignature.sol";
+import "../library/LibOrder.sol";
+import "../library/LibSignature.sol";
 import "./SigCheck.sol";
 import "./FeePanel.sol";
-import "../ProxyController.sol";
-import "../TransferProxy.sol";
+import "../Controller.sol";
+import "../Router.sol";
 import "../ERC721/OxIERC721Upgradeable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     mapping(bytes32 => bool) private _isCancelledOrFinished;
 
-    ProxyController _proxyController;
+    Controller _controller;
 
     event OrderMatched(
         bytes32 buyOrderHash,
@@ -31,7 +31,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     event OrderCancelled(bytes32 orderHash, address indexed maker);
 
     constructor(address _address) {
-        _proxyController = ProxyController(_address);
+        _controller = Controller(_address);
     }
 
     /**
@@ -198,9 +198,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address tokenContract = buyOrder.buyAsset.contractAddress;
         uint256 tokenId = sellOrder.nftAsset.tokenId;
 
-        TransferProxy transferProxy = TransferProxy(
-            _proxyController.transferProxy()
-        );
+        Router router = Router(_controller.router());
         // pay by ether (non-auction only)
         // bytes4(keccak256("ETH")) = 0xaaaebeba
         if (buyOrder.buyAsset.assetClass == 0xaaaebeba) {
@@ -243,7 +241,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 _patentFeeOf[nftContract][tokenId];
             // transfer platform fee
             if (platformFee != 0) {
-                transferProxy.transferERC20(
+                router.transferERC20(
                     tokenContract,
                     buyOrder.maker,
                     _recipient,
@@ -252,7 +250,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             }
             // transfer patent fee
             if (patentFee != 0) {
-                transferProxy.transferERC20(
+                router.transferERC20(
                     tokenContract,
                     buyOrder.maker,
                     OxIERC721Upgradeable(nftContract).creatorOf(tokenId),
@@ -264,7 +262,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 platformFee -
                 patentFee;
             if (remainValue != 0) {
-                transferProxy.transferERC20(
+                router.transferERC20(
                     tokenContract,
                     buyOrder.maker,
                     sellOrder.maker,
@@ -276,7 +274,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         }
 
         // deliver nft
-        transferProxy.transferERC721(
+        router.transferERC721(
             sellOrder.nftAsset.contractAddress,
             sellOrder.maker,
             buyOrder.maker,

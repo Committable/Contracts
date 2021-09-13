@@ -41,6 +41,15 @@ module.exports = {
       }
     },
   },
+  networks: {
+    rinkeby: {
+      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+      gas: 3000000,
+      accounts: {
+        mnemonic: ROPSTEN_MNEMONIC
+      }
+    },
+  },
   gasReporter: {
     currency: 'USD',
     coinmarketcap: COINMARKETCAP_KEY,

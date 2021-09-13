@@ -2,8 +2,8 @@
 
 pragma solidity ^0.8.0;
 
-import "./LibOrder.sol";
-import "./LibSignature.sol";
+import "../library/LibOrder.sol";
+import "../library/LibSignature.sol";
 
 contract SigCheck {
     // functions in this contract are for test only, they do not perform any roles in production

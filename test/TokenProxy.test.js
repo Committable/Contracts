@@ -11,7 +11,7 @@ const nonExistentTokenId = '13';
 const fourthTokenId = 4;
 
 describe('TokenProxy', function () {
-  let oxERC721Upgradeable, proxyController, tokenProxy, signers;
+  let oxERC721Upgradeable, controller, tokenProxy, signers;
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
       // get signers
@@ -22,15 +22,15 @@ describe('TokenProxy', function () {
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
 
-      let ProxyController = await ethers.getContractFactory("ProxyController");
-      proxyController = await ProxyController.deploy();
-      await proxyController.deployed();
+      let Controller = await ethers.getContractFactory("Controller");
+      controller = await Controller.deploy();
+      await controller.deployed();
 
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, proxyController.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, proxyController.address, calldata);
+      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
+      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
       await tokenProxy.deployed();
       tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
 
@@ -155,49 +155,6 @@ describe('TokenProxy', function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
     })
-
-
-    context('when minting additional tokens', function () {
-      // two tokens have been minted to owner address, here we mint addtional four tokens to another address
-      let tokenIds = ['33', '2', '3334', '0x11'];
-
-      context('when minting 4 additional tokens to batchOwner', function () {
-        beforeEach('', async function() {
-          for (let i = 0; i < tokenIds.length; i++) {
-            let tx = await tokenProxy['safeMint(address,uint256)'](batchOwner.address, tokenIds[i]);
-            await tx.wait();
-          }
-        })
-        it('return batch creator address array', async function() {
-          expect(await tokenProxy.creatorOfBatch(tokenIds))
-            .deep.to.equal([batchOwner.address, batchOwner.address, batchOwner.address, batchOwner.address])
-        })
-        it('return batch old-minted tokenIds sorted by all tokens', async function() {
-          let tokenIds_original_bn = [firstTokenId, secondTokenId].map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-          expect((await tokenProxy.tokenByIndexBatch([0, 1])))
-            .deep.to.equal(tokenIds_original_bn)
-        })
-        it('return batch new-minted tokenIds sorted by all tokens', async function() {
-          let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-          expect((await tokenProxy.tokenByIndexBatch([2, 3, 4, 5])))
-            .deep.to.equal(tokenIds_bn)
-        })
-        it('return batch old-minted tokenIds sorted by owner', async function() {
-          let tokenIds_original_bn = [firstTokenId, secondTokenId].map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-          expect((await tokenProxy.tokenOfOwnerByIndexBatch(owner.address, [0, 1])))
-          .deep.to.equal(tokenIds_original_bn)
-        })
-        it('return batch new-minted tokenIds sorted by owner', async function() {
-          let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-          expect((await tokenProxy.tokenOfOwnerByIndexBatch(batchOwner.address, [0, 1, 2, 3])))
-          .deep.to.equal(tokenIds_bn)
-        })
-      })
-
-    })
-
-
-
   })
 
 

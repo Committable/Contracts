@@ -29,7 +29,7 @@ contract OxERC721Upgradeable is OxERC721Tradable, OxIERC721Upgradeable {
         public
         view
         virtual
-        override(IERC165Upgradeable, OxERC721EnumerableUpgradeable)
+        override(IERC165Upgradeable, ERC721EnumerableUpgradeable)
         returns (bool)
     {
         return
@@ -81,20 +81,7 @@ contract OxERC721Upgradeable is OxERC721Tradable, OxIERC721Upgradeable {
         return _creator[tokenId];
     }
 
-    function creatorOfBatch(uint256[] memory tokenIds)
-        external
-        view
-        virtual
-        override
-        returns (address[] memory)
-    {
-        address[] memory batchCreators = new address[](tokenIds.length);
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            batchCreators[i] = _creator[tokenIds[i]];
-        }
 
-        return batchCreators;
-    }
 
     uint256[49] private __gap;
 }

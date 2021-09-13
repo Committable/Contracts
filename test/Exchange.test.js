@@ -17,7 +17,7 @@ const PLATFORM_FEE = 2000; // 20%
 
 
 let seller, buyer, creator, recipient, newRecipient, operator, others;
-let tokenProxy, exchange, oxERC721Upgradeable, transferProxy, proxyController;
+let tokenProxy, exchange, oxERC721Upgradeable, router, controller;
 let buy_order, buy_order_1, buy_order_2, buy_order_tmp, sell_order, sell_order_1, sell_order_2, sell_order_tmp;
 let buy_order_sig, buy_order_sig_1, buy_order_sig_2, buy_order_sig_tmp, sell_order_sig, sell_order_sig_1, sell_order_sig_2, sell_order_sig_tmp;
 describe('Exchange', function () {
@@ -33,36 +33,36 @@ describe('Exchange', function () {
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
 
-      let ProxyController = await ethers.getContractFactory("ProxyController");
-      proxyController = await ProxyController.deploy();
-      await proxyController.deployed();
+      let Controller = await ethers.getContractFactory("Controller");
+      controller = await Controller.deploy();
+      await controller.deployed();
 
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, proxyController.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, proxyController.address, calldata);
+      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
+      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
       await tokenProxy.deployed();
       tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
 
-      let TransferProxy = await ethers.getContractFactory("TransferProxy");
-      transferProxy = await TransferProxy.deploy(proxyController.address);
-      await transferProxy.deployed();
+      let Router = await ethers.getContractFactory("Router");
+      router = await Router.deploy(controller.address);
+      await router.deployed();
 
       let Exchange = await ethers.getContractFactory("Exchange");
-      exchange = await Exchange.deploy(proxyController.address);
+      exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
 
-      let tx = await proxyController.grantAuthentication(exchange.address);
+      let tx = await controller.grantAuthentication(exchange.address);
       await tx.wait();
-      tx = await proxyController.setProxy(transferProxy.address);
+      tx = await controller.setRouter(router.address);
       await tx.wait();
 
       // deploy erc20 and approve for test
       let ERC20 = await ethers.getContractFactory("ERC20Test");
       token = await ERC20.connect(buyer).deploy("Tether", "USDT");
       await token.deployed();
-      tx = await token.approve(transferProxy.address, ethers.utils.parseEther('10000').toString());
+      tx = await token.approve(router.address, ethers.utils.parseEther('10000').toString());
       await tx.wait();
       // mint nft to seller
       tx = await tokenProxy['safeMint(address,uint256)'](seller.address, firstTokenId);
@@ -1179,7 +1179,7 @@ describe('Exchange', function () {
         })
         it('revert with not approving tokens in erc20 non-auction order', async function () {
           try {
-            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
+            let tx = await token.connect(buyer).approve(router.address, '0');
             await tx;
             tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
             await tx.wait();
@@ -1202,7 +1202,7 @@ describe('Exchange', function () {
         })
         it('revert with not approving tokens in erc20 auction order', async function () {
           try {
-            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
+            let tx = await token.connect(buyer).approve(router.address, '0');
             await tx;
             tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();
@@ -1371,7 +1371,7 @@ describe('Exchange', function () {
             await tx.wait()
             throw null;
           } catch (err) {
-            expect(err.message).to.include('Transaction reverted:');
+            expect(err.message).to.include('Transaction reverted');
           }
         })
         it('revert with ERC20 non-auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {

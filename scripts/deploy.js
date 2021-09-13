@@ -22,41 +22,41 @@ async function main() {
   await oxERC721Upgradeable.deployed();
   console.log("oxERC721Upgradeable deployed to:", oxERC721Upgradeable.address);
 
-  console.log('waiting for deployment: ProxyController...')
-  let ProxyController = await ethers.getContractFactory("ProxyController");
-  proxyController = await ProxyController.deploy();
-  await proxyController.deployed();
-  console.log("proxyController deployed to:", proxyController.address);
+  console.log('waiting for deployment: Controller...')
+  let Controller = await ethers.getContractFactory("Controller");
+  controller = await Controller.deploy();
+  await controller.deployed();
+  console.log("controller deployed to:", controller.address);
 
   console.log('waiting for deploymentdeployment: TokenProxy...')
   let TokenProxy = await ethers.getContractFactory("TokenProxy");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);
-  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, proxyController.address]);
-  tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, proxyController.address, calldata);
+  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
+  tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
   await tokenProxy.deployed();
   tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
   console.log("tokenProxy deployed to:", tokenProxy.address);
 
   console.log('waiting for deployment: TransferProxy...')
   let TransferProxy = await ethers.getContractFactory("TransferProxy");
-  transferProxy = await TransferProxy.deploy(proxyController.address);
+  transferProxy = await TransferProxy.deploy(controller.address);
   await transferProxy.deployed();
   console.log("transferProxy deployed to:", transferProxy.address);
 
   console.log('waiting for deployment: Exchange...')
   let Exchange = await ethers.getContractFactory("Exchange");
-  exchange = await Exchange.deploy(proxyController.address);
+  exchange = await Exchange.deploy(controller.address);
   await exchange.deployed();
   console.log("exchange deployed to:", exchange.address);
 
   console.log('waiting for interaction: grant exchange...')
-  let tx = await proxyController.grantAuthentication(exchange.address);
+  let tx = await controller.grantAuthentication(exchange.address);
   await tx.wait();
   console.log("grant exchange: ", exchange.address);
 
   console.log('waiting for interaction: set proxy...')
-  tx = await proxyController.setProxy(transferProxy.address);
+  tx = await controller.setRouter(transferProxy.address);
   await tx.wait();
   console.log("set transferProxy: ", transferProxy.address);
 

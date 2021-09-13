@@ -1,21 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-// import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
-// import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol"
-import "./OxERC721EnumerableUpgradeable.sol";
-import "../../ProxyController.sol";
-import "../../TransferProxy.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "../../Controller.sol";
+import "../../Router.sol";
 
-contract OxERC721Tradable is OxERC721EnumerableUpgradeable {
-    ProxyController _proxyController;
+contract OxERC721Tradable is ERC721EnumerableUpgradeable {
+    Controller _controller;
 
     // solhint-disable-next-line
-    function __ERC721Tradable_init_unchained(address proxyController)
+    function __ERC721Tradable_init_unchained(address controller)
         internal
         initializer
     {
-        _proxyController = ProxyController(proxyController);
+        _controller = Controller(controller);
     }
 
     function isApprovedForAll(address owner, address operator)
@@ -25,7 +23,7 @@ contract OxERC721Tradable is OxERC721EnumerableUpgradeable {
         returns (bool)
     {
         {
-            if (_proxyController.transferProxy() == operator) {
+            if (_controller.router() == operator) {
                 return true;
             }
         }

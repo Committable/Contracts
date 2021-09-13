@@ -7,7 +7,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const old_exchange_address = '0x7c63d26347dFeaBD11FD93776C6A7D783f57d11f';
-const proxyController_address = '0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f';
+const controller_address = '0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f';
 
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
@@ -23,19 +23,19 @@ async function main() {
 
     // We get the contract to interact
     const Exchange = await ethers.getContractFactory("Exchange");
-    const exchange = await Exchange.deploy(proxyController_address);
+    const exchange = await Exchange.deploy(controller_address);
     await exchange.deployed();
     console.log("exchange deployed to:", exchange.address);
 
     // do sth
-    const ProxyController = await ethers.getContractFactory("ProxyController");
-    const proxyController = await ProxyController.attach(proxyController_address);
-    let tx = await proxyController.grantAuthentication(exchange.address);
+    const Controller = await ethers.getContractFactory("Controller");
+    const controller = await Controller.attach(controller_address);
+    let tx = await controller.grantAuthentication(exchange.address);
     await tx.wait();
     console.log("grant exchange contract: ", exchange.address);
-    console.log("is new exchange address is authenticated: ", await proxyController.contracts(exchange.address));
+    console.log("is new exchange address is authenticated: ", await controller.contracts(exchange.address));
 
-    tx = await proxyController.revokeAuthentication(old_exchange_address);
+    tx = await controller.revokeAuthentication(old_exchange_address);
     await tx.wait();
     console.log("revoke exchange contract: ", old_exchange_address);
 

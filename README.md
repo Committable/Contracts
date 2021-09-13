@@ -22,20 +22,20 @@ $ npm install
 
 Create following file in the root folder before deployment or running any tests:
 
-**.setting.js**
+**.config.js**
 
 ```javascript
 const NAME = "<your_token_name>";
-const SYMBOL = "<your_symbol_name>";
-const ALCHEMY_API_KEY = '<your_alchemy_api_key>'; 
+const SYMBOL = "<your_token_symbol>";
+const INFURA_API_KEY = '<your_infura_api_key>'; 
 const COINMARKETCAP_KEY = '<your coinmarketcap api>' // use for gas reporter
 const ROPSTEN_MNEMONIC = '<your mnemonic>'; // use wallet for test-net only
 
-module.exports = {NAME, SYMBOL, ALCHEMY_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY};
+module.exports = {NAME, SYMBOL, INFURA_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY};
 
 ```
 
-You can customize network configurations in **hardhat.config.js**, by default we use hdwallet and alchemy to communicate with Ethereum blockchain.
+You can customize network configurations in **hardhat.config.js**, by default we use infura as our provider to communicate with Ethereum blockchain.
 
 ### Test
 

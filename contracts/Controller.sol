@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
-contract ProxyController is ProxyAdmin {
-    address public transferProxy;
+contract Controller is ProxyAdmin {
+    address public router;
     mapping(address => bool) public contracts;
 
     /**
@@ -26,7 +26,7 @@ contract ProxyController is ProxyAdmin {
         contracts[_address] = false;
     }
 
-    function setProxy(address _transferProxy) external onlyOwner {
-        transferProxy = _transferProxy;
+    function setRouter(address _router) external onlyOwner {
+        router = _router;
     }
 }
