@@ -6,7 +6,7 @@ import "../../Controller.sol";
 import "../../Router.sol";
 
 contract OxERC721Tradable is ERC721EnumerableUpgradeable {
-    Controller _controller;
+    Controller internal _controller;
 
     // solhint-disable-next-line
     function __ERC721Tradable_init_unchained(address controller)

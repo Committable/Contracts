@@ -28,7 +28,7 @@ async function main() {
   await controller.deployed();
   console.log("controller deployed to:", controller.address);
 
-  console.log('waiting for deploymentdeployment: TokenProxy...')
+  console.log('waiting for deployment: TokenProxy...')
   let TokenProxy = await ethers.getContractFactory("TokenProxy");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);
@@ -38,11 +38,11 @@ async function main() {
   tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
   console.log("tokenProxy deployed to:", tokenProxy.address);
 
-  console.log('waiting for deployment: TransferProxy...')
-  let TransferProxy = await ethers.getContractFactory("TransferProxy");
-  transferProxy = await TransferProxy.deploy(controller.address);
-  await transferProxy.deployed();
-  console.log("transferProxy deployed to:", transferProxy.address);
+  console.log('waiting for deployment: Router')
+  let Router = await ethers.getContractFactory("Router");
+  router = await Router.deploy(controller.address);
+  await router.deployed();
+  console.log("router deployed to:", router.address);
 
   console.log('waiting for deployment: Exchange...')
   let Exchange = await ethers.getContractFactory("Exchange");
@@ -56,9 +56,9 @@ async function main() {
   console.log("grant exchange: ", exchange.address);
 
   console.log('waiting for interaction: set proxy...')
-  tx = await controller.setRouter(transferProxy.address);
+  tx = await controller.setRouter(router.address);
   await tx.wait();
-  console.log("set transferProxy: ", transferProxy.address);
+  console.log("set router: ", router.address);
 
 
 }

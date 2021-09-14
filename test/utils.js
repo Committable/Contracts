@@ -42,7 +42,6 @@ const hashNft = (nft) => {
 
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
-
   let order_encode =
     abiCoder.encode(['address', 'bool', 'bool', 'address', 'bytes32', 'bytes32', 'uint256', 'uint256', 'uint256'],
       [order.exchange, order.isBuyer, order.isAuction, order.maker,
@@ -85,8 +84,18 @@ const Order = class {
     this.end = end;
   }
 }
-
-
+const CommitInfo = class {
+  constructor(project, commits) {
+    this.project = project;
+    this.commits = commits;
+  }
+}
+const hashCommitInfo = (commitInfo) => {
+  let abiCoder = new ethers.utils.AbiCoder();
+  let commitInfo_encode =
+    abiCoder.encode(['string', 'bytes20[]'], [commitInfo.project, commitInfo.commits])
+  return commitInfo_hash = ethers.utils.keccak256(commitInfo_encode);
+}
 const Utils = {
   timeTravel: timeTravel,
   getFunctionAbi: getFunctionAbi,
@@ -95,7 +104,9 @@ const Utils = {
   hashOrder: hashOrder,
   BuyAsset: BuyAsset,
   NftAsset: NftAsset,
-  Order: Order
+  Order: Order,
+  CommitInfo: CommitInfo,
+  hashCommitInfo: hashCommitInfo
 }
 
 module.exports = Utils;

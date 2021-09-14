@@ -21,10 +21,10 @@ contract Router {
         address _to,
         uint256 tokenId
     ) external {
-        require(!isDisabled[_from], "token owner has disabled router");
         require(
-            controller.contracts(msg.sender),
-            "only registered address can visit this proxy"
+            (controller.contracts(msg.sender) && !isDisabled[_from]) ||
+                OxIERC721Upgradeable(_token).ownerOf(tokenId) == msg.sender,
+            "invalid visitor or owner has disabled this function"
         );
         OxIERC721Upgradeable(_token).safeTransferFrom(_from, _to, tokenId);
     }
@@ -35,10 +35,6 @@ contract Router {
         address _to,
         uint256 amount
     ) external {
-        require(
-            controller.contracts(msg.sender),
-            "only registered address can visit this proxy"
-        );
         SafeERC20.safeTransferFrom(IERC20(_token), _from, _to, amount);
     }
 
@@ -88,7 +84,7 @@ contract Router {
         return tokenIds;
     }
 
-        function creatorOfBatch(address _token, uint256[] memory tokenIds)
+    function creatorOfBatch(address _token, uint256[] memory tokenIds)
         external
         view
         virtual
@@ -96,7 +92,9 @@ contract Router {
     {
         address[] memory batchCreators = new address[](tokenIds.length);
         for (uint256 i = 0; i < tokenIds.length; ++i) {
-            batchCreators[i] = OxIERC721Upgradeable(_token).creatorOf(tokenIds[i]);
+            batchCreators[i] = OxIERC721Upgradeable(_token).creatorOf(
+                tokenIds[i]
+            );
         }
 
         return batchCreators;

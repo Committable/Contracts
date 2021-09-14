@@ -7,12 +7,18 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract Controller is ProxyAdmin {
     address public router;
+    address public signer;
     mapping(address => bool) public contracts;
+
+    constructor() {
+        signer = msg.sender;
+    }
 
     /**
      * @dev authenticate a contract that can call transferProxy instantly.
      * @param _address to authenticate
      */
+
     function grantAuthentication(address _address) public onlyOwner {
         require(
             !contracts[_address],
@@ -28,5 +34,9 @@ contract Controller is ProxyAdmin {
 
     function setRouter(address _router) external onlyOwner {
         router = _router;
+    }
+
+    function setSigner(address _signer) external onlyOwner {
+        signer = _signer;
     }
 }
