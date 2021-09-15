@@ -4,12 +4,12 @@ const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
 const { CommitInfo, hashCommitInfo } = require("./utils.js");
-const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3 } = require('./commitInfo.js');
+const { tokenIds, commitInfo } = require('./commitInfo.js');
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3} = tokenIds;
+const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3 } = commitInfo; 
+// const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = require('./commitInfo.js');
 
-const tokenId_0 = 5042;
-const tokenId_1 = '0x79217';
-const tokenId_2 = '13';
-const tokenId_3 = 4;
+
 let OxERC721Upgradeable, controller, tokenProxy;
 let signer, user, others;
 describe('Committable', function () {
@@ -48,23 +48,6 @@ describe('Committable', function () {
         })
 
         context('with legitimate behaviors', function() {
-            it('should return creator by tokenId', async function() {
-                expect(await tokenProxy.creatorOf(tokenId_0)).to.equal(signer.address);
-                expect(await tokenProxy.creatorOf(tokenId_1)).to.equal(signer.address);
-                expect(await tokenProxy.creatorOf(tokenId_2)).to.equal(signer.address);
-                expect(await tokenProxy.creatorOf(tokenId_3)).to.equal(user.address);
-            })
-            it('should return token supply of creator', async function() {
-                expect(await tokenProxy.totalSupplyOfCreator(signer.address)).to.equal('3');
-                expect(await tokenProxy.totalSupplyOfCreator(user.address)).to.equal('1');
-                expect(await tokenProxy.totalSupplyOfCreator(ZERO_ADDRESS)).to.equal('0');
-            })
-            it('should return tokenId of creator by index', async function() {
-                expect(await tokenProxy.tokenOfCreatorByIndex(signer.address, 0)).to.equal(tokenId_0);
-                expect(await tokenProxy.tokenOfCreatorByIndex(signer.address, 1)).to.equal(tokenId_1);
-                expect(await tokenProxy.tokenOfCreatorByIndex(signer.address, 2)).to.equal(tokenId_2);
-                expect(await tokenProxy.tokenOfCreatorByIndex(user.address, 0)).to.equal(tokenId_3);
-            })
             it('should return project by tokenId', async function() {
                 expect(await tokenProxy.projectOf(tokenId_0)).to.equal(commitInfo_0.project);
                 expect(await tokenProxy.projectOf(tokenId_1)).to.equal(commitInfo_1.project);

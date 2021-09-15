@@ -1,21 +1,20 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { BN, constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
-const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3 } = require('./commitInfo.js');
 const { hashCommitInfo } = require('./utils.js');
-const tokenId_0 = 5042;
-const tokenId_1 = '0x79217';
-const tokenId_2 = '13';
-const tokenId_3 = 4;
+const { tokenIds, commitInfo } = require('./commitInfo.js');
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
+const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
+
 
 describe('TokenProxy', function () {
   let oxERC721Upgradeable, controller, tokenProxy, signers;
   context('with minted tokens and deployed contracts', function () {
     beforeEach(async function () {
-      // get signers
+      // get signers, the first signer of the array is the admin and metadata signer
       [signer, user, ...others] = await ethers.getSigners();
 
       // deploy contracts here
@@ -47,7 +46,8 @@ describe('TokenProxy', function () {
       let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_1)));
       let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_2)));
       let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_3)));
-      // mint 0, 1, 2 to signer, 3 to user
+
+      // mint 1, 2 to signer, 3 to user
       await tokenProxy.mint(signer.address, tokenId_0, commitInfo_0, signature_0);
       await tokenProxy.mint(signer.address, tokenId_1, commitInfo_1, signature_1);
       await tokenProxy.mint(signer.address, tokenId_2, commitInfo_2, signature_2);
@@ -56,11 +56,6 @@ describe('TokenProxy', function () {
     })
 
     context('with legitimate batch request', function () {
-      it('return batch creator address array', async function () {
-        let tokenIds = [tokenId_0, tokenId_1, tokenId_2, tokenId_3];
-        expect(await router.creatorOfBatch(tokenProxy.address, tokenIds))
-          .deep.to.equal([signer.address, signer.address, signer.address, user.address])
-      })
       it('return batch tokenIds sorted by all tokens', async function () {
         let tokenIds = [tokenId_0, tokenId_1, tokenId_2, tokenId_3];
         let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
@@ -78,11 +73,68 @@ describe('TokenProxy', function () {
           .deep.to.equal(tokenIds_signer_bn)
         expect((await router.tokenOfOwnerByIndexBatch(tokenProxy.address, user.address, [0])))
           .deep.to.equal(tokenIds_user_bn)
-                })
+      })
     })
 
+    context('[event test] mintAndTransfer function', function () {
+      it('should emit desired event', async function () {
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
 
+        let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+        expect(tx).to.emit(tokenProxy, "Transfer")
+          .withArgs(ZERO_ADDRESS, signer.address, tokenId_4);
+        expect(tx).to.emit(tokenProxy, "Transfer")
+          .withArgs(signer.address, user.address, tokenId_4);
+      })
+    })
+    context('with legitimate lazy_mint', function () {
+      beforeEach('lazy mint from signer to user', async function () {
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+        let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+        await tx.wait();
+      })
+      it('should return correct owner', async function () {
+        expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+      })
+    })
 
+    context('with legitimate mint and transfer', function () {
+      beforeEach('mintAndTransfer from signer to user', async function () {
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+        let tx = await tokenProxy.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
+        await tx.wait();
+        tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, signer.address, user.address, tokenId_4);
+        await tx.wait();
+      })
+      it('should return correct owner', async function () {
+        expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+      })
+    })
+
+    context('with malicious lazy_mint', function () {
+      it('should revert if commitInfo is signed by unauthorized address', async function () {
+        let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+        try {
+          let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+          await tx.wait();
+          throw null;
+        } catch (err) {
+          expect(await err.message).to.include("commitInfo signature validation failed");
+        }
+      })
+      it('should revert if user has disabled router', async function () {
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+        try {
+          let tx = await router.connect(user).disable(true);
+          await tx.wait();
+          tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, user.address, signer.address, tokenId_4, commitInfo_4, signature_4);
+          await tx.wait();
+          throw null;
+        } catch (err) {
+          expect(await err.message).to.include("invalid sender: must be token owner or registered address");
+        }
+      })
+    })
 
 
 

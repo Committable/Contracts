@@ -219,10 +219,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 payable(_recipient).transfer(platformFee);
             }
             // transfer patent fee
-            if (patentFee != 0) {
-                payable(OxIERC721Upgradeable(nftContract).creatorOf(tokenId))
-                    .transfer(patentFee);
-            }
+            // if (patentFee != 0) {
+            //     payable(OxIERC721Upgradeable(nftContract).creatorOf(tokenId))
+            //         .transfer(patentFee);
+            // }
             // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
             uint256 remainValue = buyOrder.buyAsset.value -
                 platformFee -
@@ -249,14 +249,14 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 );
             }
             // transfer patent fee
-            if (patentFee != 0) {
-                router.transferERC20(
-                    tokenContract,
-                    buyOrder.maker,
-                    OxIERC721Upgradeable(nftContract).creatorOf(tokenId),
-                    patentFee
-                );
-            }
+            // if (patentFee != 0) {
+            //     router.transferERC20(
+            //         tokenContract,
+            //         buyOrder.maker,
+            //         OxIERC721Upgradeable(nftContract).creatorOf(tokenId),
+            //         patentFee
+            //     );
+            // }
             // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
             uint256 remainValue = buyOrder.buyAsset.value -
                 platformFee -
@@ -300,15 +300,15 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         _isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
         _isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
         // if the seller of the nft is creator, he can change the patent fee rate
-        address creator = OxIERC721Upgradeable(
-            sellOrder.nftAsset.contractAddress
-        ).creatorOf(sellOrder.nftAsset.tokenId);
-        if (sellOrder.maker == creator) {
-            _changePatentFee(
-                sellOrder.nftAsset.contractAddress,
-                sellOrder.nftAsset.tokenId,
-                sellOrder.nftAsset.patentFee
-            );
-        }
+        // address creator = OxIERC721Upgradeable(
+        //     sellOrder.nftAsset.contractAddress
+        // ).creatorOf(sellOrder.nftAsset.tokenId);
+        // if (sellOrder.maker == creator) {
+        //     _changePatentFee(
+        //         sellOrder.nftAsset.contractAddress,
+        //         sellOrder.nftAsset.tokenId,
+        //         sellOrder.nftAsset.patentFee
+        //     );
+        // }
     }
 }

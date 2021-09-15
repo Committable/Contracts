@@ -1,14 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { BN, constants, expectEvent, expectRevert } = require('@openzeppelin/test-helpers');
+const { BN, constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
-
-const firstTokenId = 5042;
-const secondTokenId = '0x79217';
-const nonExistentTokenId = '13';
-const fourthTokenId = 4;
+const { tokenIds, commitInfo } = require('./commitInfo.js');
+const { hashCommitInfo } = require('./utils.js');
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4} = tokenIds;
+const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo; 
 
 describe('TokenProxy', function () {
   let oxERC721Upgradeable, controller, tokenProxy, signers;
@@ -34,9 +33,13 @@ describe('TokenProxy', function () {
       await tokenProxy.deployed();
       tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
 
-      let tx = await tokenProxy['safeMint(address,uint256)'](owner.address, firstTokenId);
+    // sign some tokens commit info
+    let signature_0 = await owner.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_0)));
+    let signature_1 = await owner.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_1)));
+      // mint 0, 1 to owner
+      let tx = await tokenProxy.mint(owner.address, tokenId_0, commitInfo_0, signature_0);
       await tx.wait();
-      tx = await tokenProxy['safeMint(address,uint256)'](owner.address, secondTokenId);
+      tx = await tokenProxy.mint(owner.address, tokenId_1, commitInfo_1, signature_1);
       await tx.wait();
     })
     context("when initialized", function () {
@@ -67,13 +70,13 @@ describe('TokenProxy', function () {
     })
 
     context('when the given token ID was tracked by this token', function () {
-      const tokenId = firstTokenId;
+      const tokenId = tokenId_0;
       it('returns the owner of the given token Id', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(owner.address);
       })
     })
     context('when the given token ID was not tracked by this token', function () {
-      const tokenId = nonExistentTokenId;
+      const tokenId = tokenId_2;
       it('revert', async function () {
         try {
           await tokenProxy.ownerOf(tokenId);
@@ -85,7 +88,7 @@ describe('TokenProxy', function () {
     })
 
     context('with the given token ID being sent by owner', function () {
-      const tokenId = firstTokenId;
+      const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {
         let tx = await tokenProxy.transferFrom(owner.address, recipient.address, tokenId);
@@ -109,7 +112,7 @@ describe('TokenProxy', function () {
     })
 
     context('with the given token ID being sent by approved address', function () {
-      const tokenId = firstTokenId;
+      const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {
         let tx = await tokenProxy.approve(approved.address, tokenId);
@@ -133,7 +136,7 @@ describe('TokenProxy', function () {
     })
 
     context('with the given token ID being sent by operator', function () {
-      const tokenId = firstTokenId;
+      const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {
         let tx = await tokenProxy.setApprovalForAll(operator.address, true);

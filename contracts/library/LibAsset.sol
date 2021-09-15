@@ -6,19 +6,20 @@ library LibAsset {
     bytes4 public constant ETH_ASSET_CLASS = bytes4(keccak256("ETH"));
     bytes4 public constant ERC20_ASSET_CLASS = bytes4(keccak256("ERC20"));
     bytes4 public constant ERC721_ASSET_CLASS = bytes4(keccak256("ERC721"));
-    bytes4 public constant ERC1155_ASSET_CLASS = bytes4(keccak256("ERC1155"));
 
     struct Asset {
+        // assetClass to imply the type of this asset
         bytes4 assetClass;
+        // contractAddress of ERC20 or ERC721, unused for ETH
         address contractAddress;
-        uint256 value;
+        // amount of asset for ETH or ERC20, unused for ERC721
+        uint256 amount;
+        // tokenId of ERC721, unused for ERC20 or ETH
+        uint256 tokenId;
+        // creator of ERC721, unused for ERC20 or ETH
+        address creator;
     }
 
-    struct NFT {
-        address contractAddress;
-        uint256 tokenId;
-        uint256 patentFee;
-    }
 
     function hash(Asset memory asset) internal pure returns (bytes32) {
         return
@@ -27,10 +28,4 @@ library LibAsset {
             );
     }
 
-    function hash(NFT memory nft) internal pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(nft.contractAddress, nft.tokenId, nft.patentFee)
-            );
-    }
 }

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./Controller.sol";
+import "./library/LibCommitInfo.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ERC721/OxIERC721Upgradeable.sol";
@@ -15,20 +16,59 @@ contract Router {
         controller = Controller(_address);
     }
 
+    /**
+     * @dev mint and transfer ERC721
+     * mint and transfer ERC721 onbehalf of user
+     */
     function transferERC721(
-        address _token,
-        address _from,
-        address _to,
-        uint256 tokenId
+        address token,
+        address from,
+        address to,
+        uint256 tokenId,
+        LibCommitInfo.CommitInfo memory commitInfo,
+        bytes memory signature
     ) external {
-        require(
-            (controller.contracts(msg.sender) && !isDisabled[_from]) ||
-                OxIERC721Upgradeable(_token).ownerOf(tokenId) == msg.sender,
-            "invalid visitor or owner has disabled this function"
-        );
-        OxIERC721Upgradeable(_token).safeTransferFrom(_from, _to, tokenId);
+        OxIERC721Upgradeable(token).mint(from, tokenId, commitInfo, signature);
+        _transferERC721(token, from, to, tokenId);
     }
 
+    /**
+     * @dev transfer ERC721
+     * transfer ERC721 onbehalf of user
+     */
+    function transferERC721(
+        address token,
+        address from,
+        address to,
+        uint256 tokenId
+    ) external {
+        _transferERC721(token, from, to, tokenId);
+    }
+
+    /**
+     * @dev transfer ERC721
+     * internal function to transfer ERC721 onbehalf of user, this function can only be accessed only when the msg.sender is the owner
+     * or registered exchange (and owner allows this type of transaction)
+     */
+    function _transferERC721(
+        address token,
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal {
+        require(
+            ((controller.contracts(msg.sender)) && !isDisabled[from]) ||
+                OxIERC721Upgradeable(token).ownerOf(tokenId) == msg.sender,
+            "invalid sender: must be token owner or registered address"
+        );
+        OxIERC721Upgradeable(token).safeTransferFrom(from, to, tokenId);
+    }
+
+
+    /**
+     * @dev transfer ERC20
+     * transfer ERC20 onbehalf of user, implement SafeERC20: will throw when transferFrom function reverts or return false
+     */
     function transferERC20(
         address _token,
         address _from,
@@ -82,21 +122,5 @@ contract Router {
             tokenIds[i] = OxIERC721Upgradeable(_token).tokenByIndex(indexes[i]);
         }
         return tokenIds;
-    }
-
-    function creatorOfBatch(address _token, uint256[] memory tokenIds)
-        external
-        view
-        virtual
-        returns (address[] memory)
-    {
-        address[] memory batchCreators = new address[](tokenIds.length);
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            batchCreators[i] = OxIERC721Upgradeable(_token).creatorOf(
-                tokenIds[i]
-            );
-        }
-
-        return batchCreators;
     }
 }

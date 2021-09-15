@@ -14,27 +14,6 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
     ) external;
 
     /**
-     * @dev Returns creator of a given tokenId
-     */
-    function creatorOf(uint256 tokenId) external view returns (address);
-
-    /**
-     * @dev Returns total supply of a given creator
-     */
-    function totalSupplyOfCreator(address creator)
-        external
-        view
-        returns (uint256);
-
-    /**
-     * @dev Returns tokenId of a creator at a given index
-     */
-    function tokenOfCreatorByIndex(address creator, uint256 index)
-        external
-        view
-        returns (uint256);
-
-    /**
      * @dev Returns project of a given tokenId
      */
     function projectOf(uint256 tokenId) external view returns (string memory);

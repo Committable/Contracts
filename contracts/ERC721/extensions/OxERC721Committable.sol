@@ -8,10 +8,6 @@ import "../../library/LibSignature.sol";
 import "./OxIERC721Committable.sol";
 
 contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
-    // mapping from tokenId to creator
-    mapping(uint256 => address) private _creator;
-    // mapping from creator to tokenIds this address created
-    mapping(address => uint256[]) private _creatorTokens;
     // mapping from tokenId to project
     mapping(uint256 => string) private _project;
     // mapping from project to tokenIds belongging to this project
@@ -38,53 +34,12 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
             require(_commitsToken[commit] == 0, "commit has been registered");
             _commitsToken[commit] = tokenId;
         }
-        _creator[tokenId] = to;
-        _creatorTokens[to].push(tokenId);
 
-        // _project[tokenId] = commitInfo.project;
+        _project[tokenId] = commitInfo.project;
         _projectTokens[commitInfo.project].push(tokenId);
 
         _commits[tokenId] = commitInfo.commits;
         _mint(to, tokenId);
-    }
-
-    /**
-     * @dev Returns creator of a given tokenId
-     */
-    function creatorOf(uint256 tokenId)
-        external
-        view
-        virtual
-        override
-        returns (address)
-    {
-        return _creator[tokenId];
-    }
-
-    /**
-     * @dev Returns tokenId of a creator at a given index
-     */
-    function tokenOfCreatorByIndex(address creator, uint256 index)
-        external
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _creatorTokens[creator][index];
-    }
-
-    /**
-     * @dev Returns token supply of a given creator
-     */
-    function totalSupplyOfCreator(address creator)
-        external
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _creatorTokens[creator].length;
     }
 
     /**
@@ -165,5 +120,5 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         return _commits[tokenId].length;
     }
 
-    uint256[44] private __gap;
+    uint256[46] private __gap;
 }
