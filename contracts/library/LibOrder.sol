@@ -6,14 +6,27 @@ import "./LibAsset.sol";
 
 library LibOrder {
     struct Order {
+        // exchange address to execute orders
         address exchange;
-        bool isBuyer; // true for buy order, false for sell order
-        bool isAuction; //true for auction, false for fixed price
-        address payable maker;
-        LibAsset.Asset buyAsset;
-        LibAsset.NFT nftAsset;
+        // order side: true for order from buyer, false for order from seller
+        bool isBuySide;
+        // order type: true for auction, false for fixed price
+        bool isAuction;
+        // order signer address
+        address signer;
+        // order buyside asset info:
+        // in buyside order: it refers to asset type and amount that buyer offers
+        // in sellside order: it refers to asset type and minimal amount that seller accepts
+        LibAsset.Asset buySideAsset;
+        // order sellside asset info:
+        LibAsset.Asset sellSideAsset;
+        // royalty to update
+        uint256 royalty;
+        // random value
         uint256 salt;
+        // timestamp for the starting time for executing this order
         uint256 start;
+        // timestamp for the deadline for executing this order
         uint256 end;
     }
 
@@ -22,11 +35,12 @@ library LibOrder {
             keccak256(
                 abi.encode(
                     order.exchange,
-                    order.isBuyer, // true for buy order, false for sell order
-                    order.isAuction, //true for auction, false ofr direct pay
-                    order.maker,
-                    LibAsset.hash(order.buyAsset),
-                    LibAsset.hash(order.nftAsset),
+                    order.isBuySide,
+                    order.isAuction,
+                    order.signer,
+                    LibAsset.hash(order.buySideAsset),
+                    LibAsset.hash(order.sellSideAsset),
+                    order.royalty,
                     order.salt,
                     order.start,
                     order.end

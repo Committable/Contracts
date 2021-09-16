@@ -87,41 +87,41 @@ describe('TokenProxy', function () {
           .withArgs(signer.address, user.address, tokenId_4);
       })
     })
-    context('with legitimate lazy_mint', function () {
-      beforeEach('lazy mint from signer to user', async function () {
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-        let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-        await tx.wait();
-      })
-      it('should return correct owner', async function () {
-        expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
-      })
-    })
+    // context('with legitimate lazy_mint', function () {
+    //   beforeEach('lazy mint from signer to user', async function () {
+    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+    //     await tx.wait();
+    //   })
+    //   it('should return correct owner', async function () {
+    //     expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+    //   })
+    // })
 
-    context('with legitimate mint and transfer', function () {
-      beforeEach('mintAndTransfer from signer to user', async function () {
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-        let tx = await tokenProxy.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
-        await tx.wait();
-        tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, signer.address, user.address, tokenId_4);
-        await tx.wait();
-      })
-      it('should return correct owner', async function () {
-        expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
-      })
-    })
+    // context('with legitimate mint and transfer', function () {
+    //   beforeEach('mintAndTransfer from signer to user', async function () {
+    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+    //     let tx = await tokenProxy.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
+    //     await tx.wait();
+    //     tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, signer.address, user.address, tokenId_4);
+    //     await tx.wait();
+    //   })
+    //   it('should return correct owner', async function () {
+    //     expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+    //   })
+    // })
 
     context('with malicious lazy_mint', function () {
-      it('should revert if commitInfo is signed by unauthorized address', async function () {
-        let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-        try {
-          let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-          await tx.wait();
-          throw null;
-        } catch (err) {
-          expect(await err.message).to.include("commitInfo signature validation failed");
-        }
-      })
+      // it('should revert if commitInfo is signed by unauthorized address', async function () {
+      //   let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+      //   try {
+      //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+      //     await tx.wait();
+      //     throw null;
+      //   } catch (err) {
+      //     expect(await err.message).to.include("commitInfo signature validation failed");
+      //   }
+      // })
       it('should revert if user has disabled router', async function () {
         let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
         try {

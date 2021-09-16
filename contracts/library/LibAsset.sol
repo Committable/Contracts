@@ -12,20 +12,15 @@ library LibAsset {
         bytes4 assetClass;
         // contractAddress of ERC20 or ERC721, unused for ETH
         address contractAddress;
-        // amount of asset for ETH or ERC20, unused for ERC721
-        uint256 amount;
-        // tokenId of ERC721, unused for ERC20 or ETH
-        uint256 tokenId;
-        // creator of ERC721, unused for ERC20 or ETH
-        address creator;
+        // amount for ETH or ERC20, tokenId for ERC721
+        uint256 amountOrId;
     }
 
 
     function hash(Asset memory asset) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encode(asset.assetClass, asset.contractAddress, asset.value)
+                abi.encode(asset.assetClass, asset.contractAddress, asset.amountOrId)
             );
     }
-
 }

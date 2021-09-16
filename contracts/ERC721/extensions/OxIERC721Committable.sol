@@ -6,6 +6,14 @@ import "../../library/LibCommitInfo.sol";
 import "../../library/LibSignature.sol";
 
 interface OxIERC721Committable is IERC721EnumerableUpgradeable {
+    // function transferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId,
+    //     LibCommitInfo.CommitInfo memory commitInfo,
+    //     bytes memory signature
+    // ) external;
+
     function mint(
         address to,
         uint256 tokenId,

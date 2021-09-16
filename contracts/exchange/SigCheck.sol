@@ -16,14 +16,6 @@ contract SigCheck {
         return LibAsset.hash(asset);
     }
 
-    function getNftHash(LibAsset.NFT memory nft)
-        external
-        pure
-        returns (bytes32)
-    {
-        return LibAsset.hash(nft);
-    }
-
     function getOrderHash(LibOrder.Order memory order)
         external
         pure

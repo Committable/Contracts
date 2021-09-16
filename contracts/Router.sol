@@ -20,17 +20,20 @@ contract Router {
      * @dev mint and transfer ERC721
      * mint and transfer ERC721 onbehalf of user
      */
-    function transferERC721(
-        address token,
-        address from,
-        address to,
-        uint256 tokenId,
-        LibCommitInfo.CommitInfo memory commitInfo,
-        bytes memory signature
-    ) external {
-        OxIERC721Upgradeable(token).mint(from, tokenId, commitInfo, signature);
-        _transferERC721(token, from, to, tokenId);
-    }
+    // function transferERC721(
+    //     address token,
+    //     address from,
+    //     address to,
+    //     uint256 tokenId,
+    //     LibCommitInfo.CommitInfo memory commitInfo,
+    //     bytes memory signature
+    // ) external {
+    //     require(
+    //         (controller.contracts(msg.sender)) && !isDisabled[from],
+    //         "invalid sender: must be registered address"
+    //     );
+    //     OxIERC721Upgradeable(token).transferFrom(from, to, tokenId, commitInfo, signature);
+    // }
 
     /**
      * @dev transfer ERC721
@@ -42,41 +45,13 @@ contract Router {
         address to,
         uint256 tokenId
     ) external {
-        _transferERC721(token, from, to, tokenId);
-    }
-
-    /**
-     * @dev transfer ERC721
-     * internal function to transfer ERC721 onbehalf of user, this function can only be accessed only when the msg.sender is the owner
-     * or registered exchange (and owner allows this type of transaction)
-     */
-    function _transferERC721(
-        address token,
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal {
         require(
-            ((controller.contracts(msg.sender)) && !isDisabled[from]) ||
-                OxIERC721Upgradeable(token).ownerOf(tokenId) == msg.sender,
-            "invalid sender: must be token owner or registered address"
+            (controller.contracts(msg.sender)) && !isDisabled[from],
+            "invalid sender: must be registered address"
         );
-        OxIERC721Upgradeable(token).safeTransferFrom(from, to, tokenId);
+        OxIERC721Upgradeable(token).transferFrom(from, to, tokenId);
     }
 
-
-    /**
-     * @dev transfer ERC20
-     * transfer ERC20 onbehalf of user, implement SafeERC20: will throw when transferFrom function reverts or return false
-     */
-    function transferERC20(
-        address _token,
-        address _from,
-        address _to,
-        uint256 amount
-    ) external {
-        SafeERC20.safeTransferFrom(IERC20(_token), _from, _to, amount);
-    }
 
     /**
      * @dev Allow user to manage their proxy status

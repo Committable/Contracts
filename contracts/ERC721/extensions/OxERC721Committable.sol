@@ -42,6 +42,17 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         _mint(to, tokenId);
     }
 
+    // function transferFrom(
+    //     address from,
+    //     address to,
+    //     uint256 tokenId,
+    //     LibCommitInfo.CommitInfo memory commitInfo,
+    //     bytes memory signature
+    // ) external virtual override {
+    //     mint(from, tokenId, commitInfo, signature);
+    //     super.transferFrom(from, to, tokenId);
+    // }
+
     /**
      * @dev Returns project of a given tokenId
      */
