@@ -14,11 +14,9 @@ library LibOrder {
         bool isAuction;
         // order signer address
         address signer;
-        // order buyside asset info:
-        // in buyside order: it refers to asset type and amount that buyer offers
-        // in sellside order: it refers to asset type and minimal amount that seller accepts
+        // order buyside asset:
         LibAsset.Asset buySideAsset;
-        // order sellside asset info:
+        // order sellside asset:
         LibAsset.Asset sellSideAsset;
         // royalty to update
         uint256 royalty;

@@ -11,6 +11,8 @@ module.exports = {
     "ecmaVersion": 12
   },
   "rules": {
+    "mocha/no-exports" : 0,
+    "mocha/no-setup-in-describe": 0
   },
 
 };

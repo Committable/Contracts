@@ -52,7 +52,6 @@ contract Router {
         OxIERC721Upgradeable(token).transferFrom(from, to, tokenId);
     }
 
-
     /**
      * @dev Allow user to manage their proxy status
      * @param _bool, transferProxy is disabled when the _bool is set to true

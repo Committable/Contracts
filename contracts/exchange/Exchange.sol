@@ -87,7 +87,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     }
 
     /**
-     * @dev match orders and transfer, the function currently only supports matching ETH, ERC20 buySideOrder with ERC721 sellSideOrder
+     * @dev match orders and transfer, the function currently supports matching ETH, ERC20 buySideOrder with ERC721 sellSideOrder
      * Requirements:
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
@@ -201,8 +201,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "buySideAsset contractAddress does not match"
         );
         require(
-            buySideOrder.buySideAsset.amountOrId >=
-                sellSideOrder.buySideAsset.amountOrId,
+            buySideOrder.buySideAsset.value >= sellSideOrder.buySideAsset.value,
             "buySideOrder bid price must be no less than the seller ask price"
         );
         // sellSideAsset match
@@ -217,9 +216,9 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             "sellSideAsset contractAddress does not match"
         );
         require(
-            buySideOrder.sellSideAsset.amountOrId ==
-                sellSideOrder.sellSideAsset.amountOrId,
-            "sellSideAsset tokenId does not amtch"
+            buySideOrder.sellSideAsset.value ==
+                sellSideOrder.sellSideAsset.value,
+            "sellSideAsset value does not match"
         );
         // other validations
         require(
@@ -249,10 +248,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         // bytes4(keccak256("ERC721")) = 0x73ad2146
         require(
             buySideOrder.sellSideAsset.assetClass == 0x73ad2146,
-            "invalid sellSideAsset type: only support ERC721 now"
+            "invalid sellSideAsset type"
         );
         address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.amountOrId;
+        uint256 tokenId = sellSideOrder.sellSideAsset.value;
         address royaltyRecipient = sellSideOrder.signer;
         // mint nft to buyer
         OxIERC721Upgradeable(nftContract).mint(
@@ -275,10 +274,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         // bytes4(keccak256("ERC721")) = 0x73ad2146
         require(
             buySideOrder.sellSideAsset.assetClass == 0x73ad2146,
-            "invalid sellSideAsset type: only support ERC721 now"
+            "invalid sellSideAsset type"
         );
         address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.amountOrId;
+        uint256 tokenId = sellSideOrder.sellSideAsset.value;
         address royaltyRecipient = sellSideOrder.signer;
         // deliver nft to buyer
         Router router = Router(_controller.router());
@@ -300,7 +299,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     ) internal {
         address nftContract = buySideOrder.sellSideAsset.contractAddress;
         address tokenContract = buySideOrder.buySideAsset.contractAddress;
-        uint256 tokenId = buySideOrder.sellSideAsset.amountOrId;
+        uint256 tokenId = buySideOrder.sellSideAsset.value;
         // pay by ether (fixed-price only)
         // bytes4(keccak256("ETH")) = 0xaaaebeba
         if (buySideOrder.buySideAsset.assetClass == 0xaaaebeba) {
@@ -309,11 +308,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 "invalid orders: ETH not allowed in auction"
             );
             require(
-                msg.value == buySideOrder.buySideAsset.amountOrId,
+                msg.value == buySideOrder.buySideAsset.value,
                 "ether amount does not match buy order value"
             );
-            uint256 fee = (buySideOrder.buySideAsset.amountOrId / 10000) * _fee;
-            uint256 royalty = (buySideOrder.buySideAsset.amountOrId / 10000) *
+            uint256 fee = (buySideOrder.buySideAsset.value / 10000) * _fee;
+            uint256 royalty = (buySideOrder.buySideAsset.value / 10000) *
                 _royalty[nftContract][tokenId];
             // transfer fee
             if (fee != 0) {
@@ -329,7 +328,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 );
             }
             // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
-            uint256 remainValue = buySideOrder.buySideAsset.amountOrId -
+            uint256 remainValue = buySideOrder.buySideAsset.value -
                 fee -
                 royalty;
             if (remainValue != 0) {
@@ -340,8 +339,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         // bytes4(keccak256("ERC20")) = 0x8ae85d84
         else if (buySideOrder.buySideAsset.assetClass == 0x8ae85d84) {
             require(msg.value == 0, "sending ether not allowed in ERC20 order");
-            uint256 fee = (buySideOrder.buySideAsset.amountOrId / 10000) * _fee;
-            uint256 royalty = (buySideOrder.buySideAsset.amountOrId / 10000) *
+            uint256 fee = (buySideOrder.buySideAsset.value / 10000) * _fee;
+            uint256 royalty = (buySideOrder.buySideAsset.value / 10000) *
                 _royalty[nftContract][tokenId];
             // transfer fee
             if (fee != 0) {
@@ -365,7 +364,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 );
             }
             // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
-            uint256 remainValue = buySideOrder.buySideAsset.amountOrId -
+            uint256 remainValue = buySideOrder.buySideAsset.value -
                 fee -
                 royalty;
             if (remainValue != 0) {
@@ -377,7 +376,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
                 );
             }
         } else {
-            revert("invalid asset type");
+            revert("invalid buySideAsset type");
         }
 
         emit OrderMatched(
@@ -385,11 +384,11 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             LibOrder.hash(sellSideOrder),
             buySideOrder.signer,
             sellSideOrder.signer,
-            sellSideOrder.sellSideAsset.amountOrId,
+            sellSideOrder.sellSideAsset.value,
             sellSideOrder.isAuction,
             buySideOrder.buySideAsset.assetClass,
             buySideOrder.buySideAsset.contractAddress,
-            buySideOrder.buySideAsset.amountOrId
+            buySideOrder.buySideAsset.value
         );
     }
 
@@ -401,7 +400,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         _isCancelledOrFinished[LibOrder.hash(sellSideOrder)] = true;
         // if the signer of the sellSide order is royalty recipient, he can update the royalty after transaction
         address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.amountOrId;
+        uint256 tokenId = sellSideOrder.sellSideAsset.value;
         uint256 royalty = sellSideOrder.royalty;
         if (
             sellSideOrder.signer == _royaltyRecipient[nftContract][tokenId] &&

@@ -14,7 +14,7 @@ const ROYALTY = 1000; // 10 %
 const life_span = 60 * 60 * 24 * 7 // one week
 
 
-function shouldWorkWithLegitimateBehaviors() {
+function shouldWorkWithLegitimateBehavior() {
     context('with legitimate behaviors', function () {
         context('with minted nft', function () {
             beforeEach('with minted nft', async function () {
@@ -39,9 +39,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await seller.getBalance();
                     originalRecipientBalance = await recipient.getBalance();
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
                     gasPrice = tx.gasPrice;
@@ -79,9 +79,9 @@ function shouldWorkWithLegitimateBehaviors() {
                 beforeEach(async function () {
                     // seller purchase nft(tokenId_1) from creator, patent fee was set
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: price })
-                    buy_order_0.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_0.sellSideAsset.value = tokenId_3;
                     buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
-                    sell_order_0.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_0.sellSideAsset.value = tokenId_3;
                     sell_order_sig_0 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_0)));
 
                     originalBuyerBalance = await buyer.getBalance();
@@ -90,9 +90,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalCreatorBalance = await creator.getBalance();
 
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
                     gasPrice = tx.gasPrice;
@@ -135,7 +135,7 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
 
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait();
@@ -171,9 +171,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: price })
                     await tx.wait();
 
-                    buy_order_1.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_1.sellSideAsset.value = tokenId_3;
                     buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-                    sell_order_1.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_1.sellSideAsset.value = tokenId_3;
                     sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
 
                     originalBuyerBalance = await token.balanceOf(buyer.address);
@@ -181,9 +181,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     originalCreatorBalance = await token.balanceOf(creator.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait()
@@ -224,9 +224,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait();
@@ -263,9 +263,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: price })
                     await tx.wait();
 
-                    buy_order_2.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_2.sellSideAsset.value = tokenId_3;
                     buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-                    sell_order_2.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_2.sellSideAsset.value = tokenId_3;
                     sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
 
                     originalBuyerBalance = await token.balanceOf(buyer.address);
@@ -274,9 +274,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalCreatorBalance = await token.balanceOf(creator.address);
 
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait()
 
@@ -313,12 +313,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with non-aution ETH orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
@@ -335,12 +335,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with non-aution ERC20 orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
                     let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
@@ -357,12 +357,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with auction ERC20 orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
                     let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -390,9 +390,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await seller.getBalance();
                     originalRecipientBalance = await recipient.getBalance();
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, commitInfo_0, commitInfo_sig_0, { value: price });
                     gasPrice = tx.gasPrice;
@@ -429,9 +429,9 @@ function shouldWorkWithLegitimateBehaviors() {
                 beforeEach(async function () {
                     // seller purchase nft(tokenId_1) from creator, patent fee was set
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: price })
-                    buy_order_0.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_0.sellSideAsset.value = tokenId_3;
                     buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
-                    sell_order_0.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_0.sellSideAsset.value = tokenId_3;
                     sell_order_sig_0 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_0)));
 
                     originalBuyerBalance = await buyer.getBalance();
@@ -440,9 +440,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalCreatorBalance = await creator.getBalance();
 
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
                     gasPrice = tx.gasPrice;
@@ -485,7 +485,7 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
 
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, commitInfo_1, commitInfo_sig_1);
                     await tx.wait();
@@ -521,9 +521,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: price })
                     await tx.wait();
 
-                    buy_order_1.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_1.sellSideAsset.value = tokenId_3;
                     buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-                    sell_order_1.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_1.sellSideAsset.value = tokenId_3;
                     sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
 
                     originalBuyerBalance = await token.balanceOf(buyer.address);
@@ -531,9 +531,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     originalCreatorBalance = await token.balanceOf(creator.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait()
@@ -574,9 +574,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, commitInfo_2, commitInfo_sig_2);
                     await tx.wait();
@@ -613,9 +613,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: price })
                     await tx.wait();
 
-                    buy_order_2.sellSideAsset.amountOrId = tokenId_3;
+                    buy_order_2.sellSideAsset.value = tokenId_3;
                     buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-                    sell_order_2.sellSideAsset.amountOrId = tokenId_3;
+                    sell_order_2.sellSideAsset.value = tokenId_3;
                     sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
 
                     originalBuyerBalance = await token.balanceOf(buyer.address);
@@ -624,9 +624,9 @@ function shouldWorkWithLegitimateBehaviors() {
                     originalCreatorBalance = await token.balanceOf(creator.address);
 
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait()
 
@@ -663,12 +663,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with non-aution ETH orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, commitInfo_0, commitInfo_sig_0, { value: price });
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.value);
                 })
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, commitInfo_0, commitInfo_sig_0, { value: price });
@@ -691,12 +691,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with non-aution ERC20 orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, commitInfo_1, commitInfo_sig_1);
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.value);
                 })
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, commitInfo_1, commitInfo_sig_1);
@@ -718,12 +718,12 @@ function shouldWorkWithLegitimateBehaviors() {
             context('[event test] with auction ERC20 orders executed', function () {
                 it('emit desired exchange event', async function () {
                     let fee = await exchange.getFee();
-                    let royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.amountOrId);
-                    let _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
-                    let _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.amountOrId)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    let royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
+                    let _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+                    let _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, commitInfo_2, commitInfo_sig_2);
                     expect(tx).to.emit(exchange, 'OrderMatched')
-                        .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.amountOrId);
+                        .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.value);
                 })
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, commitInfo_2, commitInfo_sig_2);
@@ -745,4 +745,4 @@ function shouldWorkWithLegitimateBehaviors() {
     })
 }
 
-module.exports = { shouldWorkWithLegitimateBehaviors };
+module.exports = { shouldWorkWithLegitimateBehavior };

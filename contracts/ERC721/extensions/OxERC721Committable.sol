@@ -44,6 +44,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
             "commitInfo signature validation failed"
         );
 
+        require(commitInfo.commits.length > 0, "at least register 1 commit");
         for (uint256 i = 0; i < commitInfo.commits.length; ++i) {
             bytes20 commit = commitInfo.commits[i];
             require(_commitsToken[commit] == 0, "commit has been registered");
@@ -56,17 +57,6 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         _commits[tokenId] = commitInfo.commits;
         _mint(to, tokenId);
     }
-
-    // function transferFrom(
-    //     address from,
-    //     address to,
-    //     uint256 tokenId,
-    //     LibCommitInfo.CommitInfo memory commitInfo,
-    //     bytes memory signature
-    // ) external virtual override {
-    //     mint(from, tokenId, commitInfo, signature);
-    //     super.transferFrom(from, to, tokenId);
-    // }
 
     /**
      * @dev Returns project of a given tokenId

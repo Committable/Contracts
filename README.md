@@ -18,6 +18,14 @@ Install npm packages.
 $ npm install
 ```
 
+### Compile
+
+Run following command to compile all solidity files located at ./contracts folder
+
+```bash
+$ npm run compile
+```
+
 ### Usage
 
 Create following file in the root folder before deployment or running any tests:
@@ -39,7 +47,7 @@ You can customize network configurations in **hardhat.config.js**, by default we
 
 ### Test
 
-Testing scripts with ethers.js and Waffle are located at **./test/** folder, run following commands to start
+Testing scripts with ethers.js and Waffle are located at **./test/** folder, run following commands to start testing
 
 ```bash
 $ npm run test
@@ -54,8 +62,6 @@ $ npm run ropsten ./scripts/deploy.js
 ```
 
 Above script will deploy five contracts on ropsten network and make additional transactions  to chain them 
-
-
 
 ## Documents
 

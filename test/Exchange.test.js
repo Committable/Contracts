@@ -7,7 +7,8 @@ const { CommitInfo, hashCommitInfo, Asset, hashAsset, Order, hashOrder } = requi
 const { tokenIds, commitInfo } = require('./commitInfo.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
-const { shouldWorkWithLegitimateBehaviors } = require('./Exchange.legitimate.behaviors.js');
+const { shouldWorkWithLegitimateBehavior } = require('./Exchange.legitimate.behavior.js');
+const { shouldRevertWithMaliciousBehavior } = require('./Exchange.malicious.behavior.js')
 
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -57,7 +58,7 @@ describe('Exchange', function () {
       await token.deployed();
       tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());
       await tx.wait();
-      
+
       // set platform fee and change recipient
       tx = await exchange.changeFee(FEE);
       await tx.wait()
@@ -180,7 +181,7 @@ describe('Exchange', function () {
       sell_order_sig_3 = await creator.signMessage(ethers.utils.arrayify(hashOrder(sell_order_3)));
     })
     context('with generated orders', function () {
-  
+
       context("check orders hash and signature", function () {
         it('buy_order on-chain and off-chain hash match', async function () {
           expect(await exchange.getOrderHash(buy_order_0)).to.equal(hashOrder(buy_order_0));
@@ -204,7 +205,8 @@ describe('Exchange', function () {
         })
       })
     })
-    shouldWorkWithLegitimateBehaviors();
+    shouldWorkWithLegitimateBehavior();
+    shouldRevertWithMaliciousBehavior();
   })
 
 })

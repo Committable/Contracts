@@ -13,14 +13,13 @@ library LibAsset {
         // contractAddress of ERC20 or ERC721, unused for ETH
         address contractAddress;
         // amount for ETH or ERC20, tokenId for ERC721
-        uint256 amountOrId;
+        uint256 value;
     }
-
 
     function hash(Asset memory asset) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encode(asset.assetClass, asset.contractAddress, asset.amountOrId)
+                abi.encode(asset.assetClass, asset.contractAddress, asset.value)
             );
     }
 }

@@ -26,16 +26,16 @@ const getFunctionAbi = function (abi, functionName) {
 }
 
 const Asset = class {
-  constructor(assetClass, contractAddress, amountOrId) {
+  constructor(assetClass, contractAddress, value) {
     this.assetClass = assetClass;
     this.contractAddress = contractAddress;
-    this.amountOrId = amountOrId;
+    this.value = value;
   }
 }
 const hashAsset = (asset) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let asset_encode =
-    abiCoder.encode(['bytes4', 'address', 'uint256'], [asset.assetClass, asset.contractAddress, asset.amountOrId])
+    abiCoder.encode(['bytes4', 'address', 'uint256'], [asset.assetClass, asset.contractAddress, asset.value])
   return asset_hash = ethers.utils.keccak256(asset_encode);
 }
 
