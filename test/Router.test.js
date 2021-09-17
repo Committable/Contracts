@@ -10,7 +10,7 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
 
 
-describe('TokenProxy', function () {
+describe('Router', function () {
   let oxERC721Upgradeable, controller, tokenProxy, signers;
   context('with minted tokens and deployed contracts', function () {
     beforeEach(async function () {
@@ -76,17 +76,17 @@ describe('TokenProxy', function () {
       })
     })
 
-    context('[event test] mintAndTransfer function', function () {
-      it('should emit desired event', async function () {
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+    // context('[event test] mintAndTransfer function', function () {
+    //   it('should emit desired event', async function () {
+    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
 
-        let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-        expect(tx).to.emit(tokenProxy, "Transfer")
-          .withArgs(ZERO_ADDRESS, signer.address, tokenId_4);
-        expect(tx).to.emit(tokenProxy, "Transfer")
-          .withArgs(signer.address, user.address, tokenId_4);
-      })
-    })
+    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+    //     expect(tx).to.emit(tokenProxy, "Transfer")
+    //       .withArgs(ZERO_ADDRESS, signer.address, tokenId_4);
+    //     expect(tx).to.emit(tokenProxy, "Transfer")
+    //       .withArgs(signer.address, user.address, tokenId_4);
+    //   })
+    // })
     // context('with legitimate lazy_mint', function () {
     //   beforeEach('lazy mint from signer to user', async function () {
     //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
@@ -127,11 +127,11 @@ describe('TokenProxy', function () {
         try {
           let tx = await router.connect(user).disable(true);
           await tx.wait();
-          tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, user.address, signer.address, tokenId_4, commitInfo_4, signature_4);
+          tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, user.address, signer.address, tokenId_4);
           await tx.wait();
           throw null;
         } catch (err) {
-          expect(await err.message).to.include("invalid sender: must be token owner or registered address");
+          expect(await err.message).to.include("invalid sender: must be registered address");
         }
       })
     })

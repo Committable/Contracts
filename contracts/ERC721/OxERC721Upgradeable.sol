@@ -25,11 +25,11 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721EnumerableUpgradeable)
+        override(IERC165Upgradeable, OxERC721Committable)
         returns (bool)
     {
         return
-            interfaceId == type(OxIERC721Upgradeable).interfaceId ||
+            interfaceId == type(OxIERC721Committable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 

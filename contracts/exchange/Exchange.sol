@@ -86,16 +86,15 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         return bools;
     }
 
-
     /**
-     * @dev match orders and execute, the function currently only supports matching ETH, ERC20 buySideOrder with ERC721 sellSideOrder
+     * @dev match orders and transfer, the function currently only supports matching ETH, ERC20 buySideOrder with ERC721 sellSideOrder
      * Requirements:
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
      * - The 'msg.sender' must be one of the order signer according to transaction type
      * - Emits an {orderMatched} event.
      */
-    function matchOrder(
+    function matchAndTransfer(
         LibOrder.Order memory buySideOrder,
         bytes memory buySideOrderSig,
         LibOrder.Order memory sellSideOrder,
@@ -113,7 +112,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         _afterTransfer(buySideOrder, sellSideOrder);
     }
 
-    function matchOrderAndMint(
+    /**
+     * @dev match orders and mint ERC721 to buyer, this function only supports Committable ERC721
+     */
+    function matchAndMint(
         LibOrder.Order memory buySideOrder,
         bytes memory buySideOrderSig,
         LibOrder.Order memory sellSideOrder,
@@ -237,6 +239,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         );
     }
 
+    // transfer sellSideAsset that has not yet minted
     function _transferSellSideAsset(
         LibOrder.Order memory buySideOrder,
         LibOrder.Order memory sellSideOrder,
@@ -251,27 +254,20 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address nftContract = sellSideOrder.sellSideAsset.contractAddress;
         uint256 tokenId = sellSideOrder.sellSideAsset.amountOrId;
         address royaltyRecipient = sellSideOrder.signer;
-        // mint nft to seller
+        // mint nft to buyer
         OxIERC721Upgradeable(nftContract).mint(
-            royaltyRecipient,
+            buySideOrder.signer,
             tokenId,
             commitInfo,
             commitInfoSig
         );
         // register royaltyRecipient if not set
         if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
-            _royaltyRecipient[nftContract][tokenId] = royaltyRecipient;
+            _setRoyaltyRecipient(nftContract, tokenId, royaltyRecipient);
         }
-        // deliver nft to buyer
-        Router router = Router(_controller.router());
-        router.transferERC721(
-            nftContract,
-            sellSideOrder.signer,
-            buySideOrder.signer,
-            tokenId
-        );
     }
 
+    // transfer ERC721 from seller to buyer, and register royaltyRecipient address if not set
     function _transferSellSideAsset(
         LibOrder.Order memory buySideOrder,
         LibOrder.Order memory sellSideOrder
@@ -284,10 +280,6 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address nftContract = sellSideOrder.sellSideAsset.contractAddress;
         uint256 tokenId = sellSideOrder.sellSideAsset.amountOrId;
         address royaltyRecipient = sellSideOrder.signer;
-        // register royaltyRecipient if not set
-        if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
-            _royaltyRecipient[nftContract][tokenId] = royaltyRecipient;
-        }
         // deliver nft to buyer
         Router router = Router(_controller.router());
         router.transferERC721(
@@ -296,6 +288,10 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             buySideOrder.signer,
             tokenId
         );
+        // register royaltyRecipient if not set
+        if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
+            _royaltyRecipient[nftContract][tokenId] = royaltyRecipient;
+        }
     }
 
     function _transferBuySideAsset(

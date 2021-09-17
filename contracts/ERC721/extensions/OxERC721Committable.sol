@@ -17,6 +17,21 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
     // mapping from commit to tokenId
     mapping(bytes20 => uint256) private _commitsToken;
 
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(IERC165Upgradeable, ERC721EnumerableUpgradeable)
+        returns (bool)
+    {
+        return
+            interfaceId == type(OxIERC721Committable).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
     function mint(
         address to,
         uint256 tokenId,

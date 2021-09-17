@@ -142,6 +142,7 @@ describe('TokenProxy', function () {
         let tx = await tokenProxy.setApprovalForAll(operator.address, true);
         await tx.wait();
         tx = await tokenProxy.connect(operator).transferFrom(owner.address, recipient.address, tokenId);
+        await tx.wait();
       })
       it('transfers the ownership of the given tokenID to the given address', async function () {
         expect(await tokenProxy.ownerOf(tokenId)).to.equal(recipient.address);

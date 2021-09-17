@@ -7,7 +7,7 @@ const { CommitInfo, hashCommitInfo, Asset, hashAsset, Order, hashOrder } = requi
 const { tokenIds, commitInfo } = require('./commitInfo.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
-const { shouldWorkWithLegitimateBehaviors } = require('./Exchange.legitimate_behaviors.js');
+const { shouldWorkWithLegitimateBehaviors } = require('./Exchange.legitimate.behaviors.js');
 
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';

@@ -25,11 +25,6 @@ const getFunctionAbi = function (abi, functionName) {
   return null;
 }
 
-
-
-
-
-
 const Asset = class {
   constructor(assetClass, contractAddress, amountOrId) {
     this.assetClass = assetClass;
