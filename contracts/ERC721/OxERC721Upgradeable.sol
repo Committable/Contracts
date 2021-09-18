@@ -9,13 +9,15 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
     function initialize(
         string memory _name,
         string memory _symbol,
-        address proxyController
+        address controller
     ) public override initializer {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __ERC721Enumerable_init_unchained();
-        __ERC721Tradable_init_unchained(proxyController);
+        __ERC721Tradable_init_unchained(controller);
+        address signer = Controller(controller).signer();
+        __ERC721Committable_init_unchained(signer);
     }
 
     /**

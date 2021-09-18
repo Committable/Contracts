@@ -23,14 +23,15 @@ describe('Exchange', function () {
       // get signer
       [seller, buyer, creator, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
       // deploy contracts here
-      let OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
-      oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
-      await oxERC721Upgradeable.deployed();
-
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
       await controller.deployed();
 
+      let OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
+      oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
+      await oxERC721Upgradeable.deployed();
+
+      
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);

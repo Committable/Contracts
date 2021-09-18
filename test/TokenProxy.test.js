@@ -17,13 +17,15 @@ describe('TokenProxy', function () {
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
 
       // deploy contracts here
+      let Controller = await ethers.getContractFactory("Controller");
+      controller = await Controller.deploy();
+      await controller.deployed();
+      
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
 
-      let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy();
-      await controller.deployed();
+      
 
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];

@@ -15,7 +15,7 @@ const life_span = 60 * 60 * 24 * 7 // one week
 
 
 function shouldWorkWithLegitimateBehavior() {
-    context('with legitimate behaviors', function () {
+    context.only('with legitimate behaviors', function () {
         context('with minted nft', function () {
             beforeEach('with minted nft', async function () {
                 // sign some tokens commit info

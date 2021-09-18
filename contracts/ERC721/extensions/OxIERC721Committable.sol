@@ -21,6 +21,10 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
         bytes memory signature
     ) external;
 
+    function changeSigner(address signer) external;
+
+    function getSigner() external view returns (address);
+
     /**
      * @dev Returns project of a given tokenId
      */

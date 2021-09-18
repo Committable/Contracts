@@ -8,6 +8,8 @@ import "../../library/LibSignature.sol";
 import "./OxIERC721Committable.sol";
 
 contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
+    // address to sign commitInfo
+    address private _signer;
     // mapping from tokenId to project
     mapping(uint256 => string) private _project;
     // mapping from project to tokenIds belongging to this project
@@ -16,6 +18,14 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
     mapping(uint256 => bytes20[]) private _commits;
     // mapping from commit to tokenId
     mapping(bytes20 => uint256) private _commitsToken;
+
+    // solhint-disable-next-line
+    function __ERC721Committable_init_unchained(address signer)
+        internal
+        initializer
+    {
+        _signer = signer;
+    }
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -32,6 +42,15 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
             super.supportsInterface(interfaceId);
     }
 
+    function changeSigner(address signer) external virtual override {
+        require(msg.sender == _signer);
+        _signer = signer;
+    }
+
+    function getSigner() external virtual override view returns(address) {
+        return _signer;
+    }
+
     function mint(
         address to,
         uint256 tokenId,
@@ -40,7 +59,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
     ) external virtual override {
         require(
             LibSignature.recover(LibCommitInfo.hash(commitInfo), signature) ==
-                _controller.signer(),
+                _signer,
             "commitInfo signature validation failed"
         );
 
