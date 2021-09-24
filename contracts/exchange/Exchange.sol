@@ -107,38 +107,38 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             sellSideOrderSig
         );
         _orderParamsValidation(buySideOrder, sellSideOrder);
-        _transferSellSideAsset(buySideOrder, sellSideOrder);
-        _transferBuySideAsset(buySideOrder, sellSideOrder);
+        // _transferSellSideAsset(buySideOrder, sellSideOrder);
+        // _transferBuySideAsset(buySideOrder, sellSideOrder);
         _afterTransfer(buySideOrder, sellSideOrder);
     }
 
     /**
      * @dev match orders and mint ERC721 to buyer, this function only supports Committable ERC721
      */
-    function matchAndMint(
-        LibOrder.Order memory buySideOrder,
-        bytes memory buySideOrderSig,
-        LibOrder.Order memory sellSideOrder,
-        bytes memory sellSideOrderSig,
-        LibCommitInfo.CommitInfo memory commitInfo,
-        bytes memory commitInfoSig
-    ) external payable nonReentrant {
-        _orderSigValidation(
-            buySideOrder,
-            buySideOrderSig,
-            sellSideOrder,
-            sellSideOrderSig
-        );
-        _orderParamsValidation(buySideOrder, sellSideOrder);
-        _transferSellSideAsset(
-            buySideOrder,
-            sellSideOrder,
-            commitInfo,
-            commitInfoSig
-        );
-        _transferBuySideAsset(buySideOrder, sellSideOrder);
-        _afterTransfer(buySideOrder, sellSideOrder);
-    }
+    // function matchAndMint(
+    //     LibOrder.Order memory buySideOrder,
+    //     bytes memory buySideOrderSig,
+    //     LibOrder.Order memory sellSideOrder,
+    //     bytes memory sellSideOrderSig,
+    //     LibCommitInfo.CommitInfo memory commitInfo,
+    //     bytes memory commitInfoSig
+    // ) external payable nonReentrant {
+    //     _orderSigValidation(
+    //         buySideOrder,
+    //         buySideOrderSig,
+    //         sellSideOrder,
+    //         sellSideOrderSig
+    //     );
+    //     _orderParamsValidation(buySideOrder, sellSideOrder);
+    //     _transferSellSideAsset(
+    //         buySideOrder,
+    //         sellSideOrder,
+    //         commitInfo,
+    //         commitInfoSig
+    //     );
+    //     _transferBuySideAsset(buySideOrder, sellSideOrder);
+    //     _afterTransfer(buySideOrder, sellSideOrder);
+    // }
 
     function _orderSigValidation(
         LibOrder.Order memory buySideOrder,
@@ -254,12 +254,12 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         uint256 tokenId = sellSideOrder.sellSideAsset.value;
         address royaltyRecipient = sellSideOrder.signer;
         // mint nft to buyer
-        OxIERC721Upgradeable(nftContract).mint(
-            buySideOrder.signer,
-            tokenId,
-            commitInfo,
-            commitInfoSig
-        );
+        // OxIERC721Upgradeable(nftContract).mint(
+        //     buySideOrder.signer,
+        //     tokenId,
+        //     commitInfo,
+        //     commitInfoSig
+        // );
         // register royaltyRecipient if not set
         if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
             _setRoyaltyRecipient(nftContract, tokenId, royaltyRecipient);
@@ -281,7 +281,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         address royaltyRecipient = sellSideOrder.signer;
         // deliver nft to buyer
         Router router = Router(_controller.router());
-        router.transferERC721(
+        router.transferFrom(
             nftContract,
             sellSideOrder.signer,
             buySideOrder.signer,

@@ -17,23 +17,19 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
     function mint(
         address to,
         uint256 tokenId,
-        LibCommitInfo.CommitInfo memory commitInfo,
         bytes memory signature
     ) external;
 
-    function changeSigner(address signer) external;
-
-    function getSigner() external view returns (address);
 
     /**
      * @dev Returns project of a given tokenId
      */
-    function projectOf(uint256 tokenId) external view returns (string memory);
+    function projectOf(uint256 tokenId) external view returns (uint96);
 
     /**
      * @dev Returns total supply of a given project
      */
-    function totalSupplyOfProject(string memory project)
+    function totalSupplyOfProject(uint96 project)
         external
         view
         returns (uint256);
@@ -41,7 +37,7 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
     /**
      * @dev Returns tokenId of a project at a given index
      */
-    function tokenOfProjectByIndex(string memory project, uint256 index)
+    function tokenOfProjectByIndex(uint96 project, uint256 index)
         external
         view
         returns (uint256);
@@ -49,21 +45,9 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
     /**
      * @dev Returns commit supply of a given tokenId
      */
-    function commitSupplyOfToken(uint256 tokenId)
+    function commitOf(uint256 tokenId)
         external
         view
-        returns (uint256);
+        returns (uint160);
 
-    /**
-     * @dev Returns commit of a tokenId at a given index
-     */
-    function commitOfTokenByIndex(uint256 tokenId, uint256 index)
-        external
-        view
-        returns (bytes20);
-
-    /**
-     * @dev Returns tokenId of commit
-     */
-    function tokenOfCommit(bytes20 commit) external view returns (uint256);
 }

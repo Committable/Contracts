@@ -10,7 +10,7 @@ library LibAsset {
     struct Asset {
         // assetClass to imply the type of this asset
         bytes4 assetClass;
-        // contractAddress of ERC20 or ERC721, unused for ETH
+        // contractAddress of ERC20 or ERC721, address(0) for ethers as sentinel value 
         address contractAddress;
         // amount for ETH or ERC20, tokenId for ERC721
         uint256 value;

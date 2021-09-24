@@ -16,14 +16,6 @@ const timeTravel = function (time) {
 }
 
 
-const getFunctionAbi = function (abi, functionName) {
-  for (let i = 0; i < abi.length; i++) {
-    if (abi[i].name == functionName) {
-      return abi[i];
-    }
-  }
-  return null;
-}
 
 const Asset = class {
   constructor(assetClass, contractAddress, value) {
@@ -64,25 +56,12 @@ const hashOrder = (order) => {
 
   return order_hash = ethers.utils.keccak256(order_encode);
 }
-const CommitInfo = class {
-  constructor(project, commits) {
-    this.project = project;
-    this.commits = commits;
-  }
-}
-const hashCommitInfo = (commitInfo) => {
-  let abiCoder = new ethers.utils.AbiCoder();
-  let commitInfo_encode =
-    abiCoder.encode(['string', 'bytes20[]'], [commitInfo.project, commitInfo.commits])
-  return commitInfo_hash = ethers.utils.keccak256(commitInfo_encode);
-}
+
 const Utils = {
   Asset: Asset,
   hashAsset: hashAsset,
   Order: Order,
   hashOrder: hashOrder,
-  CommitInfo: CommitInfo,
-  hashCommitInfo: hashCommitInfo
 }
 
 module.exports = Utils;

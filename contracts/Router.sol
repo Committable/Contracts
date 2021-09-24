@@ -16,30 +16,8 @@ contract Router {
         controller = Controller(_address);
     }
 
-    /**
-     * @dev mint and transfer ERC721
-     * mint and transfer ERC721 onbehalf of user
-     */
-    // function transferERC721(
-    //     address token,
-    //     address from,
-    //     address to,
-    //     uint256 tokenId,
-    //     LibCommitInfo.CommitInfo memory commitInfo,
-    //     bytes memory signature
-    // ) external {
-    //     require(
-    //         (controller.contracts(msg.sender)) && !isDisabled[from],
-    //         "invalid sender: must be registered address"
-    //     );
-    //     OxIERC721Upgradeable(token).transferFrom(from, to, tokenId, commitInfo, signature);
-    // }
 
-    /**
-     * @dev transfer ERC721
-     * transfer ERC721 onbehalf of user
-     */
-    function transferERC721(
+    function transferFrom(
         address token,
         address from,
         address to,

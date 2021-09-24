@@ -16,8 +16,6 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
         __ERC721_init_unchained(_name, _symbol);
         __ERC721Enumerable_init_unchained();
         __ERC721Tradable_init_unchained(controller);
-        address signer = Controller(controller).signer();
-        __ERC721Committable_init_unchained(signer);
     }
 
     /**

@@ -5,9 +5,8 @@ const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
 const { hashCommitInfo } = require('./utils.js');
-const { tokenIds, commitInfo } = require('./commitInfo.js');
+const { tokenIds, commitInfo } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
-const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
 
 
 describe('Router', function () {
@@ -21,11 +20,10 @@ describe('Router', function () {
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
       await controller.deployed();
-      
+
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
-
 
 
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
@@ -44,16 +42,19 @@ describe('Router', function () {
       await tx.wait();
 
       // sign some tokens commit info
-      let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_0)));
-      let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_1)));
-      let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_2)));
-      let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_3)));
+      let abiCoder = new ethers.utils.AbiCoder;
+      let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
+      let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
+      let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
+      let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
+
+
 
       // mint 1, 2 to signer, 3 to user
-      await tokenProxy.mint(signer.address, tokenId_0, commitInfo_0, signature_0);
-      await tokenProxy.mint(signer.address, tokenId_1, commitInfo_1, signature_1);
-      await tokenProxy.mint(signer.address, tokenId_2, commitInfo_2, signature_2);
-      await tokenProxy.mint(user.address, tokenId_3, commitInfo_3, signature_3);
+      await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+      await tokenProxy.mint(signer.address, tokenId_1, signature_1);
+      await tokenProxy.mint(signer.address, tokenId_2, signature_2);
+      await tokenProxy.mint(user.address, tokenId_3, signature_3);
 
     })
 
@@ -113,7 +114,7 @@ describe('Router', function () {
     //   })
     // })
 
-    context('with malicious lazy_mint', function () {
+    context('with router disabled', function () {
       // it('should revert if commitInfo is signed by unauthorized address', async function () {
       //   let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
       //   try {
@@ -125,11 +126,12 @@ describe('Router', function () {
       //   }
       // })
       it('should revert if user has disabled router', async function () {
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
+        let abiCoder = new ethers.utils.AbiCoder;
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
         try {
           let tx = await router.connect(user).disable(true);
           await tx.wait();
-          tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, user.address, signer.address, tokenId_4);
+          tx = await router.transferFrom(tokenProxy.address, user.address, signer.address, tokenId_4);
           await tx.wait();
           throw null;
         } catch (err) {

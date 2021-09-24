@@ -4,44 +4,39 @@ const { BN, constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
-const { tokenIds, commitInfo } = require('./commitInfo.js');
-const { hashCommitInfo } = require('./utils.js');
-const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4} = tokenIds;
-const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo; 
+const { tokenIds, projects, commits } = require('./tokenId.js');
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 
 describe('TokenProxy', function () {
-  let oxERC721Upgradeable, controller, tokenProxy, signers;
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
-      // get signers
+      /* get signers */
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
-
-      // deploy contracts here
+      /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
       await controller.deployed();
-      
+      /* deploy token logic contract */
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
-
-      
-
+      /* deploy token proxy contract */
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
       tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
       await tokenProxy.deployed();
-      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
-
-    // sign some tokens commit info
-    let signature_0 = await owner.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_0)));
-    let signature_1 = await owner.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_1)));
-      // mint 0, 1 to owner
-      let tx = await tokenProxy.mint(owner.address, tokenId_0, commitInfo_0, signature_0);
+      /* attach token proxy contract with logic contract abi */
+      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address)
+      /* sign some tokenId */
+      let abiCoder = new ethers.utils.AbiCoder;
+      let signature_0 = await owner.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
+      let signature_1 = await owner.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
+      /* mint tokenId_0, tokenId_1 to owner */
+      let tx = await tokenProxy.mint(owner.address, tokenId_0, signature_0);
       await tx.wait();
-      tx = await tokenProxy.mint(owner.address, tokenId_1, commitInfo_1, signature_1);
+      tx = await tokenProxy.mint(owner.address, tokenId_1, signature_1);
       await tx.wait();
     })
     context("when initialized", function () {

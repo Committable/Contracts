@@ -4,7 +4,7 @@ const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
 const { CommitInfo, hashCommitInfo, Asset, hashAsset, Order, hashOrder } = require("./utils.js");
-const { tokenIds, commitInfo } = require('./commitInfo.js');
+const { tokenIds, commitInfo } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { commitInfo_0, commitInfo_1, commitInfo_2, commitInfo_3, commitInfo_4 } = commitInfo;
 
