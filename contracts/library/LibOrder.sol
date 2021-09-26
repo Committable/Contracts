@@ -10,22 +10,30 @@ library LibOrder {
         address exchange;
         // order side: true for order from buyer, false for order from seller
         bool isBuySide;
-        // order type: true for auction, false for fixed price
-        bool isAuction;
-        // order signer address
-        address signer;
-        // order buyside asset:
-        LibAsset.Asset buySideAsset;
-        // order sellside asset:
-        LibAsset.Asset sellSideAsset;
-        // royalty to update
+        // order maker address
+        address maker;
+        // order taker address, if specified
+        address taker;
+        // paymentToken contract address, zero-address as sentinal value for ether
+        address paymentToken;
+        // paymentToken amount that a buyer is willing to pay, or a seller's minimal ask price
+        uint256 value;
+        // royalty address to pay
+        address royaltyRecipient;
+        // royalty to pay
         uint256 royalty;
-        // random value
-        uint256 salt;
+        // target to call
+        address target;
+        // attached calldata to target
+        bytes data;
+        // data replacement pattern, empty bytes for no replacement;
+        bytes replacementPattern;
         // timestamp for the starting time for executing this order
         uint256 start;
         // timestamp for the deadline for executing this order
         uint256 end;
+        // randomize order hash
+        uint256 salt;
     }
 
     function hash(Order memory order) internal pure returns (bytes32) {
@@ -34,13 +42,17 @@ library LibOrder {
                 abi.encode(
                     order.exchange,
                     order.isBuySide,
-                    order.isAuction,
-                    order.signer,
-                    LibAsset.hash(order.buySideAsset),
-                    LibAsset.hash(order.sellSideAsset),
+                    order.maker,
+                    order.taker,
+                    order.paymentToken,
+                    order.value,
+                    order.royaltyRecipient,
                     order.royalty,
-                    order.salt,
+                    order.target,
+                    order.data,
+                    order.replacementPattern,
                     order.start,
+                    order.end,
                     order.end
                 )
             );

@@ -20,15 +20,12 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     Controller _controller;
 
     event OrderMatched(
-        bytes32 buySideOrderHash,
-        bytes32 sellSideOrderHash,
+        bytes32 buyOrderHash,
+        bytes32 sellOrderHash,
         address indexed buyer,
         address indexed seller,
-        uint256 indexed tokenId,
-        bool isAuction,
-        bytes4 assetClass,
-        address contractAddress,
-        uint256 price
+        address paymentToken,
+        uint256 value
     );
 
     event OrderCancelled(bytes32 orderHash, address indexed maker);
@@ -47,7 +44,7 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      */
     function cancelOrder(LibOrder.Order memory order) external {
         require(
-            order.signer == msg.sender,
+            order.maker == msg.sender,
             "order must be cancelled by its maker"
         );
         _isCancelledOrFinished[LibOrder.hash(order)] = true;
@@ -87,326 +84,154 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
     }
 
     /**
-     * @dev match orders and transfer, the function currently supports matching ETH, ERC20 buySideOrder with ERC721 sellSideOrder
+     * @dev match orders and transfer, the function currently supports matching ETH, ERC20 buyOrder with ERC721 sellOrder
      * Requirements:
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
-     * - The 'msg.sender' must be one of the order signer according to transaction type
      * - Emits an {orderMatched} event.
      */
     function matchAndTransfer(
-        LibOrder.Order memory buySideOrder,
-        bytes memory buySideOrderSig,
-        LibOrder.Order memory sellSideOrder,
-        bytes memory sellSideOrderSig
+        LibOrder.Order memory buyOrder,
+        bytes memory buyOrderSig,
+        LibOrder.Order memory sellOrder,
+        bytes memory sellOrderSig
     ) external payable nonReentrant {
-        _orderSigValidation(
-            buySideOrder,
-            buySideOrderSig,
-            sellSideOrder,
-            sellSideOrderSig
+        require(
+            _orderSigValidation(buyOrder, buyOrderSig, sellOrder, sellOrderSig),
+            "invalid order signature"
         );
-        _orderParamsValidation(buySideOrder, sellSideOrder);
-        // _transferSellSideAsset(buySideOrder, sellSideOrder);
-        // _transferBuySideAsset(buySideOrder, sellSideOrder);
-        _afterTransfer(buySideOrder, sellSideOrder);
+        require(
+            _orderParamsValidation(buyOrder, sellOrder),
+            "invalid order parameters"
+        );
+        _beforeTransfer(buyOrder, sellOrder);
+        _transferToken(buyOrder, sellOrder);
     }
 
-    /**
-     * @dev match orders and mint ERC721 to buyer, this function only supports Committable ERC721
-     */
-    // function matchAndMint(
-    //     LibOrder.Order memory buySideOrder,
-    //     bytes memory buySideOrderSig,
-    //     LibOrder.Order memory sellSideOrder,
-    //     bytes memory sellSideOrderSig,
-    //     LibCommitInfo.CommitInfo memory commitInfo,
-    //     bytes memory commitInfoSig
-    // ) external payable nonReentrant {
-    //     _orderSigValidation(
-    //         buySideOrder,
-    //         buySideOrderSig,
-    //         sellSideOrder,
-    //         sellSideOrderSig
-    //     );
-    //     _orderParamsValidation(buySideOrder, sellSideOrder);
-    //     _transferSellSideAsset(
-    //         buySideOrder,
-    //         sellSideOrder,
-    //         commitInfo,
-    //         commitInfoSig
-    //     );
-    //     _transferBuySideAsset(buySideOrder, sellSideOrder);
-    //     _afterTransfer(buySideOrder, sellSideOrder);
-    // }
-
     function _orderSigValidation(
-        LibOrder.Order memory buySideOrder,
-        bytes memory buySideOrderSig,
-        LibOrder.Order memory sellSideOrder,
-        bytes memory sellSideOrderSig
-    ) internal pure {
-        bytes32 buySideOrderHash = LibOrder.hash(buySideOrder);
-        bytes32 sellSideOrderHash = LibOrder.hash(sellSideOrder);
-
-        require(
-            LibSignature.recover(buySideOrderHash, buySideOrderSig) ==
-                buySideOrder.signer,
-            "buySideOrder signature validation failed"
-        );
-        require(
-            LibSignature.recover(sellSideOrderHash, sellSideOrderSig) ==
-                sellSideOrder.signer,
-            "sellSideOrder signature validation failed"
-        );
+        LibOrder.Order memory buyOrder,
+        bytes memory buyOrderSig,
+        LibOrder.Order memory sellOrder,
+        bytes memory sellOrderSig
+    ) internal pure returns (bool) {
+        bytes32 buyOrderHash = LibOrder.hash(buyOrder);
+        bytes32 sellOrderHash = LibOrder.hash(sellOrder);
+        return (LibSignature.recover(buyOrderHash, buyOrderSig) ==
+            buyOrder.maker &&
+            LibSignature.recover(sellOrderHash, sellOrderSig) ==
+            sellOrder.maker);
     }
 
     function _orderParamsValidation(
-        LibOrder.Order memory buySideOrder,
-        LibOrder.Order memory sellSideOrder
-    ) internal view {
-        require(
-            buySideOrder.exchange == address(this) &&
-                sellSideOrder.exchange == address(this),
-            "order does not match exchange address"
-        );
-        require(
-            buySideOrder.isBuySide == true && sellSideOrder.isBuySide == false,
-            "order buy/sell side does not match"
-        );
-        require(
-            buySideOrder.isAuction == sellSideOrder.isAuction,
-            "order transaction type does not match"
-        );
-        if (buySideOrder.isAuction == true) {
-            require(
-                msg.sender == sellSideOrder.signer,
-                "auction transaction must be executed by the seller"
-            );
-        } else {
-            require(
-                msg.sender == buySideOrder.signer,
-                "fixed-price transaction must be executed by the buyer"
-            );
-        }
-        // buySideAsset match
-        require(
-            buySideOrder.buySideAsset.assetClass ==
-                sellSideOrder.buySideAsset.assetClass,
-            "buySideAsset assetClass does not match"
-        );
-        require(
-            buySideOrder.buySideAsset.contractAddress ==
-                sellSideOrder.buySideAsset.contractAddress,
-            "buySideAsset contractAddress does not match"
-        );
-        require(
-            buySideOrder.buySideAsset.value >= sellSideOrder.buySideAsset.value,
-            "buySideOrder bid price must be no less than the seller ask price"
-        );
-        // sellSideAsset match
-        require(
-            buySideOrder.sellSideAsset.assetClass ==
-                sellSideOrder.sellSideAsset.assetClass,
-            "sellSideAsset assetClass does not match"
-        );
-        require(
-            buySideOrder.sellSideAsset.contractAddress ==
-                sellSideOrder.sellSideAsset.contractAddress,
-            "sellSideAsset contractAddress does not match"
-        );
-        require(
-            buySideOrder.sellSideAsset.value ==
-                sellSideOrder.sellSideAsset.value,
-            "sellSideAsset value does not match"
-        );
-        // other validations
-        require(
-            buySideOrder.start < block.timestamp &&
-                sellSideOrder.start < block.timestamp,
-            "either order has not started"
-        );
-        require(
-            buySideOrder.end > block.timestamp &&
-                sellSideOrder.end > block.timestamp,
-            "either order has expired"
-        );
-        require(
-            _isCancelledOrFinished[LibOrder.hash(buySideOrder)] == false &&
-                _isCancelledOrFinished[LibOrder.hash(sellSideOrder)] == false,
-            "either order has been cancelled or finishd"
-        );
+        LibOrder.Order memory buyOrder,
+        LibOrder.Order memory sellOrder
+    ) internal view returns (bool) {
+        return ((buyOrder.exchange == address(this)) &&
+            (sellOrder.exchange == address(this)) &&
+            // must be opposite order side
+            (buyOrder.isBuySide == true && sellOrder.isBuySide == false) &&
+            // must be valid taker
+            (buyOrder.taker == address(0) ||
+                buyOrder.taker == sellOrder.maker) &&
+            // must be valid taker
+            (sellOrder.taker == address(0) ||
+                sellOrder.taker == buyOrder.maker) &&
+            // must match paymentToken
+            (buyOrder.paymentToken == sellOrder.paymentToken) &&
+            // buyOrder value must be larger than sellOrder
+            (buyOrder.value >= sellOrder.value) &&
+            // royaltyRecipient must match
+            (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
+            // royalty must match
+            (buyOrder.royalty == sellOrder.royalty) &&
+            // royalty must be a rational value
+            ((buyOrder.royalty + _fee) <= 10000) &&
+            // target must match
+            (buyOrder.target == sellOrder.target) &&
+            // must reach start time
+            (buyOrder.start < block.timestamp &&
+                sellOrder.start < block.timestamp) &&
+            // buyOrder must not expire
+            (buyOrder.end > block.timestamp || buyOrder.end == 0) &&
+            // sellOrder must not expire
+            (sellOrder.end > block.timestamp || sellOrder.end == 0) &&
+            // must be executable
+            (_isCancelledOrFinished[LibOrder.hash(buyOrder)] == false &&
+                _isCancelledOrFinished[LibOrder.hash(sellOrder)] == false));
     }
 
-    // transfer sellSideAsset that has not yet minted
-    function _transferSellSideAsset(
-        LibOrder.Order memory buySideOrder,
-        LibOrder.Order memory sellSideOrder,
-        LibCommitInfo.CommitInfo memory commitInfo,
-        bytes memory commitInfoSig
+    function _transferToken(
+        LibOrder.Order memory buyOrder,
+        LibOrder.Order memory sellOrder
     ) internal {
-        // bytes4(keccak256("ERC721")) = 0x73ad2146
-        require(
-            buySideOrder.sellSideAsset.assetClass == 0x73ad2146,
-            "invalid sellSideAsset type"
-        );
-        address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.value;
-        address royaltyRecipient = sellSideOrder.signer;
-        // mint nft to buyer
-        // OxIERC721Upgradeable(nftContract).mint(
-        //     buySideOrder.signer,
-        //     tokenId,
-        //     commitInfo,
-        //     commitInfoSig
-        // );
-        // register royaltyRecipient if not set
-        if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
-            _setRoyaltyRecipient(nftContract, tokenId, royaltyRecipient);
-        }
-    }
-
-    // transfer ERC721 from seller to buyer, and register royaltyRecipient address if not set
-    function _transferSellSideAsset(
-        LibOrder.Order memory buySideOrder,
-        LibOrder.Order memory sellSideOrder
-    ) internal {
-        // bytes4(keccak256("ERC721")) = 0x73ad2146
-        require(
-            buySideOrder.sellSideAsset.assetClass == 0x73ad2146,
-            "invalid sellSideAsset type"
-        );
-        address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.value;
-        address royaltyRecipient = sellSideOrder.signer;
-        // deliver nft to buyer
-        Router router = Router(_controller.router());
-        router.transferFrom(
-            nftContract,
-            sellSideOrder.signer,
-            buySideOrder.signer,
-            tokenId
-        );
-        // register royaltyRecipient if not set
-        if (_royaltyRecipient[nftContract][tokenId] == address(0)) {
-            _royaltyRecipient[nftContract][tokenId] = royaltyRecipient;
-        }
-    }
-
-    function _transferBuySideAsset(
-        LibOrder.Order memory buySideOrder,
-        LibOrder.Order memory sellSideOrder
-    ) internal {
-        address nftContract = buySideOrder.sellSideAsset.contractAddress;
-        address tokenContract = buySideOrder.buySideAsset.contractAddress;
-        uint256 tokenId = buySideOrder.sellSideAsset.value;
-        // pay by ether (fixed-price only)
-        // bytes4(keccak256("ETH")) = 0xaaaebeba
-        if (buySideOrder.buySideAsset.assetClass == 0xaaaebeba) {
-            require(
-                buySideOrder.isAuction == false,
-                "invalid orders: ETH not allowed in auction"
-            );
-            require(
-                msg.value == buySideOrder.buySideAsset.value,
-                "ether amount does not match buy order value"
-            );
-            uint256 fee = (buySideOrder.buySideAsset.value / 10000) * _fee;
-            uint256 royalty = (buySideOrder.buySideAsset.value / 10000) *
-                _royalty[nftContract][tokenId];
+        address royaltyRecipient = buyOrder.royaltyRecipient;
+        address paymentToken = buyOrder.paymentToken;
+        uint256 fee = (buyOrder.value / 10000) * _fee;
+        uint256 royalty = (buyOrder.value / 10000) * buyOrder.royalty;
+        uint256 remainValue = buyOrder.value - fee - royalty;
+        // pay by ether
+        if (paymentToken == address(0)) {
+            require(msg.value == buyOrder.value, "insufficient ether");
             // transfer fee
             if (fee != 0) {
                 payable(_recipient).transfer(fee);
             }
             // transfer royalty
-            if (
-                royalty != 0 &&
-                _royaltyRecipient[nftContract][tokenId] != address(0)
-            ) {
-                payable(_royaltyRecipient[nftContract][tokenId]).transfer(
-                    royalty
-                );
+            if (royalty != 0 && royaltyRecipient != address(0)) {
+                payable(royaltyRecipient).transfer(royalty);
             }
-            // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
-            uint256 remainValue = buySideOrder.buySideAsset.value -
-                fee -
-                royalty;
+            // transfer remain value to seller
             if (remainValue != 0) {
-                payable(sellSideOrder.signer).transfer(remainValue);
+                payable(sellOrder.maker).transfer(remainValue);
             }
         }
-        // pay by erc20 (non-auction and auction)
-        // bytes4(keccak256("ERC20")) = 0x8ae85d84
-        else if (buySideOrder.buySideAsset.assetClass == 0x8ae85d84) {
-            require(msg.value == 0, "sending ether not allowed in ERC20 order");
-            uint256 fee = (buySideOrder.buySideAsset.value / 10000) * _fee;
-            uint256 royalty = (buySideOrder.buySideAsset.value / 10000) *
-                _royalty[nftContract][tokenId];
+        // pay by erc20
+        else {
+            require(msg.value == 0, "sending ether not allowed");
             // transfer fee
             if (fee != 0) {
                 SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
-                    buySideOrder.signer,
+                    IERC20(paymentToken),
+                    buyOrder.maker,
                     _recipient,
                     fee
                 );
             }
             // transfer royalty
-            if (
-                royalty != 0 &&
-                _royaltyRecipient[nftContract][tokenId] != address(0)
-            ) {
+            if (royalty != 0 && royaltyRecipient != address(0)) {
                 SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
-                    buySideOrder.signer,
-                    _royaltyRecipient[nftContract][tokenId],
+                    IERC20(paymentToken),
+                    buyOrder.maker,
+                    royaltyRecipient,
                     royalty
                 );
             }
-            // transfer remainValue to the seller, solidity above 0.8.0 will take underflow check
-            uint256 remainValue = buySideOrder.buySideAsset.value -
-                fee -
-                royalty;
+            // transfer remain value to seller
             if (remainValue != 0) {
                 SafeERC20.safeTransferFrom(
-                    IERC20(tokenContract),
-                    buySideOrder.signer,
-                    sellSideOrder.signer,
+                    IERC20(paymentToken),
+                    buyOrder.maker,
+                    sellOrder.maker,
                     remainValue
                 );
             }
-        } else {
-            revert("invalid buySideAsset type");
         }
 
         emit OrderMatched(
-            LibOrder.hash(buySideOrder),
-            LibOrder.hash(sellSideOrder),
-            buySideOrder.signer,
-            sellSideOrder.signer,
-            sellSideOrder.sellSideAsset.value,
-            sellSideOrder.isAuction,
-            buySideOrder.buySideAsset.assetClass,
-            buySideOrder.buySideAsset.contractAddress,
-            buySideOrder.buySideAsset.value
+            LibOrder.hash(buyOrder),
+            LibOrder.hash(sellOrder),
+            buyOrder.maker,
+            sellOrder.maker,
+            buyOrder.paymentToken,
+            buyOrder.value
         );
     }
 
-    function _afterTransfer(
-        LibOrder.Order memory buySideOrder,
-        LibOrder.Order memory sellSideOrder
+    function _beforeTransfer(
+        LibOrder.Order memory buyOrder,
+        LibOrder.Order memory sellOrder
     ) internal {
-        _isCancelledOrFinished[LibOrder.hash(buySideOrder)] = true;
-        _isCancelledOrFinished[LibOrder.hash(sellSideOrder)] = true;
-        // if the signer of the sellSide order is royalty recipient, he can update the royalty after transaction
-        address nftContract = sellSideOrder.sellSideAsset.contractAddress;
-        uint256 tokenId = sellSideOrder.sellSideAsset.value;
-        uint256 royalty = sellSideOrder.royalty;
-        if (
-            sellSideOrder.signer == _royaltyRecipient[nftContract][tokenId] &&
-            _royalty[nftContract][tokenId] != royalty
-        ) {
-            _changeRoyalty(nftContract, tokenId, royalty);
-        }
+        _isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
+        _isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
     }
 }

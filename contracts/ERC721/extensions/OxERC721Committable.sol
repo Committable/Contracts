@@ -34,7 +34,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         require(
             LibSignature.recover(bytes32(tokenId), signature) ==
                 _controller.signer(),
-            "ECDSA: fail"
+            "invalid token signature"
         );
         uint96 project = uint96(tokenId >> 160);
         _projectTokens[project].push(tokenId);

@@ -10,47 +10,41 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 
 
 describe('Router', function () {
-  let oxERC721Upgradeable, controller, tokenProxy, signers;
   context('with minted tokens and deployed contracts', function () {
     beforeEach(async function () {
-      // get signers, the first signer of the array is the admin and metadata signer
+      /* get signers */
       [signer, user, ...others] = await ethers.getSigners();
-
-      // deploy contracts here
+      /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
       await controller.deployed();
-
+      /* deploy token logic contract */
       OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
-
-
+      /* deploy token proxy contract */
       let TokenProxy = await ethers.getContractFactory("TokenProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
       tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
       await tokenProxy.deployed();
+      /* attach token proxy contract with logic contract abi */
       tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
-
+      /* deploy router contract */
       let Router = await ethers.getContractFactory("Router");
       router = await Router.deploy(controller.address);
       await router.deployed();
-
+      /* set router address in controller contract */
       tx = await controller.setRouter(router.address);
       await tx.wait();
-
-      // sign some tokens commit info
+      /* sign some tokenId */
       let abiCoder = new ethers.utils.AbiCoder;
       let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
       let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
       let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
       let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
-
-
-
-      // mint 1, 2 to signer, 3 to user
+      /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
       await tokenProxy.mint(signer.address, tokenId_0, signature_0);
       await tokenProxy.mint(signer.address, tokenId_1, signature_1);
       await tokenProxy.mint(signer.address, tokenId_2, signature_2);

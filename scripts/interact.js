@@ -6,7 +6,8 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const controller_address = '0xBb16c643346d17D1330b477789a64316b5ae08C5';
-const exchange_address = '0x37e281C8238FEe521D0592509eCF0Cd44175A9B5'
+const exchange_address = '0x37e281C8238FEe521D0592509eCF0Cd44175A9B5';
+const tokenProxy_address = '0x02dAbB18416087d26D62cEF630Dc3Dd4DB5754bd';
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.

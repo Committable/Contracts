@@ -81,7 +81,7 @@ describe('Committable', function () {
                     await tokenProxy.mint(signer.address, tokenId_1, signature_0);
                     throw null;
                 } catch (err) {
-                    expect(err.message).to.include("ECDSA: fail");
+                    expect(err.message).to.include("invalid token signature");
                 }
             })
         })
