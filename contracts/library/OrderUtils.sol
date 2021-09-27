@@ -2,9 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./LibAsset.sol";
-
-library LibOrder {
+library OrderUtils {
     struct Order {
         // exchange address to execute orders
         address exchange;
@@ -20,7 +18,7 @@ library LibOrder {
         uint256 value;
         // royalty address to pay
         address royaltyRecipient;
-        // royalty to pay
+        // royalty to pay, zero as non-royalty
         uint256 royalty;
         // target to call
         address target;

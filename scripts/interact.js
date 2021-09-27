@@ -19,19 +19,17 @@ async function main() {
   // get provider accounts
   const accounts = await ethers.provider.listAccounts();
   // console.log(accounts);
-  [owner, user] = await ethers.getSigners();
+  [signer, user] = await ethers.getSigners();
 
-  console.log(owner.address)
+  console.log(signer.address)
   // We get the contract to interact
-  const Controller = await ethers.getContractFactory("Controller");
-  const controller = await Controller.attach(controller_address);
-  console.log("Signer address is: ", controller.signer.address);
-  console.log("controller deployed to:", controller.address);
+  const OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
+  const tokenProxy = await OxERC721Upgradeable.connect(signer).attach(tokenProxy_address);
 
+  // console.log(tokenProxy);
   // do sth
-  console.log("transferProxy address is: ", await controller.transferProxy());
-  console.log(`exchange address of ${exchange_address} is: ` ,await controller.contracts(exchange_address))
-
+  let tokenId = '0x0000000000000000000000006d193b90ef6cb2128eb6b85c22ea38c683824652'
+  console.log(await tokenProxy.ownerOf('0x0000000000000000000000006d193b90ef6cb2128eb6b85c22ea38c683824652'));
 }
 
 // We recommend this pattern to be able to use async/await everywhere

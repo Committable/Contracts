@@ -2,24 +2,15 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/IERC721EnumerableUpgradeable.sol";
-import "../../library/LibCommitInfo.sol";
-import "../../library/LibSignature.sol";
+import "../../library/ECDSA.sol";
 
 interface OxIERC721Committable is IERC721EnumerableUpgradeable {
-    // function transferFrom(
-    //     address from,
-    //     address to,
-    //     uint256 tokenId,
-    //     LibCommitInfo.CommitInfo memory commitInfo,
-    //     bytes memory signature
-    // ) external;
 
     function mint(
         address to,
         uint256 tokenId,
         bytes memory signature
     ) external;
-
 
     /**
      * @dev Returns project of a given tokenId
@@ -45,9 +36,5 @@ interface OxIERC721Committable is IERC721EnumerableUpgradeable {
     /**
      * @dev Returns commit supply of a given tokenId
      */
-    function commitOf(uint256 tokenId)
-        external
-        view
-        returns (uint160);
-
+    function commitOf(uint256 tokenId) external view returns (uint160);
 }

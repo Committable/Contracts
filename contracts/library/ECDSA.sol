@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-library LibSignature {
+library ECDSA {
     /**
      * @dev Returns the address that signed a hashed message (`hash`) with
      * `signature`. This address can then be used for verification purposes.

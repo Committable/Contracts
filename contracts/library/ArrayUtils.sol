@@ -2,17 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-contract ArrayUtils {
-
-
+library ArrayUtils {
     function guardedArrayReplace(
         bytes memory array,
         bytes memory desired,
         bytes memory mask
-    ) external pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         require(array.length == desired.length);
         require(array.length == mask.length);
-
         uint256 words = array.length / 0x20;
         uint256 index = words * 0x20;
         assert(index / 0x20 == words);
@@ -20,7 +17,6 @@ contract ArrayUtils {
         for (i = 0; i < words; ++i) {
             assembly {
                 /* Conceptually: array[i] = (!mask[i] & array[i]) | (mask[i] & desired[i]), bitwise in word chunks. */
-
                 let commonIndex := mul(0x20, add(1, i))
                 let maskValue := mload(add(mask, commonIndex))
                 mstore(
@@ -32,7 +28,6 @@ contract ArrayUtils {
                 )
             }
         }
-
         /* Deal with the last section of the byte array. */
         if (words > 0) {
             /* This overlaps with bytes already set but is still more efficient than iterating through each of the remaining bytes individually. */

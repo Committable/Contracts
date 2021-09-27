@@ -2,10 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "../library/LibOrder.sol";
-import "../library/LibSignature.sol";
-import "../library/LibCommitInfo.sol";
-import "./SigCheck.sol";
+import "../library/OrderUtils.sol";
+import "../library/ECDSA.sol";
+import "../library/ArrayUtils.sol";
 import "./FeePanel.sol";
 import "../Controller.sol";
 import "../Router.sol";
@@ -14,11 +13,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
+contract Exchange is ReentrancyGuard, FeePanel {
     mapping(bytes32 => bool) private _isCancelledOrFinished;
-
     Controller _controller;
-
     event OrderMatched(
         bytes32 buyOrderHash,
         bytes32 sellOrderHash,
@@ -42,13 +39,13 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      *
      * Emits an {OrderCancelled} event.
      */
-    function cancelOrder(LibOrder.Order memory order) external {
+    function cancelOrder(OrderUtils.Order memory order) external {
         require(
             order.maker == msg.sender,
             "order must be cancelled by its maker"
         );
-        _isCancelledOrFinished[LibOrder.hash(order)] = true;
-        emit OrderCancelled(LibOrder.hash(order), msg.sender);
+        _isCancelledOrFinished[OrderUtils.hash(order)] = true;
+        emit OrderCancelled(OrderUtils.hash(order), msg.sender);
     }
 
     /**
@@ -91,9 +88,9 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
      * - Emits an {orderMatched} event.
      */
     function matchAndTransfer(
-        LibOrder.Order memory buyOrder,
+        OrderUtils.Order memory buyOrder,
         bytes memory buyOrderSig,
-        LibOrder.Order memory sellOrder,
+        OrderUtils.Order memory sellOrder,
         bytes memory sellOrderSig
     ) external payable nonReentrant {
         require(
@@ -106,25 +103,26 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         );
         _beforeTransfer(buyOrder, sellOrder);
         _transferToken(buyOrder, sellOrder);
+        _transitState(buyOrder, sellOrder);
     }
 
     function _orderSigValidation(
-        LibOrder.Order memory buyOrder,
+        OrderUtils.Order memory buyOrder,
         bytes memory buyOrderSig,
-        LibOrder.Order memory sellOrder,
+        OrderUtils.Order memory sellOrder,
         bytes memory sellOrderSig
     ) internal pure returns (bool) {
-        bytes32 buyOrderHash = LibOrder.hash(buyOrder);
-        bytes32 sellOrderHash = LibOrder.hash(sellOrder);
-        return (LibSignature.recover(buyOrderHash, buyOrderSig) ==
+        bytes32 buyOrderHash = OrderUtils.hash(buyOrder);
+        bytes32 sellOrderHash = OrderUtils.hash(sellOrder);
+        return (ECDSA.recover(buyOrderHash, buyOrderSig) ==
             buyOrder.maker &&
-            LibSignature.recover(sellOrderHash, sellOrderSig) ==
+            ECDSA.recover(sellOrderHash, sellOrderSig) ==
             sellOrder.maker);
     }
 
     function _orderParamsValidation(
-        LibOrder.Order memory buyOrder,
-        LibOrder.Order memory sellOrder
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
         return ((buyOrder.exchange == address(this)) &&
             (sellOrder.exchange == address(this)) &&
@@ -148,6 +146,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             ((buyOrder.royalty + _fee) <= 10000) &&
             // target must match
             (buyOrder.target == sellOrder.target) &&
+            // target must not be ZERO-address
+            (buyOrder.target != address(0)) &&
             // must reach start time
             (buyOrder.start < block.timestamp &&
                 sellOrder.start < block.timestamp) &&
@@ -156,13 +156,13 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
             // sellOrder must not expire
             (sellOrder.end > block.timestamp || sellOrder.end == 0) &&
             // must be executable
-            (_isCancelledOrFinished[LibOrder.hash(buyOrder)] == false &&
-                _isCancelledOrFinished[LibOrder.hash(sellOrder)] == false));
+            (_isCancelledOrFinished[OrderUtils.hash(buyOrder)] == false &&
+                _isCancelledOrFinished[OrderUtils.hash(sellOrder)] == false));
     }
 
     function _transferToken(
-        LibOrder.Order memory buyOrder,
-        LibOrder.Order memory sellOrder
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
     ) internal {
         address royaltyRecipient = buyOrder.royaltyRecipient;
         address paymentToken = buyOrder.paymentToken;
@@ -218,8 +218,8 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         }
 
         emit OrderMatched(
-            LibOrder.hash(buyOrder),
-            LibOrder.hash(sellOrder),
+            OrderUtils.hash(buyOrder),
+            OrderUtils.hash(sellOrder),
             buyOrder.maker,
             sellOrder.maker,
             buyOrder.paymentToken,
@@ -227,11 +227,36 @@ contract Exchange is ReentrancyGuard, SigCheck, FeePanel {
         );
     }
 
+    function _transitState(
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
+    ) internal returns (bytes memory) {
+        bytes memory buyOrderData = ArrayUtils.guardedArrayReplace(
+            buyOrder.data,
+            sellOrder.data,
+            buyOrder.replacementPattern
+        );
+        bytes memory sellOrderData = ArrayUtils.guardedArrayReplace(
+            sellOrder.data,
+            buyOrder.data,
+            sellOrder.replacementPattern
+        );
+        require(
+            keccak256(buyOrderData) == keccak256(sellOrderData),
+            "invalid data replacement"
+        );
+        (bool success, bytes memory result) = buyOrder.target.call(
+            buyOrderData
+        );
+        require(success, "state transition failed");
+        return result;
+    }
+
     function _beforeTransfer(
-        LibOrder.Order memory buyOrder,
-        LibOrder.Order memory sellOrder
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
     ) internal {
-        _isCancelledOrFinished[LibOrder.hash(buyOrder)] = true;
-        _isCancelledOrFinished[LibOrder.hash(sellOrder)] = true;
+        _isCancelledOrFinished[OrderUtils.hash(buyOrder)] = true;
+        _isCancelledOrFinished[OrderUtils.hash(sellOrder)] = true;
     }
 }

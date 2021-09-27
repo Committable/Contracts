@@ -3,8 +3,7 @@ pragma solidity ^0.8.0;
 
 import "./OxERC721Tradable.sol";
 import "../../Controller.sol";
-import "../../library/LibCommitInfo.sol";
-import "../../library/LibSignature.sol";
+import "../../library/ECDSA.sol";
 import "./OxIERC721Committable.sol";
 
 contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
@@ -32,7 +31,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         bytes memory signature
     ) external virtual override {
         require(
-            LibSignature.recover(bytes32(tokenId), signature) ==
+            ECDSA.recover(bytes32(tokenId), signature) ==
                 _controller.signer(),
             "invalid token signature"
         );
@@ -81,7 +80,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
     }
 
     /**
-     * @dev Returns commit of a tokenId  
+     * @dev Returns commit of a tokenId
      */
     function commitOf(uint256 tokenId)
         external
