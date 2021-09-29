@@ -51,7 +51,7 @@ const hashOrder = (order) => {
     abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
       [order.exchange, order.isBuySide, order.maker, order.taker,
       order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
-      order.salt, order.start, order.end]
+      order.start, order.end, order.salt]
     );
 
   return order_hash = ethers.utils.keccak256(order_encode);

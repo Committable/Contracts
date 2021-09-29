@@ -51,7 +51,7 @@ library OrderUtils {
                     order.replacementPattern,
                     order.start,
                     order.end,
-                    order.end
+                    order.salt
                 )
             );
     }

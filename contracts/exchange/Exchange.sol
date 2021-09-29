@@ -87,7 +87,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * - buy order and sell order params must match with each other
      * - Emits an {orderMatched} event.
      */
-    function matchAndTransfer(
+    function matchOrder(
         OrderUtils.Order memory buyOrder,
         bytes memory buyOrderSig,
         OrderUtils.Order memory sellOrder,

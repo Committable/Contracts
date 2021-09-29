@@ -25,9 +25,9 @@ describe('replacement', function () {
         expect(await replacement.replace(
             '0x12340000',
             '0x00005678',
-            '0x0000ffff'
+            '0x0fffffff'
         )).to.equal(
-            '0x12345678'
+            '0x10005678'
         )
     })
     it('should have equal output after replacement', async function () {
