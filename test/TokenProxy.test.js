@@ -84,7 +84,7 @@ describe('TokenProxy', function () {
       })
     })
 
-    context('with the given token ID being sent by owner', function () {
+    context.only('with the given token ID being sent by owner', function () {
       const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {

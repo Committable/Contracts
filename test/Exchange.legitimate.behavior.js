@@ -17,7 +17,7 @@ function shouldWorkWithLegitimateBehavior() {
                 let abiCoder = new ethers.utils.AbiCoder();
                 let signature_0 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
                 let signature_1 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-                // mint tokenId_0, 1, 2 to seller, tokenId_3 to creator
+                // mint tokenId_0, 1, 2 to seller, tokenId_3 to royaltyRecipient
                 tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
                 await tx.wait();
                 tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
@@ -84,28 +84,27 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with ETH orders: have royalty", function () {
+            context.only("with ETH orders: have royalty", function () {
                 beforeEach(async function () {
-    
 
                     originalBuyerBalance = await buyer.getBalance();
                     originalSellerBalance = await seller.getBalance();
                     originalRecipientBalance = await recipient.getBalance();
-                    originalCreatorBalance = await creator.getBalance();
+                    originalRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
 
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = buy_order_0.royalty;
-                    _royalty = (ethers.BigNumber.from(buy_order_0.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+                    _fee = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = buy_order_1.royalty;
+                    _royalty = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
 
-                    tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+                    tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
                     gasPrice = tx.gasPrice;
                     gasUsed = (await tx.wait()).gasUsed;
                     gasFee = gasPrice.mul(gasUsed);
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await buyer.getBalance();
@@ -119,21 +118,21 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await recipient.getBalance();
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await creator.getBalance();
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
-                    expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
-                    expect(await exchange.checkOrderStatus(hashOrder(sell_order_0))).to.equal(false);
+                    expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
+                    expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
                 })
                 it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_0), hashOrder(sell_order_0), hashOrder(buy_order_3), hashOrder(sell_order_3)])).
-                        to.deep.equal([false, false, false, false]);
+                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1)])).
+                        to.deep.equal([false, false]);
                 })
             })
 
-            context("with non-aution ERC20 orders executed: seller is creator", function () {
+            context("with non-aution ERC20 orders executed: seller is royaltyRecipient", function () {
                 beforeEach(async function () {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
@@ -141,7 +140,7 @@ function shouldWorkWithLegitimateBehavior() {
                     fee = await exchange.getFee();
                     _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
 
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait();
                 })
                 it('owner of nft token changed', async function () {
@@ -169,10 +168,10 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with non-aution ERC20 orders executed: seller is not creator", function () {
+            context("with non-aution ERC20 orders executed: seller is not royaltyRecipient", function () {
                 beforeEach(async function () {
-                    // seller purchase nft(tokenId_1) from creator, patent fee was set
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE })
+                    // seller purchase nft(tokenId_1) from royaltyRecipient, patent fee was set
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE })
                     await tx.wait();
 
                     buy_order_1.sellSideAsset.value = tokenId_3;
@@ -183,18 +182,18 @@ function shouldWorkWithLegitimateBehavior() {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
-                    originalCreatorBalance = await token.balanceOf(creator.address);
+                    originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
                     fee = await exchange.getFee();
-                    _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
-                    royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
-                    _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+                    _fee = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+                    royalty = buy_order_1.royalty;
+                    _royalty = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
-                    tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait()
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -208,9 +207,9 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await token.balanceOf(recipient.address);
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await token.balanceOf(creator.address);
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
@@ -222,7 +221,7 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with aution ERC20 orders executed: seller is creator", function () {
+            context("with aution ERC20 orders executed: seller is royaltyRecipient", function () {
                 beforeEach(async function () {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
@@ -232,7 +231,7 @@ function shouldWorkWithLegitimateBehavior() {
                     royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
                     _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait();
 
                 })
@@ -261,10 +260,10 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with aution ERC20 orders executed: seller is not creator", function () {
+            context("with aution ERC20 orders executed: seller is not royaltyRecipient", function () {
                 beforeEach(async function () {
-                    // seller purchase nft(tokenId_1) from creator, patent fee was set
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE })
+                    // seller purchase nft(tokenId_1) from royaltyRecipient, patent fee was set
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE })
                     await tx.wait();
 
                     buy_order_2.sellSideAsset.value = tokenId_3;
@@ -275,13 +274,13 @@ function shouldWorkWithLegitimateBehavior() {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
-                    originalCreatorBalance = await token.balanceOf(creator.address);
+                    originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
 
                     fee = await exchange.getFee();
                     _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
                     royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
                     _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
-                    tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait()
 
                 })
@@ -300,9 +299,9 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await token.balanceOf(recipient.address);
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await token.balanceOf(creator.address);
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
@@ -320,17 +319,17 @@ function shouldWorkWithLegitimateBehavior() {
                     let royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
                     let _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
                     let _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
                     expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_0);
                 })
                 it('emit desired fee change event', async function () {
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
                     expect(tx).to.emit(exchange, 'RoyaltyChanged')
                         .withArgs(buy_order_0.sellSideAsset.contractAddress, tokenId_0, '0', ROYALTY);
                 })
@@ -342,17 +341,17 @@ function shouldWorkWithLegitimateBehavior() {
                     let royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
                     let _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
                     let _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_1);
                 })
                 it('emit desired fee change event', async function () {
-                    let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     expect(tx).to.emit(exchange, 'RoyaltyChanged')
                         .withArgs(buy_order_1.sellSideAsset.contractAddress, tokenId_1, '0', ROYALTY);
                 })
@@ -364,17 +363,17 @@ function shouldWorkWithLegitimateBehavior() {
                     let royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
                     let _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
                     let _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.value);
                 })
                 it('emit desired tokenProxy event', async function () {
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_2);
                 })
                 it('emit desired fee change event', async function () {
-                    let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     expect(tx).to.emit(exchange, 'RoyaltyChanged')
                         .withArgs(buy_order_2.sellSideAsset.contractAddress, tokenId_2, '0', ROYALTY);
                 })
@@ -388,7 +387,7 @@ function shouldWorkWithLegitimateBehavior() {
                 commitInfo_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_2)));
                 commitInfo_sig_3 = await seller.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_3)));
             })  
-            context("with non-aution ETH orders executed: seller is creator", function () {
+            context("with non-aution ETH orders executed: seller is royaltyRecipient", function () {
                 beforeEach(async function () {
                     originalBuyerBalance = await buyer.getBalance();
                     originalSellerBalance = await seller.getBalance();
@@ -429,9 +428,9 @@ function shouldWorkWithLegitimateBehavior() {
                         to.deep.equal([false, false]);
                 })
             })
-            context("with non-aution ETH orders executed: seller is not creator", function () {
+            context("with non-aution ETH orders executed: seller is not royaltyRecipient", function () {
                 beforeEach(async function () {
-                    // seller purchase nft(tokenId_1) from creator, patent fee was set
+                    // seller purchase nft(tokenId_1) from royaltyRecipient, patent fee was set
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: PRICE })
                     buy_order_0.sellSideAsset.value = tokenId_3;
                     buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
@@ -441,14 +440,14 @@ function shouldWorkWithLegitimateBehavior() {
                     originalBuyerBalance = await buyer.getBalance();
                     originalSellerBalance = await seller.getBalance();
                     originalRecipientBalance = await recipient.getBalance();
-                    originalCreatorBalance = await creator.getBalance();
+                    originalRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
 
                     fee = await exchange.getFee();
                     _fee = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
                     royalty = await exchange.getRoyalty(buy_order_0.sellSideAsset.contractAddress, buy_order_0.sellSideAsset.value);
                     _royalty = (ethers.BigNumber.from(buy_order_0.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
-                    tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+                    tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
                     gasPrice = tx.gasPrice;
                     gasUsed = (await tx.wait()).gasUsed;
                     gasFee = gasPrice.mul(gasUsed);
@@ -469,9 +468,9 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await recipient.getBalance();
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await creator.getBalance();
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
@@ -483,7 +482,7 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with non-aution ERC20 orders executed: seller is creator", function () {
+            context("with non-aution ERC20 orders executed: seller is royaltyRecipient", function () {
                 beforeEach(async function () {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
@@ -519,9 +518,9 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with non-aution ERC20 orders executed: seller is not creator", function () {
+            context("with non-aution ERC20 orders executed: seller is not royaltyRecipient", function () {
                 beforeEach(async function () {
-                    // seller purchase nft(tokenId_3) from creator, patent fee was set
+                    // seller purchase nft(tokenId_3) from royaltyRecipient, patent fee was set
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: PRICE })
                     await tx.wait();
 
@@ -533,13 +532,13 @@ function shouldWorkWithLegitimateBehavior() {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
-                    originalCreatorBalance = await token.balanceOf(creator.address);
+                    originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
                     fee = await exchange.getFee();
                     _fee = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
                     royalty = await exchange.getRoyalty(buy_order_1.sellSideAsset.contractAddress, buy_order_1.sellSideAsset.value);
                     _royalty = (ethers.BigNumber.from(buy_order_1.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
 
-                    tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+                    tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
                     await tx.wait()
 
                 })
@@ -558,9 +557,9 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await token.balanceOf(recipient.address);
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await token.balanceOf(creator.address);
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
@@ -572,7 +571,7 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with aution ERC20 orders executed: seller is creator", function () {
+            context("with aution ERC20 orders executed: seller is royaltyRecipient", function () {
                 beforeEach(async function () {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
@@ -611,9 +610,9 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-            context("with aution ERC20 orders executed: seller is not creator", function () {
+            context("with aution ERC20 orders executed: seller is not royaltyRecipient", function () {
                 beforeEach(async function () {
-                    // seller purchase nft(tokenId_1) from creator, patent fee was set
+                    // seller purchase nft(tokenId_1) from royaltyRecipient, patent fee was set
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, commitInfo_3, commitInfo_sig_3, { value: PRICE })
                     await tx.wait();
 
@@ -625,13 +624,13 @@ function shouldWorkWithLegitimateBehavior() {
                     originalBuyerBalance = await token.balanceOf(buyer.address);
                     originalSellerBalance = await token.balanceOf(seller.address);
                     originalRecipientBalance = await token.balanceOf(recipient.address);
-                    originalCreatorBalance = await token.balanceOf(creator.address);
+                    originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
 
                     fee = await exchange.getFee();
                     _fee = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(fee);
                     royalty = await exchange.getRoyalty(buy_order_2.sellSideAsset.contractAddress, buy_order_2.sellSideAsset.value);
                     _royalty = (ethers.BigNumber.from(buy_order_2.buySideAsset.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
-                    tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+                    tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
                     await tx.wait()
 
                 })
@@ -650,9 +649,9 @@ function shouldWorkWithLegitimateBehavior() {
                     let currentRecipientBalance = await token.balanceOf(recipient.address);
                     expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
                 })
-                it('creator receive royalty', async function () {
-                    let currentCreatorBalance = await token.balanceOf(creator.address);
-                    expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_royalty)
+                it('royaltyRecipient receive royalty', async function () {
+                    let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+                    expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
                 })
                 it('both orders were flagged as finished', async function () {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
