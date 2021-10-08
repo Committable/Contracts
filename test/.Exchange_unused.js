@@ -18,7 +18,7 @@ const FEE = 2000; // 20%
 
 
 let seller, buyer, creator, recipient, newRecipient, operator, others;
-let tokenProxy, exchange, oxERC721Upgradeable, router, controller;
+let committable, exchange, oxERC721Upgradeable, router, controller;
 let buy_order_0, buy_order_1, buy_order_2, buy_order_tmp, sell_order_0, sell_order_1, sell_order_2, sell_order_tmp;
 let buy_order_sig_0, buy_order_sig_1, buy_order_sig_2, buy_order_sig_tmp, sell_order_sig_0, sell_order_sig_1, sell_order_sig_2, sell_order_sig_tmp;
 describe('Exchange', function () {
@@ -38,13 +38,13 @@ describe('Exchange', function () {
       controller = await Controller.deploy();
       await controller.deployed();
 
-      let TokenProxy = await ethers.getContractFactory("TokenProxy");
+      let Committable = await ethers.getContractFactory("Committable");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
-      await tokenProxy.deployed();
-      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
+      committable = await Committable.deploy(oxERC721Upgradeable.address, controller.address, calldata);
+      await committable.deployed();
+      committable = await OxERC721Upgradeable.attach(committable.address);
 
       let Router = await ethers.getContractFactory("Router");
       router = await Router.deploy(controller.address);
@@ -69,9 +69,9 @@ describe('Exchange', function () {
       let commitInfo_sig_0 = await seller.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_0)));
       let commitInfo_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_1)));
       // mint tokenId_0 to seller, tokenId_1 to creator
-      tx = await tokenProxy.mint(seller.address, tokenId_0, commitInfo_0, commitInfo_sig_0);
+      tx = await committable.mint(seller.address, tokenId_0, commitInfo_0, commitInfo_sig_0);
       await tx.wait();
-      tx = await tokenProxy.mint(creator.address, tokenId_1, commitInfo_1, commitInfo_sig_1);
+      tx = await committable.mint(creator.address, tokenId_1, commitInfo_1, commitInfo_sig_1);
       await tx.wait();
       // set platform fee and transfer recipient
       tx = await exchange.changeFee(FEE);
@@ -88,7 +88,7 @@ describe('Exchange', function () {
         false,
         buyer.address,
         new Asset(ETH_CLASS, ZERO_ADDRESS, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -100,7 +100,7 @@ describe('Exchange', function () {
         false,
         seller.address,
         new Asset(ETH_CLASS, ZERO_ADDRESS, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -116,7 +116,7 @@ describe('Exchange', function () {
         false,
         buyer.address,
         new Asset(ERC20_CLASS, token.address, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -128,7 +128,7 @@ describe('Exchange', function () {
         false,
         seller.address,
         new Asset(ERC20_CLASS, token.address, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -145,7 +145,7 @@ describe('Exchange', function () {
         true,
         buyer.address,
         new Asset(ERC20_CLASS, token.address, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -157,7 +157,7 @@ describe('Exchange', function () {
         true,
         seller.address,
         new Asset(ERC20_CLASS, token.address, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_0),
+        new Asset(ERC721_CLASS, committable.address, tokenId_0),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -174,7 +174,7 @@ describe('Exchange', function () {
         false,
         seller.address,
         new Asset(ETH_CLASS, ZERO_ADDRESS, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_1),
+        new Asset(ERC721_CLASS, committable.address, tokenId_1),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -186,7 +186,7 @@ describe('Exchange', function () {
         false,
         creator.address,
         new Asset(ETH_CLASS, ZERO_ADDRESS, price),
-        new Asset(ERC721_CLASS, tokenProxy.address, tokenId_1),
+        new Asset(ERC721_CLASS, committable.address, tokenId_1),
         ROYALTY,
         Math.floor(Math.random() * 10000),
         Math.floor(Date.now() / 1000),
@@ -238,7 +238,7 @@ describe('Exchange', function () {
 
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_0)).to.equal(buyer.address);
         })
         it('buyer spends money', async function () {
           let currentBuyerBalance = await buyer.getBalance();
@@ -289,7 +289,7 @@ describe('Exchange', function () {
 
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
         })
         it('buyer spends money', async function () {
           let currentBuyerBalance = await buyer.getBalance();
@@ -330,7 +330,7 @@ describe('Exchange', function () {
           await tx.wait();
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_0)).to.equal(buyer.address);
         })
         it('buyer spends moeny', async function () {
           let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -379,7 +379,7 @@ describe('Exchange', function () {
 
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
         })
         it('buyer spends money', async function () {
           let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -422,7 +422,7 @@ describe('Exchange', function () {
 
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_0)).to.equal(buyer.address);
         })
         it('buyer spends money', async function () {
           let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -471,7 +471,7 @@ describe('Exchange', function () {
 
         })
         it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+          expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
         })
         it('buyer spends money', async function () {
           let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -509,9 +509,9 @@ describe('Exchange', function () {
           expect(tx).to.emit(exchange, 'OrderMatched')
             .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.amountOrId);
         })
-        it('emit desired tokenProxy event', async function () {
+        it('emit desired committable event', async function () {
           let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
-          expect(tx).to.emit(tokenProxy, 'Transfer')
+          expect(tx).to.emit(committable, 'Transfer')
             .withArgs(seller.address, buyer.address, tokenId_0);
         })
         it('emit desired fee change event', async function () {
@@ -531,9 +531,9 @@ describe('Exchange', function () {
           expect(tx).to.emit(exchange, 'OrderMatched')
             .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_0, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.amountOrId);
         })
-        it('emit desired tokenProxy event', async function () {
+        it('emit desired committable event', async function () {
           let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          expect(tx).to.emit(tokenProxy, 'Transfer')
+          expect(tx).to.emit(committable, 'Transfer')
             .withArgs(seller.address, buyer.address, tokenId_0);
         })
         it('emit desired fee change event', async function () {
@@ -553,9 +553,9 @@ describe('Exchange', function () {
           expect(tx).to.emit(exchange, 'OrderMatched')
             .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_0, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.amountOrId);
         })
-        it('emit desired tokenProxy event', async function () {
+        it('emit desired committable event', async function () {
           let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          expect(tx).to.emit(tokenProxy, 'Transfer')
+          expect(tx).to.emit(committable, 'Transfer')
             .withArgs(seller.address, buyer.address, tokenId_0);
         })
         it('emit desired fee change event', async function () {

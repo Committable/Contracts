@@ -30,14 +30,14 @@ describe('Exchange', function () {
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
       /* deploy token proxy contract */
-      let TokenProxy = await ethers.getContractFactory("TokenProxy");
+      let Committable = await ethers.getContractFactory("Committable");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
-      await tokenProxy.deployed();
+      committable = await Committable.deploy(oxERC721Upgradeable.address, controller.address, calldata);
+      await committable.deployed();
       /* attach token proxy contract with logic contract abi */
-      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
+      committable = await OxERC721Upgradeable.attach(committable.address);
       /* deploy router contract */
       let Router = await ethers.getContractFactory("Router");
       router = await Router.deploy(controller.address);
@@ -73,7 +73,7 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         router.address,
-        encodeTransferFrom(tokenProxy.address, ZERO_ADDRESS, buyer.address, tokenId_0),
+        encodeTransferFrom(committable.address, ZERO_ADDRESS, buyer.address, tokenId_0),
         encodeTransferFromReplacement(true),
         0,
         0,
@@ -89,7 +89,7 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         router.address,
-        encodeTransferFrom(tokenProxy.address, seller.address, ZERO_ADDRESS, tokenId_0),
+        encodeTransferFrom(committable.address, seller.address, ZERO_ADDRESS, tokenId_0),
         encodeTransferFromReplacement(false),
         0,
         0,
@@ -110,7 +110,7 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         router.address,
-        encodeTransferFrom(tokenProxy.address, ZERO_ADDRESS, buyer.address, tokenId_1),
+        encodeTransferFrom(committable.address, ZERO_ADDRESS, buyer.address, tokenId_1),
         encodeTransferFromReplacement(true),
         0,
         0,
@@ -126,7 +126,7 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         router.address,
-        encodeTransferFrom(tokenProxy.address, seller.address, ZERO_ADDRESS, tokenId_1),
+        encodeTransferFrom(committable.address, seller.address, ZERO_ADDRESS, tokenId_1),
         encodeTransferFromReplacement(false),
         0,
         0,

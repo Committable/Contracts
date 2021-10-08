@@ -23,14 +23,14 @@ describe('Router', function () {
       oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
       await oxERC721Upgradeable.deployed();
       /* deploy token proxy contract */
-      let TokenProxy = await ethers.getContractFactory("TokenProxy");
+      let Committable = await ethers.getContractFactory("Committable");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
-      await tokenProxy.deployed();
+      committable = await Committable.deploy(oxERC721Upgradeable.address, controller.address, calldata);
+      await committable.deployed();
       /* attach token proxy contract with logic contract abi */
-      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
+      committable = await OxERC721Upgradeable.attach(committable.address);
       /* deploy router contract */
       let Router = await ethers.getContractFactory("Router");
       router = await Router.deploy(controller.address);
@@ -45,10 +45,10 @@ describe('Router', function () {
       let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
       let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
       /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-      await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-      await tokenProxy.mint(signer.address, tokenId_1, signature_1);
-      await tokenProxy.mint(signer.address, tokenId_2, signature_2);
-      await tokenProxy.mint(user.address, tokenId_3, signature_3);
+      await committable.mint(signer.address, tokenId_0, signature_0);
+      await committable.mint(signer.address, tokenId_1, signature_1);
+      await committable.mint(signer.address, tokenId_2, signature_2);
+      await committable.mint(user.address, tokenId_3, signature_3);
 
     })
 
@@ -56,7 +56,7 @@ describe('Router', function () {
       it('return batch tokenIds sorted by all tokens', async function () {
         let tokenIds = [tokenId_0, tokenId_1, tokenId_2, tokenId_3];
         let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-        expect((await router.tokenByIndexBatch(tokenProxy.address, [0, 1, 2, 3])))
+        expect((await router.tokenByIndexBatch(committable.address, [0, 1, 2, 3])))
           .deep.to.equal(tokenIds_bn)
       })
       it('return batch tokenIds sorted by owner', async function () {
@@ -66,9 +66,9 @@ describe('Router', function () {
         let tokenIds_signer_bn = tokenIds_signer.map((tokenIds_signer) => { return ethers.BigNumber.from(tokenIds_signer) });
         let tokenIds_user_bn = tokenIds_user.map((tokenIds_user) => { return ethers.BigNumber.from(tokenIds_user) });
 
-        expect((await router.tokenOfOwnerByIndexBatch(tokenProxy.address, signer.address, [0, 1, 2])))
+        expect((await router.tokenOfOwnerByIndexBatch(committable.address, signer.address, [0, 1, 2])))
           .deep.to.equal(tokenIds_signer_bn)
-        expect((await router.tokenOfOwnerByIndexBatch(tokenProxy.address, user.address, [0])))
+        expect((await router.tokenOfOwnerByIndexBatch(committable.address, user.address, [0])))
           .deep.to.equal(tokenIds_user_bn)
       })
     })
@@ -77,34 +77,34 @@ describe('Router', function () {
     //   it('should emit desired event', async function () {
     //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
 
-    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-    //     expect(tx).to.emit(tokenProxy, "Transfer")
+    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+    //     expect(tx).to.emit(committable, "Transfer")
     //       .withArgs(ZERO_ADDRESS, signer.address, tokenId_4);
-    //     expect(tx).to.emit(tokenProxy, "Transfer")
+    //     expect(tx).to.emit(committable, "Transfer")
     //       .withArgs(signer.address, user.address, tokenId_4);
     //   })
     // })
     // context('with legitimate lazy_mint', function () {
     //   beforeEach('lazy mint from signer to user', async function () {
     //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
     //     await tx.wait();
     //   })
     //   it('should return correct owner', async function () {
-    //     expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+    //     expect(await committable.ownerOf(tokenId_4)).to.equal(user.address);
     //   })
     // })
 
     // context('with legitimate mint and transfer', function () {
     //   beforeEach('mintAndTransfer from signer to user', async function () {
     //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-    //     let tx = await tokenProxy.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
+    //     let tx = await committable.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
     //     await tx.wait();
-    //     tx = await router['transferERC721(address,address,address,uint256)'](tokenProxy.address, signer.address, user.address, tokenId_4);
+    //     tx = await router['transferERC721(address,address,address,uint256)'](committable.address, signer.address, user.address, tokenId_4);
     //     await tx.wait();
     //   })
     //   it('should return correct owner', async function () {
-    //     expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(user.address);
+    //     expect(await committable.ownerOf(tokenId_4)).to.equal(user.address);
     //   })
     // })
 
@@ -112,7 +112,7 @@ describe('Router', function () {
       // it('should revert if commitInfo is signed by unauthorized address', async function () {
       //   let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
       //   try {
-      //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](tokenProxy.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
+      //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
       //     await tx.wait();
       //     throw null;
       //   } catch (err) {
@@ -125,7 +125,7 @@ describe('Router', function () {
         try {
           let tx = await router.connect(user).disable(true);
           await tx.wait();
-          tx = await router.transferFrom(tokenProxy.address, user.address, signer.address, tokenId_4);
+          tx = await router.transferFrom(committable.address, user.address, signer.address, tokenId_4);
           await tx.wait();
           throw null;
         } catch (err) {

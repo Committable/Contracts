@@ -18,9 +18,9 @@ function shouldWorkWithLegitimateBehavior() {
                 let signature_0 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
                 let signature_1 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
                 // mint tokenId_0, 1, 2 to seller, tokenId_3 to royaltyRecipient
-                tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+                tx = await committable.mint(seller.address, tokenId_0, signature_0);
                 await tx.wait();
-                tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
+                tx = await committable.mint(seller.address, tokenId_1, signature_1);
                 await tx.wait();
                 // deploy Check for test
                 let Debugger = await ethers.getContractFactory("Debugger");
@@ -60,7 +60,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_0)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await buyer.getBalance();
@@ -104,7 +104,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await buyer.getBalance();
@@ -144,7 +144,7 @@ function shouldWorkWithLegitimateBehavior() {
                     await tx.wait();
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends moeny', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -193,7 +193,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -236,7 +236,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_2)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_2)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -285,7 +285,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_3)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -323,9 +323,9 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, tokenId_0, sell_order_0.isAuction, buy_order_0.buySideAsset.assetClass, buy_order_0.buySideAsset.contractAddress, buy_order_0.buySideAsset.value);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_0);
                 })
                 it('emit desired fee change event', async function () {
@@ -345,9 +345,9 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, tokenId_1, sell_order_1.isAuction, buy_order_1.buySideAsset.assetClass, buy_order_1.buySideAsset.contractAddress, buy_order_1.buySideAsset.value);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_1);
                 })
                 it('emit desired fee change event', async function () {
@@ -367,9 +367,9 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(tx).to.emit(exchange, 'OrderMatched')
                         .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, tokenId_2, sell_order_2.isAuction, buy_order_2.buySideAsset.assetClass, buy_order_2.buySideAsset.contractAddress, buy_order_2.buySideAsset.value);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(seller.address, buyer.address, tokenId_2);
                 })
                 it('emit desired fee change event', async function () {
@@ -404,7 +404,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_0)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await buyer.getBalance();
@@ -454,7 +454,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_3)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await buyer.getBalance();
@@ -494,7 +494,7 @@ function shouldWorkWithLegitimateBehavior() {
                     await tx.wait();
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_1)).to.equal(buyer.address);
                 })
                 it('buyer spends moeny', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -543,7 +543,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_3)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -586,7 +586,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_2)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_2)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -635,7 +635,7 @@ function shouldWorkWithLegitimateBehavior() {
 
                 })
                 it('owner of nft token changed', async function () {
-                    expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+                    expect(await committable.ownerOf(tokenId_3)).to.equal(buyer.address);
                 })
                 it('buyer spends money', async function () {
                     let currentBuyerBalance = await token.balanceOf(buyer.address);
@@ -676,11 +676,11 @@ function shouldWorkWithLegitimateBehavior() {
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, commitInfo_0, commitInfo_sig_0, { value: PRICE });
                     expect(tx).to.emit(exchange, 'RoyaltyRecipientSet')
-                        .withArgs(tokenProxy.address, tokenId_0, seller.address);
+                        .withArgs(committable.address, tokenId_0, seller.address);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, commitInfo_0, commitInfo_sig_0, { value: PRICE });
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(ZERO_ADDRESS, buyer.address, tokenId_0);
                 })
                 
@@ -704,11 +704,11 @@ function shouldWorkWithLegitimateBehavior() {
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, commitInfo_1, commitInfo_sig_1);
                     expect(tx).to.emit(exchange, 'RoyaltyRecipientSet')
-                        .withArgs(tokenProxy.address, tokenId_1, seller.address);
+                        .withArgs(committable.address, tokenId_1, seller.address);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchAndMint(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, commitInfo_1, commitInfo_sig_1);
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(ZERO_ADDRESS, buyer.address, tokenId_1);
                 })
                 it('emit desired fee change event', async function () {
@@ -731,11 +731,11 @@ function shouldWorkWithLegitimateBehavior() {
                 it('emit desired exchange RoyaltyRecipientSet event', async function () {
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, commitInfo_2, commitInfo_sig_2);
                     expect(tx).to.emit(exchange, 'RoyaltyRecipientSet')
-                        .withArgs(tokenProxy.address, tokenId_2, seller.address);
+                        .withArgs(committable.address, tokenId_2, seller.address);
                 })
-                it('emit desired tokenProxy event', async function () {
+                it('emit desired committable event', async function () {
                     let tx = await exchange.connect(seller).matchAndMint(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, commitInfo_2, commitInfo_sig_2);
-                    expect(tx).to.emit(tokenProxy, 'Transfer')
+                    expect(tx).to.emit(committable, 'Transfer')
                         .withArgs(ZERO_ADDRESS, buyer.address, tokenId_2);
                 })
                 it('emit desired fee change event', async function () {
