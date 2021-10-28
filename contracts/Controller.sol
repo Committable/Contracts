@@ -6,8 +6,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 
 contract Controller is ProxyAdmin {
-    address public router;
+    address public defaultRouter;
     address public signer;
+    mapping(address => address) public userRouter;
     mapping(address => bool) public contracts;
 
     constructor() {
@@ -15,25 +16,35 @@ contract Controller is ProxyAdmin {
     }
 
     /**
-     * @dev authenticate a contract that can call transferProxy instantly.
-     * @param _address to authenticate
+     * @dev authenticate a contract that can call router instantly.
+     * @param contractAddress_ to authenticate
      */
 
-    function grantAuthentication(address _address) public onlyOwner {
+    function grantAuthentication(address contractAddress_) public onlyOwner {
         require(
-            !contracts[_address],
+            !contracts[contractAddress_],
             "this address has already been authenticated"
         );
-        contracts[_address] = true;
+        contracts[contractAddress_] = true;
     }
 
-    function revokeAuthentication(address _address) external onlyOwner {
-        require(contracts[_address], "this address has not been authenticated");
-        contracts[_address] = false;
+    function revokeAuthentication(address contractAddress_) external onlyOwner {
+        require(
+            contracts[contractAddress_],
+            "this address has not been authenticated"
+        );
+        contracts[contractAddress_] = false;
     }
 
-    function setRouter(address _router) external onlyOwner {
-        router = _router;
+    function setDefaultRouter(address defaultRouter_) external onlyOwner {
+        defaultRouter = defaultRouter_;
+    }
+
+    function getRouter(address user_) external view returns (address) {
+        if (userRouter[user_] == address(0)) {
+            return defaultRouter;
+        }
+        return userRouter[user_];
     }
 
     function setSigner(address _signer) external onlyOwner {

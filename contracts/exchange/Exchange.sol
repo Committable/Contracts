@@ -8,7 +8,7 @@ import "../library/ArrayUtils.sol";
 import "./FeePanel.sol";
 import "../Controller.sol";
 import "../Router.sol";
-import "../ERC721/OxIERC721Upgradeable.sol";
+import "../ERC721/CommittableV1.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -114,10 +114,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal pure returns (bool) {
         bytes32 buyOrderHash = OrderUtils.hash(buyOrder);
         bytes32 sellOrderHash = OrderUtils.hash(sellOrder);
-        return (ECDSA.recover(buyOrderHash, buyOrderSig) ==
-            buyOrder.maker &&
-            ECDSA.recover(sellOrderHash, sellOrderSig) ==
-            sellOrder.maker);
+        return (ECDSA.recover(buyOrderHash, buyOrderSig) == buyOrder.maker &&
+            ECDSA.recover(sellOrderHash, sellOrderSig) == sellOrder.maker);
     }
 
     function _orderParamsValidation(
@@ -171,13 +169,16 @@ contract Exchange is ReentrancyGuard, FeePanel {
         uint256 remainValue = buyOrder.value - fee - royalty;
         // pay by ether
         if (paymentToken == address(0)) {
-            require(msg.value == buyOrder.value, "insufficient ether");
+            require(
+                msg.sender == buyOrder.maker && msg.value == buyOrder.value,
+                "insufficient ether"
+            );
             // transfer fee
             if (fee != 0) {
                 payable(_recipient).transfer(fee);
             }
             // transfer royalty
-            if (royalty != 0 && royaltyRecipient != address(0)) {
+            if (royalty != 0) {
                 payable(royaltyRecipient).transfer(royalty);
             }
             // transfer remain value to seller
@@ -245,9 +246,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
             keccak256(buyOrderData) == keccak256(sellOrderData),
             "invalid data replacement"
         );
-        (bool success, bytes memory result) = buyOrder.target.call(
-            buyOrderData
-        );
+        address router = _controller.getRouter(sellOrder.maker);
+        (bool success, bytes memory result) = router.call(buyOrderData);
         require(success, "state transition failed");
         return result;
     }

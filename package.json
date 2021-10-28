@@ -10,9 +10,9 @@
     "ropsten": "hardhat run --network ropsten",
     "lint:js": "eslint './test/*.js'",
     "lint:js:fix": "eslint './test/*.js' --fix",
-    "lint:sol": "solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
+    "lint:sol": "npx solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",
     "lint:sol:fix": "prettier --write \"contracts/**/*.sol\"",
-    "solhint": "solhint 'contracts/**/*.sol'"
+    "solhint": "npx solhint 'contracts/**/*.sol'"
   },
   "keywords": [],
   "author": "",
@@ -37,6 +37,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.17"
   },
   "dependencies": {
-    "hardhat-tracer": "^1.0.0-alpha.6"
+    "hardhat-tracer": "^1.0.0-alpha.6",
+    "solhint": "^3.3.6"
   }
 }

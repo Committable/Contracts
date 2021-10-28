@@ -7,7 +7,7 @@ const { ZERO_ADDRESS } = constants;
 const { tokenIds, projects, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 
-describe('Committable', function () {
+describe('ERC721', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
       /* get signers */
@@ -17,18 +17,18 @@ describe('Committable', function () {
       controller = await Controller.deploy();
       await controller.deployed();
       /* deploy token logic contract */
-      OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
-      oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
-      await oxERC721Upgradeable.deployed();
+      CommittableV1 = await ethers.getContractFactory("CommittableV1");
+      committableV1 = await CommittableV1.deploy();
+      await committableV1.deployed();
       /* deploy token proxy contract */
       let Committable = await ethers.getContractFactory("Committable");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      committable = await Committable.deploy(oxERC721Upgradeable.address, controller.address, calldata);
+      committable = await Committable.deploy(committableV1.address, controller.address, calldata);
       await committable.deployed();
       /* attach token proxy contract with logic contract abi */
-      committable = await OxERC721Upgradeable.attach(committable.address)
+      committable = await CommittableV1.attach(committable.address)
       /* sign some tokenId */
       let abiCoder = new ethers.utils.AbiCoder;
       let signature_0 = await owner.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
@@ -84,7 +84,7 @@ describe('Committable', function () {
       })
     })
 
-    context.only('with the given token ID being sent by owner', function () {
+    context('with the given token ID being sent by owner', function () {
       const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {

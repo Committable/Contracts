@@ -21,4 +21,12 @@ contract Debugger {
     {
         return ECDSA.recover(orderHash, sig);
     }
+
+     function replace(
+        bytes memory data,
+        bytes memory desired,
+        bytes memory mask
+    ) external pure returns (bytes memory) {
+        return ArrayUtils.guardedArrayReplace(data, desired, mask);
+    }
 }

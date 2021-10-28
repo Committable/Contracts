@@ -2,10 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "./OxIERC721Upgradeable.sol";
-import "./extensions/OxERC721Committable.sol";
+import "./ICommittableV1.sol";
+import "./extensions/ERC721Committable.sol";
 
-contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
+contract CommittableV1 is ERC721Committable, ICommittableV1 {
     function initialize(
         string memory _name,
         string memory _symbol,
@@ -15,7 +15,7 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __ERC721Enumerable_init_unchained();
-        __ERC721Tradable_init_unchained(controller);
+        __ERC721Committable_init_unchained(controller);
     }
 
     /**
@@ -25,11 +25,11 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
         public
         view
         virtual
-        override(IERC165Upgradeable, OxERC721Committable)
+        override(IERC165Upgradeable, ERC721Committable)
         returns (bool)
     {
         return
-            interfaceId == type(OxIERC721Committable).interfaceId ||
+            interfaceId == type(ICommittableV1).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
@@ -43,5 +43,5 @@ contract OxERC721Upgradeable is OxERC721Committable, OxIERC721Upgradeable {
         return "https://app.committable.io/nft/";
     }
 
-    uint256[49] private __gap;
+    uint256[50] private __gap;
 }

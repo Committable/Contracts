@@ -4,7 +4,7 @@ const { BN, constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
-const { hashCommitInfo } = require('./utils.js');
+const { hashPermit } = require('./utils.js');
 const { tokenIds, commitInfo } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 
@@ -19,24 +19,24 @@ describe('Router', function () {
       controller = await Controller.deploy();
       await controller.deployed();
       /* deploy token logic contract */
-      OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
-      oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
-      await oxERC721Upgradeable.deployed();
+      CommittableV1 = await ethers.getContractFactory("CommittableV1");
+      committableV1 = await CommittableV1.deploy();
+      await committableV1.deployed();
       /* deploy token proxy contract */
       let Committable = await ethers.getContractFactory("Committable");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      committable = await Committable.deploy(oxERC721Upgradeable.address, controller.address, calldata);
+      committable = await Committable.deploy(committableV1.address, controller.address, calldata);
       await committable.deployed();
       /* attach token proxy contract with logic contract abi */
-      committable = await OxERC721Upgradeable.attach(committable.address);
+      committable = await CommittableV1.attach(committable.address);
       /* deploy router contract */
       let Router = await ethers.getContractFactory("Router");
       router = await Router.deploy(controller.address);
       await router.deployed();
       /* set router address in controller contract */
-      tx = await controller.setRouter(router.address);
+      tx = await controller.setDefaultRouter(router.address);
       await tx.wait();
       /* sign some tokenId */
       let abiCoder = new ethers.utils.AbiCoder;
@@ -73,66 +73,81 @@ describe('Router', function () {
       })
     })
 
-    // context('[event test] mintAndTransfer function', function () {
-    //   it('should emit desired event', async function () {
-    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-
-    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-    //     expect(tx).to.emit(committable, "Transfer")
-    //       .withArgs(ZERO_ADDRESS, signer.address, tokenId_4);
-    //     expect(tx).to.emit(committable, "Transfer")
-    //       .withArgs(signer.address, user.address, tokenId_4);
-    //   })
-    // })
-    // context('with legitimate lazy_mint', function () {
-    //   beforeEach('lazy mint from signer to user', async function () {
-    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-    //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-    //     await tx.wait();
-    //   })
-    //   it('should return correct owner', async function () {
-    //     expect(await committable.ownerOf(tokenId_4)).to.equal(user.address);
-    //   })
-    // })
-
-    // context('with legitimate mint and transfer', function () {
-    //   beforeEach('mintAndTransfer from signer to user', async function () {
-    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-    //     let tx = await committable.mint(signer.address, tokenId_4, commitInfo_4, signature_4);
-    //     await tx.wait();
-    //     tx = await router['transferERC721(address,address,address,uint256)'](committable.address, signer.address, user.address, tokenId_4);
-    //     await tx.wait();
-    //   })
-    //   it('should return correct owner', async function () {
-    //     expect(await committable.ownerOf(tokenId_4)).to.equal(user.address);
-    //   })
-    // })
-
-    context('with router disabled', function () {
-      // it('should revert if commitInfo is signed by unauthorized address', async function () {
-      //   let signature_4 = await user.signMessage(ethers.utils.arrayify(hashCommitInfo(commitInfo_4)));
-      //   try {
-      //     let tx = await router['transferERC721(address,address,address,uint256,(string,bytes20[]),bytes)'](committable.address, signer.address, user.address, tokenId_4, commitInfo_4, signature_4);
-      //     await tx.wait();
-      //     throw null;
-      //   } catch (err) {
-      //     expect(await err.message).to.include("commitInfo signature validation failed");
-      //   }
-      // })
-      it('should revert if user has disabled router', async function () {
-        let abiCoder = new ethers.utils.AbiCoder;
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+    context('[transferWithPermit] function test', function () {
+      it('should successfully transfer tokenId_0 from signer to user', async function () {
+        /* approve router and make transfer */
+        nonce = await committable.nonces(signer.address);
+        let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
+        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
+        await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
+        expect(await committable.ownerOf(tokenId_0)).to.equal(user.address);
+      })
+      it('should revert with invalid signature', async function () {
+        /* approve router and make transfer */
+        nonce = await committable.nonces(signer.address);
+        let permit_sig = await user.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
+        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
         try {
-          let tx = await router.connect(user).disable(true);
-          await tx.wait();
-          tx = await router.transferFrom(committable.address, user.address, signer.address, tokenId_4);
-          await tx.wait();
+          await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
           throw null;
-        } catch (err) {
-          expect(await err.message).to.include("invalid sender: must be registered address");
+        }
+        catch (err) {
+          expect(err.message).to.include('invalid permit signature');
+        }
+      })
+      it('should revert with expired signature', async function () {
+        /* approve router and make transfer */
+        nonce = await committable.nonces(signer.address);
+        let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 1)));
+        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
+        try {
+          await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 1, permit_sig);
+          throw null;
+        }
+        catch (err) {
+          expect(err.message).to.include('expired permit signature');
         }
       })
     })
+
+    context('[mintWithSig] function test', function () {
+      it('should successfully mint token through router', async function () {
+        /* sign some tokenId */
+        let abiCoder = new ethers.utils.AbiCoder;
+        let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+        await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
+        expect(await committable.ownerOf(tokenId_4), user.address);
+      })
+      it('should revert with invalid signature', async function () {
+        /* sign some tokenId */
+        let abiCoder = new ethers.utils.AbiCoder;
+        let signature_4 = await user.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+        try {
+          await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
+          throw null;
+        } catch(err) {
+          expect(err.message).to.include("invalid token signature")
+        }
+      })
+    })
+
+
+    // context('with router disabled', function () {
+
+    //   it('should revert if user has disabled router', async function () {
+    //     let abiCoder = new ethers.utils.AbiCoder;
+    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+    //     try {
+    //       let tx = await router.connect(user).disable(true);
+    //       await tx.wait();
+    //       tx = await router.transferFrom(committable.address, user.address, signer.address, tokenId_4);
+    //       await tx.wait();
+    //       throw null;
+    //     } catch (err) {
+    //       expect(await err.message).to.include("invalid sender: must be registered address");
+    //     }
+    //   })
+    // })
 
 
 

@@ -1,6 +1,6 @@
 # Committable | contracts
 
- ![](https://img.shields.io/badge/npm-6.12.1-blue)  ![](https://img.shields.io/badge/node-12.13.1-green)
+ ![](https://img.shields.io/badge/npm-8.0.0-blue)  ![](https://img.shields.io/badge/node-16.11.4-green)
 
 **Smart contracts that allow users to manage and exchange non-fungible tokens securely and smoothly.**
 
@@ -43,11 +43,11 @@ module.exports = {NAME, SYMBOL, INFURA_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_
 
 ```
 
-You can customize network configurations in **hardhat.config.js**, by default we use infura as our provider to communicate with Ethereum blockchain.
+You can customize network configurations in **hardhat.config.js**, by default we use infura as the provider to communicate with Ethereum blockchain.
 
 ### Test
 
-Testing scripts with ethers.js and Waffle are located at **./test/** folder, run following commands to start testing
+Testing scripts are located at **./test/** folder, run following commands to start 
 
 ```bash
 $ npm run test

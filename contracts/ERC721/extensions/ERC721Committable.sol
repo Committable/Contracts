@@ -1,14 +1,26 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./OxERC721Tradable.sol";
 import "../../Controller.sol";
 import "../../library/ECDSA.sol";
-import "./OxIERC721Committable.sol";
+import "./IERC721Committable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "../../Router.sol";
 
-contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
+contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
+    Controller internal _controller;
     // mapping from project to tokenIds belongging to this project
     mapping(uint96 => uint256[]) private _projectTokens;
+    // mapping from address to nounce to avoid reuse of approval
+    mapping(address => uint256) public nonces;
+
+    // solhint-disable-next-line
+    function __ERC721Committable_init_unchained(address controller)
+        internal
+        initializer
+    {
+        _controller = Controller(controller);
+    }
 
     /**
      * @dev See {IERC165-supportsInterface}.
@@ -21,7 +33,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         returns (bool)
     {
         return
-            interfaceId == type(OxIERC721Committable).interfaceId ||
+            interfaceId == type(IERC721Committable).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 
@@ -31,8 +43,7 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         bytes memory signature
     ) external virtual override {
         require(
-            ECDSA.recover(bytes32(tokenId), signature) ==
-                _controller.signer(),
+            ECDSA.recover(bytes32(tokenId), signature) == _controller.signer(),
             "invalid token signature"
         );
         uint96 project = uint96(tokenId >> 160);
@@ -92,5 +103,26 @@ contract OxERC721Committable is OxERC721Tradable, OxIERC721Committable {
         return uint160(tokenId);
     }
 
-    uint256[49] private __gap;
+    function permit(
+        address operator,
+        uint256 tokenId,
+        uint256 deadline,
+        bytes memory signature
+    ) external virtual override {
+        require(
+            deadline == 0 || block.timestamp < deadline,
+            "expired permit signature"
+        );
+        address owner = ownerOf(tokenId);
+        bytes32 permitHash = keccak256(
+            abi.encode(operator, tokenId, nonces[owner]++, deadline)
+        );
+        require(
+            ECDSA.recover(permitHash, signature) == ownerOf(tokenId),
+            "invalid permit signature"
+        );
+        _approve(operator, tokenId);
+    }
+
+    uint256[47] private __gap;
 }
