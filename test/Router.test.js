@@ -5,7 +5,7 @@ const { NAME, SYMBOL } = require('../.config.js');
 const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
 const { hashPermit } = require('./utils.js');
-const { tokenIds, commitInfo } = require('./tokenId.js');
+const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 
 
@@ -52,26 +52,7 @@ describe('Router', function () {
 
     })
 
-    context('with legitimate batch request', function () {
-      it('return batch tokenIds sorted by all tokens', async function () {
-        let tokenIds = [tokenId_0, tokenId_1, tokenId_2, tokenId_3];
-        let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-        expect((await router.tokenByIndexBatch(committable.address, [0, 1, 2, 3])))
-          .deep.to.equal(tokenIds_bn)
-      })
-      it('return batch tokenIds sorted by owner', async function () {
-        let tokenIds_signer = [tokenId_0, tokenId_1, tokenId_2];
-        let tokenIds_user = [tokenId_3];
-
-        let tokenIds_signer_bn = tokenIds_signer.map((tokenIds_signer) => { return ethers.BigNumber.from(tokenIds_signer) });
-        let tokenIds_user_bn = tokenIds_user.map((tokenIds_user) => { return ethers.BigNumber.from(tokenIds_user) });
-
-        expect((await router.tokenOfOwnerByIndexBatch(committable.address, signer.address, [0, 1, 2])))
-          .deep.to.equal(tokenIds_signer_bn)
-        expect((await router.tokenOfOwnerByIndexBatch(committable.address, user.address, [0])))
-          .deep.to.equal(tokenIds_user_bn)
-      })
-    })
+    
 
     context('[transferWithPermit] function test', function () {
       it('should successfully transfer tokenId_0 from signer to user', async function () {

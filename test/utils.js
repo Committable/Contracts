@@ -71,7 +71,7 @@ const encodeMintWithSigReplacement = (isBuyer) => {
 }
 
 const Order = class {
-  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
+  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, data, replacementPattern, start, end, salt) {
     this.exchange = exchange;
     this.isBuySide = isBuySide;
     this.maker = maker;
@@ -80,7 +80,6 @@ const Order = class {
     this.value = value;
     this.royaltyRecipient = royaltyRecipient;
     this.royalty = royalty;
-    this.target = target;
     this.data = data;
     this.replacementPattern = replacementPattern;
     this.start = start;
@@ -98,9 +97,9 @@ const hashPermit = (operator, tokenId, nonce, deadline) => {
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let order_encode =
-    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
+    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
       [order.exchange, order.isBuySide, order.maker, order.taker,
-      order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
+      order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.data, order.replacementPattern,
       order.start, order.end, order.salt]
     );
 

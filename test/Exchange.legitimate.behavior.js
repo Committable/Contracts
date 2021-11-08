@@ -19,8 +19,6 @@ function shouldWorkWithLegitimateBehavior() {
                 let signature_1 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
                 let signature_2 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
                 let signature_3 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
-
-
                 // mint tokenId_0, 1, 2 to seller
                 tx = await committable.mint(seller.address, tokenId_0, signature_0);
                 await tx.wait();
@@ -30,24 +28,24 @@ function shouldWorkWithLegitimateBehavior() {
                 await tx.wait();
                 tx = await committable.mint(seller.address, tokenId_3, signature_3);
                 await tx.wait();
-                // deploy Debugger for test
-                let Debugger = await ethers.getContractFactory("Debugger");
-                debugger_contract = await Debugger.deploy();
-                await debugger_contract.deployed();
+                // deploy Helper for test
+                let Helper = await ethers.getContractFactory("Helper");
+                helper = await Helper.deploy();
+                await helper.deployed();
 
             })
             context("with legitimate order hash and sig", function () {
                 it("should have correct order hash", async function () {
-                    expect(await debugger_contract.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
-                    expect(await debugger_contract.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));
-                    expect(await debugger_contract.hashOrder(buy_order_1)).to.equal(hashOrder(buy_order_1));
-                    expect(await debugger_contract.hashOrder(sell_order_1)).to.equal(hashOrder(sell_order_1));
+                    expect(await helper.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
+                    expect(await helper.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));
+                    expect(await helper.hashOrder(buy_order_1)).to.equal(hashOrder(buy_order_1));
+                    expect(await helper.hashOrder(sell_order_1)).to.equal(hashOrder(sell_order_1));
                 })
                 it("should have expected order sig", async function () {
-                    expect(await debugger_contract.recover(hashOrder(buy_order_0), buy_order_sig_0)).to.equal(buyer.address);
-                    expect(await debugger_contract.recover(hashOrder(sell_order_0), sell_order_sig_0)).to.equal(seller.address);
-                    expect(await debugger_contract.recover(hashOrder(buy_order_1), buy_order_sig_1)).to.equal(buyer.address);
-                    expect(await debugger_contract.recover(hashOrder(sell_order_1), sell_order_sig_1)).to.equal(seller.address);
+                    expect(await helper.recover(hashOrder(buy_order_0), buy_order_sig_0)).to.equal(buyer.address);
+                    expect(await helper.recover(hashOrder(sell_order_0), sell_order_sig_0)).to.equal(seller.address);
+                    expect(await helper.recover(hashOrder(buy_order_1), buy_order_sig_1)).to.equal(buyer.address);
+                    expect(await helper.recover(hashOrder(sell_order_1), sell_order_sig_1)).to.equal(seller.address);
                 })
             })
 

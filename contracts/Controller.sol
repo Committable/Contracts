@@ -4,47 +4,34 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
+import "./Router.sol";
 
 contract Controller is ProxyAdmin {
     address public defaultRouter;
     address public signer;
-    mapping(address => address) public userRouter;
-    mapping(address => bool) public contracts;
+    mapping(address => address) public userRouters;
+
+    event RouterRegistered(address indexed user, address indexed router);
 
     constructor() {
         signer = msg.sender;
-    }
-
-    /**
-     * @dev authenticate a contract that can call router instantly.
-     * @param contractAddress_ to authenticate
-     */
-
-    function grantAuthentication(address contractAddress_) public onlyOwner {
-        require(
-            !contracts[contractAddress_],
-            "this address has already been authenticated"
-        );
-        contracts[contractAddress_] = true;
-    }
-
-    function revokeAuthentication(address contractAddress_) external onlyOwner {
-        require(
-            contracts[contractAddress_],
-            "this address has not been authenticated"
-        );
-        contracts[contractAddress_] = false;
     }
 
     function setDefaultRouter(address defaultRouter_) external onlyOwner {
         defaultRouter = defaultRouter_;
     }
 
+    function registerRouter() external {
+        address userRouter = address(new Router(address(this)));
+        userRouters[msg.sender] = userRouter;
+        emit RouterRegistered(msg.sender, userRouter);
+    }
+
     function getRouter(address user_) external view returns (address) {
-        if (userRouter[user_] == address(0)) {
+        if (userRouters[user_] == address(0)) {
             return defaultRouter;
         }
-        return userRouter[user_];
+        return userRouters[user_];
     }
 
     function setSigner(address _signer) external onlyOwner {

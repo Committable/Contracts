@@ -142,10 +142,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             ((buyOrder.royalty + _fee) <= 10000) &&
-            // target must match
-            (buyOrder.target == sellOrder.target) &&
-            // target must not be ZERO-address
-            (buyOrder.target != address(0)) &&
             // must reach start time
             (buyOrder.start < block.timestamp &&
                 sellOrder.start < block.timestamp) &&

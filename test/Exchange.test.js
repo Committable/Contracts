@@ -47,9 +47,9 @@ describe('Exchange', function () {
       let Exchange = await ethers.getContractFactory("Exchange");
       exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
-      /* set router address & exchange in controller contract */
-      let tx = await controller.grantAuthentication(exchange.address);
-      await tx.wait();
+      // /* set router address & exchange in controller contract */
+      // let tx = await controller.grantAuthentication(exchange.address);
+      // await tx.wait();
       tx = await controller.setDefaultRouter(router.address);
       await tx.wait();
       /* deploy erc20 and approve for test */
@@ -73,7 +73,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        router.address,
         encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_0),
         encodeTransferWithPermitReplacement(true),
         0,
@@ -91,7 +90,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        router.address,
         encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_0, DEADLINE, tokenId_0_permit_sig),
         encodeTransferWithPermitReplacement(false),
         0,
@@ -112,7 +110,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        router.address,
         encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_1),
         encodeTransferWithPermitReplacement(true),
         0,
@@ -130,7 +127,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        router.address,
         encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_1, DEADLINE, tokenId_1_permit_sig),
         encodeTransferWithPermitReplacement(false),
         0,
@@ -151,7 +147,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        router.address,
         encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_2),
         encodeTransferWithPermitReplacement(true),
         0,
@@ -169,7 +164,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        router.address,
         encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_2, DEADLINE, tokenId_2_permit_sig),
         encodeTransferWithPermitReplacement(false),
         0,
@@ -191,7 +185,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        router.address,
         encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_3),
         encodeTransferWithPermitReplacement(true),
         0,
@@ -209,7 +202,6 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        router.address,
         encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_3, DEADLINE, tokenId_3_permit_sig),
         encodeTransferWithPermitReplacement(false),
         0,
@@ -235,7 +227,6 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        router.address,
         encodeMintWithSig(committable.address, buyer.address, tokenId_4),
         encodeMintWithSigReplacement(true),
         0,
@@ -251,7 +242,6 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        router.address,
         encodeMintWithSig(committable.address, buyer.address, tokenId_4, signature_4),
         encodeMintWithSigReplacement(false),
         0,
@@ -276,7 +266,6 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        router.address,
         encodeMintWithSig(committable.address, buyer.address, tokenId_5),
         encodeMintWithSigReplacement(true),
         0,
@@ -292,7 +281,6 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        router.address,
         encodeMintWithSig(committable.address, buyer.address, tokenId_5, signature_5),
         encodeMintWithSigReplacement(false),
         0,

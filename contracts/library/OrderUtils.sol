@@ -20,8 +20,6 @@ library OrderUtils {
         address royaltyRecipient;
         // royalty to pay, zero as non-royalty
         uint256 royalty;
-        // target to call
-        address target;
         // attached calldata to target
         bytes data;
         // data replacement pattern, empty bytes for no replacement;
@@ -46,7 +44,6 @@ library OrderUtils {
                     order.value,
                     order.royaltyRecipient,
                     order.royalty,
-                    order.target,
                     order.data,
                     order.replacementPattern,
                     order.start,
