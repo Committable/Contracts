@@ -6,14 +6,21 @@ Committable smart contracts enable software developers to tokenize their contrib
 
 ### 合约概要
 
-- Exchange：负责交易订单匹配和执行（订单交易CMT，订单交易未上链的CMT）
-- Router：负责合并授权和转账
+- **Exchange：负责交易订单匹配和执行（订单交易CMT，订单交易未上链的CMT）**
+- **Committable：CMT的ERC721合约，非交易行为可以调用该合约进行转账和铸币**
 - Helper：提供批量查询和哈希查询接口，主要用于Debug
-- Committable：CMT的ERC721合约，非交易行为可以调用该合约进行转账和铸币
-- CommittableV1：CMT的逻辑合约V1版，通过Transparent Proxy实现CMT的逻辑可更新，该合约仅由Committable调用
+- Router：负责合并授权和转账
+- CommittableV1：CMT的逻辑合约V1版，通过Transparent Proxy实现CMT的逻辑可更新性，该合约仅提供访问逻辑
 - Controller：负责各合约的参数调整和管理用户Router合约，仅管理员地址可以调用该合约
 
-### 合约地址
+### 合约地址(Ropsten)
+
+- **Exchange**：**0xC042025a4f72d8CCb6C0ce558d98bA2a134f8a24**
+- **Committable**：**0xAa30D69a35d9BC2c3f59949b96efeEfBD84BBC27**
+- Helper：0x67886c1203aAFC191Cbf878454D73b2825783dd1
+- Router：0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622
+- CommittableV1：0xF326F9dd019dCE7864C1e2d295eD1a57fC1F7205
+- Controller：0xB90EDA1295e35115D19a138cdC3A697D59eD87b0
 
 ### 管理地址
 
