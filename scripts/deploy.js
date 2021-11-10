@@ -16,51 +16,55 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  console.log('waiting for deployment: OxERC721Upgradeable...')
-  OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
-  oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
-  await oxERC721Upgradeable.deployed();
-  console.log("oxERC721Upgradeable deployed to:", oxERC721Upgradeable.address);
-
+  /* deploy controller contract */
   console.log('waiting for deployment: Controller...')
   let Controller = await ethers.getContractFactory("Controller");
   controller = await Controller.deploy();
   await controller.deployed();
   console.log("controller deployed to:", controller.address);
-
-  console.log('waiting for deployment: TokenProxy...')
-  let TokenProxy = await ethers.getContractFactory("TokenProxy");
+  /* deploy token logic contract */
+  console.log('waiting for deployment: CommittableV1...')
+  let CommittableV1 = await ethers.getContractFactory("CommittableV1");
+  committableV1 = await CommittableV1.deploy();
+  await committableV1.deployed();
+  console.log("CommittableV1 deployed to:", committableV1.address);
+  /* deploy token proxy contract */
+  console.log('waiting for deployment: Committable...')
+  let Committable = await ethers.getContractFactory("Committable");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);
   let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-  tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, controller.address, calldata);
-  await tokenProxy.deployed();
-  tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
-  console.log("tokenProxy deployed to:", tokenProxy.address);
-
+  committable = await Committable.deploy(committableV1.address, controller.address, calldata);
+  await committable.deployed();
+  console.log("Committable deployed to:", committable.address);
+  /* deploy router contract */
   console.log('waiting for deployment: Router')
   let Router = await ethers.getContractFactory("Router");
   router = await Router.deploy(controller.address);
   await router.deployed();
   console.log("router deployed to:", router.address);
-
+  /* deploy exchange contract */
   console.log('waiting for deployment: Exchange...')
   let Exchange = await ethers.getContractFactory("Exchange");
   exchange = await Exchange.deploy(controller.address);
   await exchange.deployed();
   console.log("exchange deployed to:", exchange.address);
-
-  console.log('waiting for interaction: grant exchange...')
-  let tx = await controller.grantAuthentication(exchange.address);
+  /* initialize contracts */
+  console.log("setDefaultRouter...")
+  tx = await controller.setDefaultRouter(router.address);
   await tx.wait();
-  console.log("grant exchange: ", exchange.address);
-
-  console.log('waiting for interaction: set proxy...')
-  tx = await controller.setRouter(router.address);
-  await tx.wait();
-  console.log("set router: ", router.address);
-
-
+  let defaultRouter = await controller.defaultRouter();
+  console.log("default rouer set to: ", defaultRouter);
+  console.log("setRecipient...")
+  tx = await exchange.changeRecipient('0x92E0a5c7d7D806cD48Db15e220DC4440185b0787');
+  await tx.wait()
+  let recipient = await exchange.getRecipient();
+  console.log("recipient set to: ", recipient);
+  console.log("setSigner...")
+  tx = await controller.setSigner('0x95EC7c60F2150cb9CCdbc942278CfD71f0a47024');
+  await tx.wait()
+  let signer = await controller.signer();
+  console.log("signer set to: ", signer);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

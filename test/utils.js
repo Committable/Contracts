@@ -14,21 +14,6 @@ const interface = new ethers.utils.Interface([
   "function mintWithSig(address token, address to, uint256 tokenId, bytes signature)"
 ])
 
-// const encodeTransferFrom = (ERC721ContractAddress, from, to, tokenId) => {
-//   return interface.encodeFunctionData("transferFrom", [ERC721ContractAddress, from, to, tokenId]);
-// }
-
-// const encodeTransferFromReplacement = (isBuyer) => {
-//   let abiCoder = new ethers.utils.AbiCoder();
-//   let functionReplacement = '0x00000000';
-//   let paramsReplacement;
-//   if(isBuyer){
-//     paramsReplacement = abiCoder.encode(['address', 'bytes32', 'address', 'uint256'], [ZERO_ADDRESS, REPLACEMENT, ZERO_ADDRESS, ZERO_ADDRESS])
-//   } else {
-//     paramsReplacement = abiCoder.encode(['address', 'address', 'bytes32', 'uint256'], [ZERO_ADDRESS, ZERO_ADDRESS, REPLACEMENT, ZERO_ADDRESS])
-//   }
-//   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
-// }
 
 const encodeTransferWithPermit = (ERC721ContractAddress, from, to, tokenId, deadline = 0 , signature = SIG) => {
   return interface.encodeFunctionData("transferWithPermit", [ERC721ContractAddress, from, to, tokenId, deadline, signature]);
@@ -110,8 +95,6 @@ const Utils = {
   Order: Order,
   hashOrder: hashOrder,
   hashPermit: hashPermit,
-  // encodeTransferFrom: encodeTransferFrom,
-  // encodeTransferFromReplacement: encodeTransferFromReplacement,
   encodeTransferWithPermit: encodeTransferWithPermit,
   encodeTransferWithPermitReplacement: encodeTransferWithPermitReplacement,
   encodeMintWithSig: encodeMintWithSig,
