@@ -7,7 +7,7 @@ Committable smart contracts enable software developers to tokenize their contrib
 ### 合约概要
 
 - **Exchange：负责交易订单匹配和执行（订单交易CMT，订单交易未上链的CMT）**
-- **Committable：CMT的ERC721合约，非交易行为可以调用该合约进行转账和铸币**
+- **Committable：CMT的ERC721合约，非订单交易行为可以调用该合约进行转账和铸币**
 - Helper：提供批量查询和哈希查询接口，主要用于Debug
 - Router：负责合并授权和转账
 - CommittableV1：CMT的逻辑合约V1版，通过Transparent Proxy实现CMT的逻辑可更新性，该合约仅提供访问逻辑
@@ -48,7 +48,7 @@ let tokenId = '0xaaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58';
 
 ##### 铸币签名
 
-Committable为mint函数添加了签名验证，铸币者必须通过web端获得**服务器端签名**才能进行铸币行为
+Committable为mint函数添加了签名验证，铸币者必须通过app获得**服务器端签名**才能进行铸币行为
 
 具体签名规则如下：
 

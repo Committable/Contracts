@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Order, hashOrder } = require("./utils.js");
+const { Order, hashOrder, encodeTransferWithPermit, encodeMintWithSig } = require("./utils.js");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -15,7 +15,7 @@ const life_span = 60 * 60 * 24 * 7 // one week
 function shouldRevertWithMaliciousBehavior() {
 
   context('with malicious order behaviors', function () {
-    context('with minted nft', function () {
+    context.only('with standard orders and lazy-mint orders', function () {
       beforeEach('with minted nft', async function () {
           // sign some tokenId
           let abiCoder = new ethers.utils.AbiCoder();
@@ -34,7 +34,7 @@ function shouldRevertWithMaliciousBehavior() {
           tx = await committable.mint(seller.address, tokenId_3, signature_3);
           await tx.wait();
       })
-      context('when buy order is modified', function () {
+      context.only('when buy order value is modified', function () {
         it('revert with ETH order', async function () {
           try {
             buy_order_0.value = '100000';
@@ -47,18 +47,37 @@ function shouldRevertWithMaliciousBehavior() {
         })
         it('revert with ERC20 order', async function () {
           try {
-            buy_order_3.value = '100000';
-            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            buy_order_2.value = '100000';
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();
             throw null;
           } catch (err) {
             expect(err.message).to.include('invalid order signature');
           }
         })
-       
+        it('revert with ETH lazy-mint order', async function () {
+          try {
+            buy_order_4.value = '100000';
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order signature');
+          }
+        })
+        it('revert with ERC20 lazy-mint order', async function () {
+          try {
+            buy_order_5.value = '100000';
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order signature');
+          }
+        })
       })
-      context('when sell order is modified', function () {
-        it('revert with ETH orders', async function () {
+      context.only('when sell order paymentToken is modified', function () {
+        it('revert with ETH standard orders', async function () {
           try {
             let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
             sell_order_0.paymentToken = anotherPaymentToken;
@@ -69,11 +88,33 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order signature');
           }
         })
-        it('revert with ERC20 orders ', async function () {
+        it('revert with ERC20 standard orders ', async function () {
           try {
             let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
-            sell_order_3.paymentToken = anotherPaymentToken;
-            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            sell_order_2.paymentToken = anotherPaymentToken;
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order signature');
+          }
+        })
+        it('revert with ERC20 lazy-mint orders ', async function () {
+          try {
+            let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+            sell_order_4.paymentToken = anotherPaymentToken;
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order signature');
+          }
+        })
+        it('revert with ERC20 lazy-mint orders ', async function () {
+          try {
+            let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+            sell_order_5.paymentToken = anotherPaymentToken;
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
             await tx.wait();
             throw null;
           } catch (err) {
@@ -82,8 +123,8 @@ function shouldRevertWithMaliciousBehavior() {
         })
       })
 
-      context('when buy order exchange address does not match', function () {
-        it('revert with ETH orders', async function () {
+      context.only('when buy order exchange address does not match', function () {
+        it('revert with ETH standard orders', async function () {
           try {
             buy_order_0.exchange = ZERO_ADDRESS;
             buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
@@ -94,7 +135,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 orders', async function () {
+        it('revert with ERC20 standard orders', async function () {
           try {
             buy_order_3.exchange = ZERO_ADDRESS;
             buy_order_sig_3 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_3)));
@@ -105,10 +146,32 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
+        it('revert with ETH lazy-mint orders', async function () {
+          try {
+            buy_order_4.exchange = ZERO_ADDRESS;
+            buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ERC20 lazy-mint orders', async function () {
+          try {
+            buy_order_5.exchange = ZERO_ADDRESS;
+            buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
    
       })
-      context('when sell order exchange address does not match', function () {
-        it('revert with ETH orders', async function () {
+      context.only('when sell order exchange address does not match', function () {
+        it('revert with ETH standard orders', async function () {
           try {
             sell_order_0.exchange = ZERO_ADDRESS;
             sell_order_sig_0 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_0)));
@@ -119,7 +182,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 orders', async function () {
+        it('revert with ERC20 standard orders', async function () {
           try {
             sell_order_3.exchange = ZERO_ADDRESS;
             sell_order_sig_3 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_3)));
@@ -129,10 +192,32 @@ function shouldRevertWithMaliciousBehavior() {
           } catch (err) {
             expect(err.message).to.include('invalid order parameters');
           }
-        })         
+        })      
+        it('revert with ETH lazy-mint orders', async function () {
+          try {
+            sell_order_4.exchange = ZERO_ADDRESS;
+            sell_order_sig_4 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_4)));
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ERC20 standard orders', async function () {
+          try {
+            sell_order_5.exchange = ZERO_ADDRESS;
+            sell_order_sig_5 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_5)));
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })   
       })
       context.only('when pair two buy orders', function () {
-        it('revert with ETH orders', async function () {
+        it('revert with ETH standard orders', async function () {
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, buy_order_0, buy_order_sig_0, { value: PRICE });
             await tx.wait();
@@ -141,7 +226,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 orders', async function () {
+        it('revert with ERC20 standard orders', async function () {
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, buy_order_2, buy_order_sig_2);
             await tx.wait();
@@ -150,9 +235,27 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
+        it('revert with ETH lazy-mint orders', async function () {
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, buy_order_4, buy_order_sig_4, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ERC20 lazy-mint orders', async function () {
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, buy_order_5, buy_order_sig_5, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
       })
       context.only('when pair two sell orders', function () {
-        it('revert with ETH orders', async function () {
+        it('revert with ETH standard orders', async function () {
           try {
             let tx = await exchange.connect(buyer).matchOrder(sell_order_0, sell_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
@@ -161,9 +264,27 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 orders', async function () {
+        it('revert with ERC20 standard orders', async function () {
           try {
             let tx = await exchange.connect(buyer).matchOrder(sell_order_2, sell_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ETH lazy-mint orders', async function () {
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(sell_order_4, sell_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ERC20 lazy-mint orders', async function () {
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(sell_order_5, sell_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
@@ -173,7 +294,7 @@ function shouldRevertWithMaliciousBehavior() {
       })
 
       context.only('when order payment token does not match', function () {
-        it('revert with ETH buy order pairs ERC20 sell order', async function () {
+        it('revert with buy_order_0 pairs sell_order_2', async function () {
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_2, sell_order_sig_2, { value: PRICE });
             await tx.wait();
@@ -182,9 +303,18 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
+        it('revert with buy_order_4 pairs sell_order_5', async function () {
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_5, sell_order_sig_5, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
       })
       context.only('when buy order bid price is less than sell order ask price ', function () {
-        it('revert with ETH order', async function () {
+        it('revert with ETH standard order', async function () {
           buy_order_0.value = ethers.utils.parseEther('0.9').toString();
           buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
           try {
@@ -195,7 +325,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 order', async function () {
+        it('revert with ERC20 standard order', async function () {
           buy_order_2.value = ethers.utils.parseEther('0.9').toString();
           buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
           try {
@@ -206,39 +336,76 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
+        it('revert with ETH lazy-mint order', async function () {
+          buy_order_4.value = ethers.utils.parseEther('0.9').toString();
+          buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
+        it('revert with ERC20 lazy-mint order', async function () {
+          buy_order_5.value = ethers.utils.parseEther('0.9').toString();
+          buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid order parameters');
+          }
+        })
       })
-      context('when nft contract address does not match', function () {
-        it('revert with ETH order', async function () {
-          buy_order_0.sellSideAsset.contractAddress = ZERO_ADDRESS;
+      context.only('when nft contract address does not match', function () {
+        it('revert with ETH standard order', async function () {
+          let calldata = encodeTransferWithPermit(ZERO_ADDRESS, ZERO_ADDRESS, buyer.address, tokenId_0)
+          buy_order_0.data = calldata;
           buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
           try {
-            let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('sellSideAsset contractAddress does not match');
+            expect(err.message).to.include('invalid data replacement');
           }
         })
-        it('revert with ERC20 order', async function () {
-          buy_order_1.sellSideAsset.contractAddress = ZERO_ADDRESS;
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndTransfer(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sellSideAsset contractAddress does not match');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.sellSideAsset.contractAddress = ZERO_ADDRESS;
+        it('revert with ERC20 standard order', async function () {
+          let calldata = encodeTransferWithPermit(ZERO_ADDRESS, ZERO_ADDRESS, buyer.address, tokenId_2)
+          buy_order_2.data = calldata;
           buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
           try {
-            let tx = await exchange.connect(seller).matchAndTransfer(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('sellSideAsset contractAddress does not match');
+            expect(err.message).to.include('invalid data replacement');
+          }
+        })
+        it('revert with ETH lazy-mint order', async function () {
+          let calldata = encodeMintWithSig(ZERO_ADDRESS, buyer.address, tokenId_4)
+          buy_order_4.data = calldata;
+          buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid data replacement');
+          }
+        })
+        it('revert with ETH standard order', async function () {
+          let calldata = encodeMintWithSig(ZERO_ADDRESS, buyer.address, tokenId_5)
+          buy_order_5.data = calldata;
+          buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            await tx.wait();
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid data replacement');
           }
         })
       })

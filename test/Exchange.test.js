@@ -63,6 +63,16 @@ describe('Exchange', function () {
       await tx.wait()
       tx = await exchange.changeRecipient(recipient.address);
       await tx.wait()
+      /**
+       * Below we create multiple types of order pairs:
+       * order_0: standard order pairs using ETH without royalty
+       * order_1: standard order pairs using ETH with royalty
+       * order_2: standard order pairs using ERC20 without royalty
+       * order_3: standard order pairs using ERC20 with royalty
+       * order_4: lazy-mint order pairs using ETH without royalty
+       * order_5: lazy-mint order pairs using ERC20 without royalty
+       */
+
       // generate order pairs: pay eth to transfer erc721, no royalty
       buy_order_0 = new Order(
         exchange.address,
@@ -253,7 +263,7 @@ describe('Exchange', function () {
       buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
       sell_order_sig_4 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_4)));
 
-        // generate order pairs: pay eth to mint erc721, no royalty
+        // generate order pairs: pay erc20 to mint erc721, no royalty
       // sign tokenId from server
       let signature_5 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_5])));
 
@@ -294,7 +304,7 @@ describe('Exchange', function () {
     })
 
     shouldWorkWithLegitimateBehavior();
-    // shouldRevertWithMaliciousBehavior();
+    shouldRevertWithMaliciousBehavior();
   })
 
 })

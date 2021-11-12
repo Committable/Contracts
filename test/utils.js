@@ -77,7 +77,6 @@ const hashPermit = (operator, tokenId, nonce, deadline) => {
   let permit_encode =
     abiCoder.encode(['address', 'uint256', 'uint256', 'uint256'], [operator, tokenId,nonce, deadline])
   return permit_hash = ethers.utils.keccak256(permit_encode);
-
 }
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
