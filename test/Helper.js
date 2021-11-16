@@ -14,6 +14,37 @@ describe('helper', function () {
         const Helper = await ethers.getContractFactory('Helper');
         helper = await Helper.deploy();
         await helper.deployed();
+
+         /* get signers */
+         [signer, user, ...others] = await ethers.getSigners();
+         /* deploy controller contract */
+         let Controller = await ethers.getContractFactory("Controller");
+         controller = await Controller.deploy();
+         await controller.deployed();
+         /* deploy token logic contract */
+         CommittableV1 = await ethers.getContractFactory("CommittableV1");
+         committableV1 = await CommittableV1.deploy();
+         await committableV1.deployed();
+         /* deploy token proxy contract */
+         let Committable = await ethers.getContractFactory("Committable");
+         let ABI = ["function initialize(string,string,address)"];
+         let iface = new ethers.utils.Interface(ABI);
+         let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
+         committable = await Committable.deploy(committableV1.address, controller.address, calldata);
+         await committable.deployed();
+         /* attach token proxy contract with logic contract abi */
+         committable = await CommittableV1.attach(committable.address);
+         /* sign some tokenId */
+         let abiCoder = new ethers.utils.AbiCoder;
+         let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
+         let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
+         let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
+         let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
+         /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
+         await committable.mint(signer.address, tokenId_0, signature_0);
+         await committable.mint(signer.address, tokenId_1, signature_1);
+         await committable.mint(signer.address, tokenId_2, signature_2);
+         await committable.mint(user.address, tokenId_3, signature_3);
     })
     it('should allow basic replacement', async function () {
         expect(await helper.replace(
@@ -49,39 +80,7 @@ describe('helper', function () {
         expect(buyDataAfter).to.equal(sellDataAfter);
 
     })
-    beforeEach(async function () {
-        /* get signers */
-        [signer, user, ...others] = await ethers.getSigners();
-        /* deploy controller contract */
-        let Controller = await ethers.getContractFactory("Controller");
-        controller = await Controller.deploy();
-        await controller.deployed();
-        /* deploy token logic contract */
-        CommittableV1 = await ethers.getContractFactory("CommittableV1");
-        committableV1 = await CommittableV1.deploy();
-        await committableV1.deployed();
-        /* deploy token proxy contract */
-        let Committable = await ethers.getContractFactory("Committable");
-        let ABI = ["function initialize(string,string,address)"];
-        let iface = new ethers.utils.Interface(ABI);
-        let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-        committable = await Committable.deploy(committableV1.address, controller.address, calldata);
-        await committable.deployed();
-        /* attach token proxy contract with logic contract abi */
-        committable = await CommittableV1.attach(committable.address);
-        /* sign some tokenId */
-        let abiCoder = new ethers.utils.AbiCoder;
-        let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-        let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-        let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
-        let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
-        /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-        await committable.mint(signer.address, tokenId_0, signature_0);
-        await committable.mint(signer.address, tokenId_1, signature_1);
-        await committable.mint(signer.address, tokenId_2, signature_2);
-        await committable.mint(user.address, tokenId_3, signature_3);
-  
-      })
+   
   
       context('with legitimate batch request', function () {
         it('return batch tokenIds sorted by all tokens', async function () {

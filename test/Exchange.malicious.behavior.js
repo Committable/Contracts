@@ -99,7 +99,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order signature');
           }
         })
-        it('revert with ERC20 lazy-mint orders ', async function () {
+        it('revert with ETH lazy-mint orders ', async function () {
           try {
             let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
             sell_order_4.paymentToken = anotherPaymentToken;
@@ -204,7 +204,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-        it('revert with ERC20 standard orders', async function () {
+        it('revert with ERC20 lazy-mint orders', async function () {
           try {
             sell_order_5.exchange = ZERO_ADDRESS;
             sell_order_sig_5 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_5)));
@@ -396,7 +396,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid data replacement');
           }
         })
-        it('revert with ERC20 standard order', async function () {
+        it('revert with ERC20 lazy-mint order', async function () {
           let calldata = encodeMintWithSig(ZERO_ADDRESS, buyer.address, tokenId_5)
           buy_order_5.data = calldata;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
