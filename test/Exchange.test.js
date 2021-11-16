@@ -12,7 +12,7 @@ const { shouldRevertWithMaliciousBehavior } = require('./Exchange.malicious.beha
 
 ROYALTY = '1000'; // 10%
 const life_span = 60 * 60 * 24 * 7 // one week
-FEE = '100' // 1%
+FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 DEADLINE = 0;
 

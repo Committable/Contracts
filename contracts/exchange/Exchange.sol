@@ -141,7 +141,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
             // royalty must match
             (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
-            ((buyOrder.royalty + _fee) <= 10000) &&
+            ((buyOrder.royalty + _fee) < 10000) &&
             // must reach start time
             (buyOrder.start < block.timestamp &&
                 sellOrder.start < block.timestamp) &&
@@ -167,7 +167,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         if (paymentToken == address(0)) {
             require(
                 msg.sender == buyOrder.maker && msg.value == buyOrder.value,
-                "insufficient ether"
+                "invalid payment"
             );
             // transfer fee
             if (fee != 0) {
@@ -184,7 +184,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         }
         // pay by erc20
         else {
-            require(msg.value == 0, "sending ether not allowed");
+            require(msg.value == 0, "invalid payment");
             // transfer fee
             if (fee != 0) {
                 SafeERC20.safeTransferFrom(
