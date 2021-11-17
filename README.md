@@ -2,7 +2,7 @@
 
  ![](https://img.shields.io/badge/npm-8.0.0-blue)  ![](https://img.shields.io/badge/node-16.11.4-green)
 
-**Smart contracts that allow users to manage and exchange non-fungible tokens securely and smoothly.**
+**Committable smart contracts enable software developers to tokenize their contributions (the ’commit‘) to open source projects in the form of ERC721 and provide flexible and secure exchange protocols for trading them.**
 
 - Implementation of ERC721Upgradeable with [Transparent proxy pattern](https://blog.openzeppelin.com/the-transparent-proxy-pattern/).
 - Flexible and secure proxy scheme that allows smooth transfer and role-based permissions.
@@ -55,15 +55,13 @@ $ npm run test
 
 ### Deployment
 
-Deployment scripts with ethers.js are located at **./scripts/** folder, run following commands to deploy
+Run following commands to deploy on ropsten network, additional interactions will complete initial settings
 
 ```bash
 $ npm run ropsten ./scripts/deploy.js
 ```
 
-Above script will deploy five contracts on ropsten network and make additional transactions  to chain them 
+## Learn more
 
-## Documents
-
-[API documents (Chinese version)](./docs/api) are available now.
+The guides in [Documents](./docs) will illustrate core rationale of committable contracts and provide examples about how to interact with them.
 
