@@ -63,6 +63,10 @@ describe('Exchange', function () {
       await tx.wait()
       tx = await exchange.changeRecipient(recipient.address);
       await tx.wait()
+      // approve exchange
+      tx = await controller.approveOrCancel(exchange.address, true);
+      await tx.wait();
+
       /**
        * Below we create multiple types of order pairs:
        * order_0: standard order pairs using ETH without royalty

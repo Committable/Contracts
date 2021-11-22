@@ -38,6 +38,9 @@ describe('Router', function () {
       /* set router address in controller contract */
       tx = await controller.setDefaultRouter(router.address);
       await tx.wait();
+      /* approve user address in controller contract */
+      tx = await controller.approveOrCancel(signer.address, true);
+      await tx.wait();
       /* sign some tokenId */
       let abiCoder = new ethers.utils.AbiCoder;
       let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));

@@ -43,7 +43,7 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
         bytes memory signature
     ) external virtual override {
         require(
-            ECDSA.recover(bytes32(tokenId), signature) == _controller.signer(),
+            ECDSA.recover(bytes32(tokenId), signature) == _controller.getSigner(),
             "invalid token signature"
         );
         uint96 project = uint96(tokenId >> 160);

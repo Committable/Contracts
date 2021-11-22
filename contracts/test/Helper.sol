@@ -15,12 +15,12 @@ contract Helper {
         return OrderUtils.hash(order);
     }
 
-    function recover(bytes32 orderHash, bytes memory sig)
+    function recover(bytes32 hash, bytes memory sig)
         external
         pure
         returns (address)
     {
-        return ECDSA.recover(orderHash, sig);
+        return ECDSA.recover(hash, sig);
     }
 
     function replace(

@@ -7,34 +7,48 @@ import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./Router.sol";
 
 contract Controller is ProxyAdmin {
-    address public defaultRouter;
-    address public signer;
-    mapping(address => address) public userRouters;
+    address private _defaultRouter;
+    address private _signer;
+    mapping(address => address) private _userRouters;
+    mapping(address => bool) private _isApproved;
 
     event RouterRegistered(address indexed user, address indexed router);
-
+    event ExchangeApprovedOrCancelled(address indexed exchange, bool authorized);
     constructor() {
-        signer = msg.sender;
+        _signer = msg.sender;
     }
 
     function setDefaultRouter(address defaultRouter_) external onlyOwner {
-        defaultRouter = defaultRouter_;
+        _defaultRouter = defaultRouter_;
     }
 
     function registerRouter() external {
         address userRouter = address(new Router(address(this)));
-        userRouters[msg.sender] = userRouter;
+        _userRouters[msg.sender] = userRouter;
         emit RouterRegistered(msg.sender, userRouter);
     }
 
     function getRouter(address user_) external view returns (address) {
-        if (userRouters[user_] == address(0)) {
-            return defaultRouter;
+        if (_userRouters[user_] == address(0)) {
+            return _defaultRouter;
         }
-        return userRouters[user_];
+        return _userRouters[user_];
     }
 
-    function setSigner(address _signer) external onlyOwner {
-        signer = _signer;
+    function setSigner(address signer_) external onlyOwner {
+        _signer = signer_;
+    }
+
+    function getSigner() external view returns(address) {
+        return _signer;
+    }
+    
+    function approveOrCancel(address exchange_, bool bool_) external onlyOwner {
+        _isApproved[exchange_] = bool_;
+        emit ExchangeApprovedOrCancelled(exchange_, bool_);
+    }
+
+    function isApproved(address exchange_) external view returns(bool) {
+        return _isApproved[exchange_];
     }
 }
