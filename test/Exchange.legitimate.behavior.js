@@ -443,7 +443,7 @@ function shouldWorkWithLegitimateBehavior() {
 
 
         })
-        context.only('other behaviors', function () {
+        context('other behaviors', function () {
             it('should cancel order correctly', async function () {
                 let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
                 await tx.wait();

@@ -873,6 +873,30 @@ function shouldRevertWithMaliciousBehavior() {
         })
       })
     })
+    context.only('other behaviors', function () {
+      it('should revert with invalid user', async function () {
+        try {
+          let tx = await exchange.connect(seller).cancelOrder(buy_order_0);
+          await tx.wait();
+          throw null;
+        } catch(err){
+          expect(err.message).to.include('invalid request');
+        }
+      })
+      it('should revert with cancelled order', async function () {
+        let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+        await tx.wait();
+        try {
+          let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+          await tx.wait();
+          throw null;
+        } catch(err){
+          expect(err.message).to.include('invalid request');
+        }
+      })
+
+
+  })
   })
 
 }
