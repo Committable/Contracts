@@ -612,7 +612,7 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 
 **事件触发**
 
-1. `orderMatched`
+1. `OrderMatched` - Exchange合约
 
 ##### cancelOrder(order)
 
@@ -624,7 +624,7 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 
 **事件触发**
 
-1. `orderCancelled`- Exchange合约
+1. `OrderCancelled`- Exchange合约
 
 #### Event
 
