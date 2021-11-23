@@ -624,7 +624,7 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 
 **事件触发**
 
-1. `orderCancelled`
+1. `orderCancelled`- Exchange合约
 
 #### Event
 

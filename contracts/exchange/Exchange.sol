@@ -41,8 +41,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
      */
     function cancelOrder(OrderUtils.Order memory order) external {
         require(
-            order.maker == msg.sender,
-            "order must be cancelled by its maker"
+            order.maker == msg.sender && _isCancelledOrFinished[OrderUtils.hash(order)] == false,
+            "invalid request"
         );
         _isCancelledOrFinished[OrderUtils.hash(order)] = true;
         emit OrderCancelled(OrderUtils.hash(order), msg.sender);

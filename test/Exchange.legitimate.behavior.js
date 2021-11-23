@@ -441,7 +441,21 @@ function shouldWorkWithLegitimateBehavior() {
                 })
             })
 
-    
+
+        })
+        context.only('other behaviors', function () {
+            it('should cancel order correctly', async function () {
+                let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+                await tx.wait();
+                expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
+            })
+            it('[EVENT] cancel order', async function () {
+                let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+                expect(tx).to.emit(exchange, 'OrderCancelled')
+                    .withArgs(hashOrder(buy_order_0), buy_order_0.maker);
+            })
+
+
         })
     })
 }
