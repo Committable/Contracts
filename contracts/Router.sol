@@ -13,7 +13,10 @@ contract Router {
         controller = Controller(_address);
     }
 
-    modifier onlyExchange() {
+    /**
+     * @dev functions in this contract are only accessible to approved address 
+     */
+    modifier onlyApprovedAddress() {
         require(
             controller.isApproved(msg.sender) == true,
             "exchange not approved"
@@ -31,7 +34,7 @@ contract Router {
         uint256 tokenId,
         uint256 deadline,
         bytes memory signature
-    ) external onlyExchange {
+    ) external onlyApprovedAddress {
         CommittableV1(token).permit(
             address(this),
             tokenId,
@@ -49,7 +52,7 @@ contract Router {
         address to,
         uint256 tokenId,
         bytes memory signature
-    ) external onlyExchange {
+    ) external onlyApprovedAddress {
         CommittableV1(token).mint(to, tokenId, signature);
     }
 
@@ -61,7 +64,7 @@ contract Router {
         address from,
         address to,
         uint256 tokenId
-    ) external onlyExchange {
+    ) external onlyApprovedAddress {
         CommittableV1(token).transferFrom(from, to, tokenId);
     }
 }

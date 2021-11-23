@@ -610,6 +610,10 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 3. `sellOrder` - `结构体`：卖单信息
 4. `sellOrderSig` - `字节码`：卖单签名
 
+**事件触发**
+
+1. `orderMatched`
+
 ##### cancelOrder(order)
 
 取消订单，之后若执行该订单合约会抛错
@@ -617,6 +621,10 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 **输入**
 
 1. `order` - `结构体`：订单信息
+
+**事件触发**
+
+1. `orderCancelled`
 
 #### Event
 
@@ -630,6 +638,13 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 4. `seller` - `地址`：卖方地址
 5. `paymentToken` - `地址`：支付货币合约地址
 6. `value` - `uint256`：支付数量
+
+##### OrderCancelled(orderHash, indexed maker)
+
+**输入**
+
+1. `orderHash` - `字节码`：订单哈希
+2. `maker` - `地址`：订单取消人
 
 ### Helper
 
