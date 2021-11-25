@@ -65,6 +65,10 @@ async function main() {
   await tx.wait()
   let signer = await controller.signer();
   console.log("signer set to: ", signer);
+
+  
+
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

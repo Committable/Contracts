@@ -511,7 +511,7 @@ tokenId_0_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit
         0,
         Math.floor(Math.random() * 10000)
       )
-			// 两笔订单分别让用户进行签名
+			// 计算两个订单的哈希值（hashOrder），分别让用户对订单哈希进行签名
       buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
       sell_order_sig_0 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_0)));
 ```

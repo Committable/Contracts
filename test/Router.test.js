@@ -92,6 +92,7 @@ describe('Router', function () {
           expect(err.message).to.include('expired permit signature');
         }
       })
+      
     })
 
     context('[mintWithSig] function test', function () {
@@ -136,16 +137,6 @@ describe('Router', function () {
 
 
   })
-
-
-
-
-
-
-
-
-
-
 })
 
 

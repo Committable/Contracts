@@ -262,6 +262,7 @@ describe('Exchange', function () {
         0,
         Math.floor(Math.random() * 10000)
       )
+      
 
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
       buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));

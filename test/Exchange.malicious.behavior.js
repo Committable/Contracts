@@ -655,7 +655,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-       
+
         it('revert with ERC20 standard order', async function () {
           let tx = await exchange.connect(buyer).cancelOrder(buy_order_2);
           await tx.wait();
@@ -702,7 +702,7 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-       
+
         it('revert with ERC20 standard order', async function () {
           let tx = await exchange.connect(seller).cancelOrder(sell_order_2);
           await tx.wait();
@@ -844,14 +844,14 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid order parameters');
           }
         })
-    
+
         it('revert with invalid royalty in ETH order: sum of royalty and platform fee is larger than 100%', async function () {
           try {
             let newFee = 9500;
             tx = await exchange.changeFee(newFee);
             await tx.wait()
-            
-            tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, {value: PRICE});
+
+            tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
@@ -863,7 +863,7 @@ function shouldRevertWithMaliciousBehavior() {
             let newFee = 9500;
             tx = await exchange.changeFee(newFee);
             await tx.wait()
-            
+
             tx = await exchange.connect(seller).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
             await tx.wait();
             throw null;
@@ -873,13 +873,13 @@ function shouldRevertWithMaliciousBehavior() {
         })
       })
     })
-    context.only('other behaviors', function () {
+    context('other behaviors', function () {
       it('should revert with invalid user', async function () {
         try {
           let tx = await exchange.connect(seller).cancelOrder(buy_order_0);
           await tx.wait();
           throw null;
-        } catch(err){
+        } catch (err) {
           expect(err.message).to.include('invalid request');
         }
       })
@@ -890,13 +890,11 @@ function shouldRevertWithMaliciousBehavior() {
           let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
           await tx.wait();
           throw null;
-        } catch(err){
+        } catch (err) {
           expect(err.message).to.include('invalid request');
         }
       })
-
-
-  })
+    })
   })
 
 }
