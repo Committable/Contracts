@@ -289,6 +289,16 @@ let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(user.
 3. `deadline` - `uint256`：授权截止时间戳（秒）
 4. `signature` - `bytes`：授权签名
 
+#### Event
+
+##### Transfer(indexed from, indexed to, indexed tokenId)
+
+**输入**
+
+1. `from` - `地址`：代币发送者，新铸代币代币发送者地址是以太坊0地址
+2. `to` - `地址`：代币收款者
+3. `tokenId` - `整型`：代币编号
+
 ### Exchange
 
 #### Rationale
@@ -612,7 +622,9 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 
 **事件触发**
 
-1. `OrderMatched` - Exchange合约
+1. `OrderMatched` - `Exchange合约`
+1. `Transfer`- `Committable合约`
+3. `Transfer`- `其他ERC20代币合约`（当使用ERC20代币购买CMT时会触发该事件，使用ETH不会）
 
 ##### cancelOrder(order)
 
@@ -624,7 +636,7 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
 
 **事件触发**
 
-1. `OrderCancelled`- Exchange合约
+1. `OrderCancelled`- `Exchange合约`
 
 #### Event
 

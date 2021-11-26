@@ -33,11 +33,13 @@ async function main() {
 
   const Committable = await ethers.getContractFactory("CommittableV1");
   const committable = await Committable.connect(signer).attach(committable_adress);
-
- 
+  
+  let number = new ethers.BigNumber.from('595402892662290277460423974451487721953411454995916539922');
+  console.log(number)
+  
   // test now
-  let tokenId = '595402891803809020812043695656932535628725694818928036897';
-  console.log(await committable.ownerOf(tokenId));
+  // let tokenId = '595402891803809020812043695656932535628725694818928036897';
+  // console.log(await committable.ownerOf(tokenId));
 }
 
 // We recommend this pattern to be able to use async/await everywhere
