@@ -12,6 +12,8 @@ import "../ERC721/CommittableV1.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+
 
 contract Exchange is ReentrancyGuard, FeePanel {
     mapping(bytes32 => bool) private _isCancelledOrFinished;
@@ -243,9 +245,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "invalid data replacement"
         );
         address router = _controller.getRouter(sellOrder.maker);
-        (bool success, bytes memory result) = router.call(buyOrderData);
-        require(success, "state transition failed");
-        return result;
+        return Address.functionCall(router, buyOrderData);
+        // (bool success, bytes memory result) = router.call(buyOrderData);
+        // require(success, "state transition failed");
+        // return result;
     }
 
     function _beforeTransfer(

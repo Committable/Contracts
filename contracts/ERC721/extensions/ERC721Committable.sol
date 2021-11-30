@@ -118,7 +118,7 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
             abi.encode(operator, tokenId, nonces[owner]++, deadline)
         );
         require(
-            ECDSA.recover(permitHash, signature) == ownerOf(tokenId),
+            ECDSA.recover(permitHash, signature) == owner,
             "invalid permit signature"
         );
         _approve(operator, tokenId);

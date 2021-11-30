@@ -65,9 +65,10 @@ async function main() {
   await tx.wait()
   let signer = await controller.signer();
   console.log("signer set to: ", signer);
-
-  
-
+  console.log("approve exchange...");
+  tx = await controller.approveOrCancel(exchange.address, true);
+  await tx.wait();
+  console.log("exchange has been approved?: ", await controller.isApproved(exchange.address));
 
 }
 
