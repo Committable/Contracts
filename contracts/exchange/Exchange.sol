@@ -14,7 +14,6 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-
 contract Exchange is ReentrancyGuard, FeePanel {
     mapping(bytes32 => bool) private _isCancelledOrFinished;
     Controller _controller;
@@ -43,7 +42,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
      */
     function cancelOrder(OrderUtils.Order memory order) external {
         require(
-            order.maker == msg.sender && _isCancelledOrFinished[OrderUtils.hash(order)] == false,
+            order.maker == msg.sender &&
+                _isCancelledOrFinished[OrderUtils.hash(order)] == false,
             "invalid request"
         );
         _isCancelledOrFinished[OrderUtils.hash(order)] = true;
@@ -83,8 +83,11 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev match orders and transfer, the function currently supports matching ETH, ERC20 buyOrder with ERC721 sellOrder
-     * Requirements:
+     * @dev match orders, transfer tokens and trigger state transition
+     * @param buyOrder - buy order struct
+     * @param buyOrderSig - buy order signature (must be signed by buy order maker)
+     * @param sellOrder - sell order struct
+     * @param sellOrderSig - - buy order signature (must be signed by sell order maker)
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
      * - Emits an {orderMatched} event.
@@ -108,6 +111,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
         _transitState(buyOrder, sellOrder);
     }
 
+    /**
+     * @dev check order signatures
+     */
     function _orderSigValidation(
         OrderUtils.Order memory buyOrder,
         bytes memory buyOrderSig,
@@ -120,6 +126,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
             ECDSA.recover(sellOrderHash, sellOrderSig) == sellOrder.maker);
     }
 
+    /**
+     * @dev validate order parameters
+     */
     function _orderParamsValidation(
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
@@ -156,6 +165,20 @@ contract Exchange is ReentrancyGuard, FeePanel {
                 _isCancelledOrFinished[OrderUtils.hash(sellOrder)] == false));
     }
 
+    /**
+     * @dev set order status
+     */
+    function _beforeTransfer(
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
+    ) internal {
+        _isCancelledOrFinished[OrderUtils.hash(buyOrder)] = true;
+        _isCancelledOrFinished[OrderUtils.hash(sellOrder)] = true;
+    }
+
+    /**
+     * @dev transfer payment token from buyer to seller
+     */
     function _transferToken(
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
@@ -226,6 +249,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
         );
     }
 
+    /**
+     * @dev trigger state transition (message call to router) if buy order data match sell order data after replacement
+     */
     function _transitState(
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
@@ -245,17 +271,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "invalid data replacement"
         );
         address router = _controller.getRouter(sellOrder.maker);
+        // return returndata on success, revert with reason if low-level call failed
         return Address.functionCall(router, buyOrderData);
-        // (bool success, bytes memory result) = router.call(buyOrderData);
-        // require(success, "state transition failed");
-        // return result;
-    }
-
-    function _beforeTransfer(
-        OrderUtils.Order memory buyOrder,
-        OrderUtils.Order memory sellOrder
-    ) internal {
-        _isCancelledOrFinished[OrderUtils.hash(buyOrder)] = true;
-        _isCancelledOrFinished[OrderUtils.hash(sellOrder)] = true;
     }
 }

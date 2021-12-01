@@ -14,7 +14,7 @@ contract Router {
     }
 
     /**
-     * @dev functions in this contract are only accessible to approved address 
+     * @dev functions in this contract are only accessible to approved address
      */
     modifier onlyApprovedAddress() {
         require(

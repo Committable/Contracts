@@ -13,7 +13,11 @@ contract Controller is ProxyAdmin {
     mapping(address => bool) private _isApproved;
 
     event RouterRegistered(address indexed user, address indexed router);
-    event ExchangeApprovedOrCancelled(address indexed exchange, bool authorized);
+    event ExchangeApprovedOrCancelled(
+        address indexed exchange,
+        bool authorized
+    );
+
     constructor() {
         _signer = msg.sender;
     }
@@ -39,16 +43,16 @@ contract Controller is ProxyAdmin {
         _signer = signer_;
     }
 
-    function getSigner() external view returns(address) {
+    function getSigner() external view returns (address) {
         return _signer;
     }
-    
+
     function approveOrCancel(address exchange_, bool bool_) external onlyOwner {
         _isApproved[exchange_] = bool_;
         emit ExchangeApprovedOrCancelled(exchange_, bool_);
     }
 
-    function isApproved(address exchange_) external view returns(bool) {
+    function isApproved(address exchange_) external view returns (bool) {
         return _isApproved[exchange_];
     }
 }

@@ -872,6 +872,19 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
       })
+      context('when seller does not own the token', function () {
+        it('revert when the seller does not own the token', async function () {
+          let tx = await committable.transferFrom(seller.address, buyer.address, tokenId_0);
+          await tx.wait();
+          try {
+            tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            await tx.wait()
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid permit signature');
+          }
+        })
+      })
     })
     context('other behaviors', function () {
       it('should revert with invalid user', async function () {
