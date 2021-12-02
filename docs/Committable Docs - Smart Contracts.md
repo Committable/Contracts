@@ -15,12 +15,37 @@ Committable smart contracts enable software developers to tokenize their contrib
 
 ### 合约地址(Ropsten)
 
-- **Exchange**：**0xC042025a4f72d8CCb6C0ce558d98bA2a134f8a24**
-- **Committable**：**0xAa30D69a35d9BC2c3f59949b96efeEfBD84BBC27**
-- Helper：0x67886c1203aAFC191Cbf878454D73b2825783dd1
-- Router：0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622
-- CommittableV1：0xF326F9dd019dCE7864C1e2d295eD1a57fC1F7205
-- Controller：0xB90EDA1295e35115D19a138cdC3A697D59eD87b0
+- **Exchange**：
+
+  ~~0xC042025a4f72d8CCb6C0ce558d98bA2a134f8a24~~
+
+  **0xB15F0d2e4a7416bdf9bb766a6ff2aB704A5E0392** (Updated at 2nd Dec)
+
+- **Committable**：
+
+  ~~0xAa30D69a35d9BC2c3f59949b96efeEfBD84BBC27~~
+
+  **0x2b9059EB406254c71aB9c0F90FB3be638a1147b4** (Updated at 2nd Dec)
+
+- Helper：**0x67886c1203aAFC191Cbf878454D73b2825783dd1**
+
+- Router：
+
+  ~~0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622**~~**
+
+  **0x7759f72A371debC182208024A3D33E287e799527** (Updated at 2nd Dec)
+
+- CommittableV1：
+
+  ~~0xF326F9dd019dCE7864C1e2d295eD1a57fC1F7205~~
+
+  **0xF1DA55A6026D6fdddc88F73e45CB4cA35c034b3E** (Updated at 2nd Dec)
+
+- Controller：
+
+  ~~0xB90EDA1295e35115D19a138cdC3A697D59eD87b0~~
+
+  **0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6** (Updated at 2nd Dec)
 
 ### 管理地址
 

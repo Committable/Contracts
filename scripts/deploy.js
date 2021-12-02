@@ -54,7 +54,7 @@ async function main() {
   console.log("setDefaultRouter...")
   tx = await controller.setDefaultRouter(router.address);
   await tx.wait();
-  let defaultRouter = await controller.defaultRouter();
+  let defaultRouter = await controller.getRouter();
   console.log("default rouer set to: ", defaultRouter);
   /* set fee recipient */
   console.log("setRecipient...")

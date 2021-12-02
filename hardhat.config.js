@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("hardhat-tracer");
 
+const { ethers } = require("ethers");
 const {INFURA_API_KEY, MNEMONIC, COINMARKETCAP_KEY} = require('./.config.js');
 
 
@@ -36,6 +37,7 @@ module.exports = {
     ropsten: {
       url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
       gas: 3000000,
+      gasPrice: 5000000000,
       accounts: {
         mnemonic: MNEMONIC
       }
