@@ -153,6 +153,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             ((buyOrder.royalty + _fee) < 10000) &&
+            // must match target
+            (buyOrder.target == sellOrder.target) &&
             // must reach start time
             (buyOrder.start < block.timestamp &&
                 sellOrder.start < block.timestamp) &&
@@ -272,6 +274,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         );
         address router = _controller.getRouter(sellOrder.maker);
         // return returndata on success, revert with reason if low-level call failed
+        require(Router(router).proxy(buyOrder.target, buyOrderData));
         return Address.functionCall(router, buyOrderData);
     }
 }

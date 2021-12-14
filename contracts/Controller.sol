@@ -2,12 +2,10 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import "./Router.sol";
 
 contract Controller is ProxyAdmin {
-    address private _defaultRouter;
     address private _signer;
     mapping(address => address) private _userRouters;
     mapping(address => bool) private _isApproved;
@@ -22,10 +20,6 @@ contract Controller is ProxyAdmin {
         _signer = msg.sender;
     }
 
-    function setDefaultRouter(address defaultRouter_) external onlyOwner {
-        _defaultRouter = defaultRouter_;
-    }
-
     function registerRouter() external {
         address userRouter = address(new Router(address(this)));
         _userRouters[msg.sender] = userRouter;
@@ -33,9 +27,6 @@ contract Controller is ProxyAdmin {
     }
 
     function getRouter(address user_) external view returns (address) {
-        if (_userRouters[user_] == address(0)) {
-            return _defaultRouter;
-        }
         return _userRouters[user_];
     }
 
