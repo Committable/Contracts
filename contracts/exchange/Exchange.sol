@@ -257,7 +257,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
     function _transitState(
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
-    ) internal returns (bytes memory) {
+    ) internal  {
         bytes memory buyOrderData = ArrayUtils.guardedArrayReplace(
             buyOrder.data,
             sellOrder.data,
@@ -274,7 +274,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
         );
         address router = _controller.getRouter(sellOrder.maker);
         // return returndata on success, revert with reason if low-level call failed
-        require(Router(router).proxy(buyOrder.target, buyOrderData));
-        return Address.functionCall(router, buyOrderData);
+        require(Router(router).proxy(buyOrder.target, buyOrderData), 'Exchange: low-level call failed');
     }
 }

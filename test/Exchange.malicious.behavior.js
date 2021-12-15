@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Order, hashOrder, encodeTransferWithPermit, encodeMintWithSig } = require("./utils.js");
+const { Order, hashOrder, encodeTransfer, encodeMintWithSig } = require("./utils.js");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -361,57 +361,53 @@ function shouldRevertWithMaliciousBehavior() {
       })
       context('when nft contract address does not match', function () {
         it('revert with ETH standard order', async function () {
-          let calldata = encodeTransferWithPermit(ZERO_ADDRESS, ZERO_ADDRESS, buyer.address, tokenId_0)
-          buy_order_0.data = calldata;
+          buy_order_0.target = ZERO_ADDRESS;
           buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include("invalid order parameters");
           }
         })
         it('revert with ERC20 standard order', async function () {
-          let calldata = encodeTransferWithPermit(ZERO_ADDRESS, ZERO_ADDRESS, buyer.address, tokenId_2)
-          buy_order_2.data = calldata;
+          buy_order_2.target = ZERO_ADDRESS;
           buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ETH lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(ZERO_ADDRESS, buyer.address, tokenId_4)
-          buy_order_4.data = calldata;
+          buy_order_4.target = ZERO_ADDRESS;
           buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(ZERO_ADDRESS, buyer.address, tokenId_5)
-          buy_order_5.data = calldata;
+          buy_order_5.target = ZERO_ADDRESS;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
       })
       context('when tokenID does not match', function () {
         it('revert with ETH standard order', async function () {
-          let calldata = encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_1)
+          let calldata = encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
           buy_order_0.data = calldata;
           buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
           try {
@@ -423,7 +419,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ERC20 standard order', async function () {
-          let calldata = encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_1)
+          let calldata = encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
           buy_order_2.data = calldata;
           buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
           try {
@@ -435,7 +431,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ETH lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(committable.address, buyer.address, tokenId_1)
+          let calldata = encodeMintWithSig(buyer.address, tokenId_1)
           buy_order_4.data = calldata;
           buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
           try {
@@ -447,7 +443,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(committable.address, buyer.address, tokenId_1)
+          let calldata = encodeMintWithSig(buyer.address, tokenId_1)
           buy_order_5.data = calldata;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
           try {
@@ -881,7 +877,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait()
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid permit signature');
+            expect(err.message).to.include('Exchange: low-level call failed');
           }
         })
       })

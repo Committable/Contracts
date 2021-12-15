@@ -37,10 +37,5 @@ interface IERC721Committable is IERC721EnumerableUpgradeable {
      */
     function commitOf(uint256 tokenId) external view returns (uint160);
 
-    function permit(
-        address operator,
-        uint256 tokenId,
-        uint256 deadline,
-        bytes memory signature
-    ) external;
+   
 }

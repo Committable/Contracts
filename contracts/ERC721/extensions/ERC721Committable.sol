@@ -11,8 +11,7 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
     Controller internal _controller;
     // mapping from project to tokenIds belongging to this project
     mapping(uint96 => uint256[]) private _projectTokens;
-    // mapping from address to nounce to avoid reuse of approval
-    mapping(address => uint256) public nonces;
+
 
     // solhint-disable-next-line
     function __ERC721Committable_init_unchained(address controller)
@@ -104,26 +103,22 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
         return uint160(tokenId);
     }
 
-    function permit(
-        address operator,
-        uint256 tokenId,
-        uint256 deadline,
-        bytes memory signature
-    ) external virtual override {
-        require(
-            deadline == 0 || block.timestamp < deadline,
-            "expired permit signature"
-        );
-        address owner = ownerOf(tokenId);
-        bytes32 permitHash = keccak256(
-            abi.encode(operator, tokenId, nonces[owner]++, deadline)
-        );
-        require(
-            ECDSA.recover(permitHash, signature) == owner,
-            "invalid permit signature"
-        );
-        _approve(operator, tokenId);
+    /**
+     * Override isApprovedForAll to whitelist user's router accounts to enable gas-less listings.
+     */
+    function isApprovedForAll(address owner, address operator)
+        override(ERC721Upgradeable, IERC721Upgradeable)
+        public
+        view
+        returns (bool)
+    {
+        // Whitelist router contract for easy trading.
+        if (address(_controller.getRouter(owner)) == operator) {
+            return true;
+        }
+
+        return super.isApprovedForAll(owner, operator);
     }
 
-    uint256[47] private __gap;
+    uint256[48] private __gap;
 }

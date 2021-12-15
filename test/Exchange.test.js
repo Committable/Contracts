@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Asset, hashAsset, Order, hashOrder, encodeTransferFrom, encodeTransferFromReplacement, encodeTransferWithPermit, hashPermit, encodeTransferWithPermitReplacement, encodeMintWithSig, encodeMintWithSigReplacement } = require("./utils.js");
+const { Asset, hashAsset, Order, hashOrder, encodeTransferFrom, encodeTransferFromReplacement, encodeTransfer, hashPermit, encodeTransferReplacement, encodeMintWithSig, encodeMintWithSigReplacement } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
@@ -48,10 +48,7 @@ describe('Exchange', function () {
       exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
       // /* set router address & exchange in controller contract */
-      // let tx = await controller.grantAuthentication(exchange.address);
-      // await tx.wait();
-      tx = await controller.setDefaultRouter(router.address);
-      await tx.wait();
+     
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("ERC20Test");
       token = await ERC20.connect(buyer).deploy("Tether", "USDT");
@@ -65,6 +62,10 @@ describe('Exchange', function () {
       await tx.wait()
       // approve exchange
       tx = await controller.approveOrCancel(exchange.address, true);
+      await tx.wait();
+
+      // seller enable router
+      tx = await controller.connect(seller).registerRouter();
       await tx.wait();
 
       /**
@@ -87,14 +88,13 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_0),
-        encodeTransferWithPermitReplacement(true),
+        committable.address,
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_0),
+        encodeTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
       )
-      nonce = await committable.nonces(seller.address);
-      tokenId_0_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, DEADLINE)));
       sell_order_0 = new Order(
         exchange.address,
         false,
@@ -104,8 +104,9 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_0, DEADLINE, tokenId_0_permit_sig),
-        encodeTransferWithPermitReplacement(false),
+        committable.address,
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_0, DEADLINE),
+        encodeTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -124,14 +125,13 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_1),
-        encodeTransferWithPermitReplacement(true),
+        committable.address,
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1),
+        encodeTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
       )
-      nonce = await committable.nonces(seller.address);
-      tokenId_1_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_1, nonce, DEADLINE)));
       sell_order_1 = new Order(
         exchange.address,
         false,
@@ -141,8 +141,9 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_1, DEADLINE, tokenId_1_permit_sig),
-        encodeTransferWithPermitReplacement(false),
+        committable.address,
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_1, DEADLINE),
+        encodeTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -161,14 +162,13 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_2),
-        encodeTransferWithPermitReplacement(true),
+        committable.address,
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_2),
+        encodeTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
       )
-      nonce = await committable.nonces(seller.address);
-      tokenId_2_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_2, nonce, DEADLINE)));
       sell_order_2 = new Order(
         exchange.address,
         false,
@@ -178,8 +178,9 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         0,
-        encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_2, DEADLINE, tokenId_2_permit_sig),
-        encodeTransferWithPermitReplacement(false),
+        committable.address,
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_2, DEADLINE),
+        encodeTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -199,14 +200,13 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_3),
-        encodeTransferWithPermitReplacement(true),
+        committable.address,
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_3),
+        encodeTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
       )
-      nonce = await committable.nonces(seller.address);
-      tokenId_3_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_3, nonce, DEADLINE)));
       sell_order_3 = new Order(
         exchange.address,
         false,
@@ -216,8 +216,9 @@ describe('Exchange', function () {
         PRICE,
         royaltyRecipient.address,
         ROYALTY,
-        encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_3, DEADLINE, tokenId_3_permit_sig),
-        encodeTransferWithPermitReplacement(false),
+        committable.address,
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_3, DEADLINE),
+        encodeTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -241,7 +242,8 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_4),
+        committable.address,
+        encodeMintWithSig(buyer.address, tokenId_4),
         encodeMintWithSigReplacement(true),
         0,
         0,
@@ -256,7 +258,8 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_4, signature_4),
+        committable.address,
+        encodeMintWithSig(buyer.address, tokenId_4, signature_4),
         encodeMintWithSigReplacement(false),
         0,
         0,
@@ -281,7 +284,8 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_5),
+        committable.address,
+        encodeMintWithSig(buyer.address, tokenId_5),
         encodeMintWithSigReplacement(true),
         0,
         0,
@@ -296,7 +300,8 @@ describe('Exchange', function () {
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_5, signature_5),
+        committable.address,
+        encodeMintWithSig(buyer.address, tokenId_5, signature_5),
         encodeMintWithSigReplacement(false),
         0,
         0,

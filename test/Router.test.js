@@ -57,64 +57,64 @@ describe('Router', function () {
 
     
 
-    context('[transferWithPermit] function test', function () {
-      it('should successfully transfer tokenId_0 from signer to user', async function () {
-        /* approve router and make transfer */
-        nonce = await committable.nonces(signer.address);
-        let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
-        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
-        await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
-        expect(await committable.ownerOf(tokenId_0)).to.equal(user.address);
-      })
-      it('should revert with invalid signature', async function () {
-        /* approve router and make transfer */
-        nonce = await committable.nonces(signer.address);
-        let permit_sig = await user.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
-        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
-        try {
-          await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
-          throw null;
-        }
-        catch (err) {
-          expect(err.message).to.include('invalid permit signature');
-        }
-      })
-      it('should revert with expired signature', async function () {
-        /* approve router and make transfer */
-        nonce = await committable.nonces(signer.address);
-        let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 1)));
-        expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
-        try {
-          await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 1, permit_sig);
-          throw null;
-        }
-        catch (err) {
-          expect(err.message).to.include('expired permit signature');
-        }
-      })
+    // context('[transferWithPermit] function test', function () {
+    //   it('should successfully transfer tokenId_0 from signer to user', async function () {
+    //     /* approve router and make transfer */
+    //     nonce = await committable.nonces(signer.address);
+    //     let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
+    //     expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
+    //     await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
+    //     expect(await committable.ownerOf(tokenId_0)).to.equal(user.address);
+    //   })
+    //   it('should revert with invalid signature', async function () {
+    //     /* approve router and make transfer */
+    //     nonce = await committable.nonces(signer.address);
+    //     let permit_sig = await user.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 0)));
+    //     expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
+    //     try {
+    //       await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 0, permit_sig);
+    //       throw null;
+    //     }
+    //     catch (err) {
+    //       expect(err.message).to.include('invalid permit signature');
+    //     }
+    //   })
+    //   it('should revert with expired signature', async function () {
+    //     /* approve router and make transfer */
+    //     nonce = await committable.nonces(signer.address);
+    //     let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, 1)));
+    //     expect(await committable.ownerOf(tokenId_0)).to.equal(signer.address);
+    //     try {
+    //       await router.transferWithPermit(committable.address, signer.address, user.address, tokenId_0, 1, permit_sig);
+    //       throw null;
+    //     }
+    //     catch (err) {
+    //       expect(err.message).to.include('expired permit signature');
+    //     }
+    //   })
       
-    })
+    // })
 
-    context('[mintWithSig] function test', function () {
-      it('should successfully mint token through router', async function () {
-        /* sign some tokenId */
-        let abiCoder = new ethers.utils.AbiCoder;
-        let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
-        await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
-        expect(await committable.ownerOf(tokenId_4), user.address);
-      })
-      it('should revert with invalid signature', async function () {
-        /* sign some tokenId */
-        let abiCoder = new ethers.utils.AbiCoder;
-        let signature_4 = await user.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
-        try {
-          await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
-          throw null;
-        } catch(err) {
-          expect(err.message).to.include("invalid token signature")
-        }
-      })
-    })
+    // context('[mintWithSig] function test', function () {
+    //   it('should successfully mint token through router', async function () {
+    //     /* sign some tokenId */
+    //     let abiCoder = new ethers.utils.AbiCoder;
+    //     let signature_4 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+    //     await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
+    //     expect(await committable.ownerOf(tokenId_4), user.address);
+    //   })
+    //   it('should revert with invalid signature', async function () {
+    //     /* sign some tokenId */
+    //     let abiCoder = new ethers.utils.AbiCoder;
+    //     let signature_4 = await user.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+    //     try {
+    //       await router.mintWithSig(committable.address, user.address, tokenId_4, signature_4);
+    //       throw null;
+    //     } catch(err) {
+    //       expect(err.message).to.include("invalid token signature")
+    //     }
+    //   })
+    // })
 
 
     // context('with router disabled', function () {
