@@ -90,31 +90,6 @@ let signature = await signer.signMessage(raw_data);
 
 签名完成后，用户调用mint函数传入tokenId和对应的签名即可完成铸币
 
-##### 授权签名
-
-合约提供了额外的授权函数，可以传入代币拥有者的授权签名，通过第三方调用来完成代币授权（因此在Router合约中使得将授权和转账合并到一个原子交易成为可能）
-
-具体签名规则如下：
-
-```javascript
-// 封装函数，对所需参数进行编码并哈希成原始签名数据(raw_data)
-// signer.address: 授权者地址，代币拥有者
-// operator: 授权到的地址，目前统一授权到router合约地址
-// tokenId; 授权的代币编号
-// nonce: nonce指，同一个nonce只能用一次，可以调用Committable合约nonce(address)来获取可用nonce指
-// deadline：授权有效截止时间戳(秒)，当该值设为0时表示永久有效
-const hashPermit = (operator, tokenId, nonce, deadline) => {
-  let abiCoder = new ethers.utils.AbiCoder();
-  let permit_encode =
-    abiCoder.encode(['address', 'uint256', 'uint256', 'uint256'], [operator, tokenId, nonce, deadline])
-  return permit_hash = ethers.utils.keccak256(permit_encode);
-}
-// 访问signer地址对应nonce值
-let nonce = await committable.nonces(signer.address);
-// 用signer地址进行授权签名，允许user地址使用该tokenId（signer必须是该tokenId的所有者）
-let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(user.address, tokenId, nonce, 0)));
-```
-
 #### Functions (Read-Only)
 
 ##### balanceOf(owner)
@@ -350,6 +325,8 @@ let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(user.
         address royaltyRecipient;
         // royalty to pay, zero as non-royalty
         uint256 royalty;
+        // target to call
+        address target;
         // attached calldata to target
         bytes data;
         // data replacement pattern, empty bytes for no replacement;
@@ -374,6 +351,7 @@ let permit_sig = await signer.signMessage(ethers.utils.arrayify(hashPermit(user.
 - value值指实际支付数量
 - royaltyRecipient指该笔交易的版权费接受地址（从当前版本开始，合约不再记录版权费和创作者信息，依赖外部参数输入）
 - royalty指版权费的万分比（该值设置为500时指版权费收取5%，有效值在0-10000之间）
+- address是该笔交易完成后外部调用目标
 - data是该笔交易完成后发生的外部调用数据（转账NFT或者进行延迟铸币等操作，在数据编码中会详细介绍）
 - replacementPattern表示外部调用数据的匹配规则（转账NFT或者进行延迟铸币等操作，在数据编码中会详细介绍）
 - start：该订单有效起始时间戳（秒）：设置成0表示即可生效
@@ -394,51 +372,51 @@ const SIG = '0x00000000000000000000000000000000000000000000000000000000000000000
 // 初始化abi
 const interface = new ethers.utils.Interface([
   "function mint(address to, uint256 tokenId, bytes signature)",
-  "function transferFrom(address token, address from, address to, uint256 tokenId)",
-  "function transferWithPermit(address token, address from, address to, uint256 tokenId, uint256 deadline, bytes signature)",
-  "function mintWithSig(address token, address to, uint256 tokenId, bytes signature)"
+  "function transferFrom(address from, address to, uint256 tokenId)",
+  "function mintWithSig(address to, uint256 tokenId, bytes signature)"
 ])
-// 对调用transferWithPermit进行编码，其中encodeTransferWithPerimit传入调用参数，Replacement传入买卖方布尔值
-const encodeTransferWithPermit = (ERC721ContractAddress, from, to, tokenId, deadline = 0 , signature = SIG) => {
-  return interface.encodeFunctionData("transferWithPermit", [ERC721ContractAddress, from, to, tokenId, deadline, signature]);
+// 对调用transfer进行编码，其中encodeTransfer传入调用参数，Replacement传入买卖方布尔值
+const encodeTransfer = (from, to, tokenId) => {
+  return interface.encodeFunctionData("transferFrom", [from, to, tokenId]);
 }
-const encodeTransferWithPermitReplacement = (isBuyer) => {
+const encodeTransferReplacement = (isBuyer) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let functionReplacement = '0x00000000';
   let paramsReplacement;
   if (isBuyer) {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32'],
+      [REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
   } else {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32'],
+      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT])
   }
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
 // 对调用encodeMintWithSig进行编码，其中encodeMintWithSig传入调用参数，Replacement传入买卖方布尔值
-const encodeMintWithSig = (ERC721ContractAddress, to, tokenId, signature = SIG) => {
-  return interface.encodeFunctionData("mintWithSig", [ERC721ContractAddress, to, tokenId, signature]);
+const encodeMintWithSig = (to, tokenId, signature = SIG) => {
+  return interface.encodeFunctionData("mint", [to, tokenId, signature]);
 }
+
 const encodeMintWithSigReplacement = (isBuyer) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let functionReplacement = '0x00000000';
   let paramsReplacement;
   if (isBuyer) {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
   } else {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
   }
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
 // 订单类
 const Order = class {
-  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, data, replacementPattern, start, end, salt) {
+  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
     this.exchange = exchange;
     this.isBuySide = isBuySide;
     this.maker = maker;
@@ -447,6 +425,7 @@ const Order = class {
     this.value = value;
     this.royaltyRecipient = royaltyRecipient;
     this.royalty = royalty;
+    this.target = target;
     this.data = data;
     this.replacementPattern = replacementPattern;
     this.start = start;
@@ -458,29 +437,24 @@ const Order = class {
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let order_encode =
-    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
+    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
       [order.exchange, order.isBuySide, order.maker, order.taker,
-      order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.data, order.replacementPattern,
+      order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
       order.start, order.end, order.salt]
     );
+
   return order_hash = ethers.utils.keccak256(order_encode);
 }
 // 转账授权哈希
-const hashPermit = (operator, tokenId, nonce, deadline) => {
-  let abiCoder = new ethers.utils.AbiCoder();
-  let permit_encode =
-    abiCoder.encode(['address', 'uint256', 'uint256', 'uint256'], [operator, tokenId,nonce, deadline])
-  return permit_hash = ethers.utils.keccak256(permit_encode);
-}
 
 const Utils = {
   Order: Order,
   hashOrder: hashOrder,
   hashPermit: hashPermit,
-  encodeTransferWithPermit: encodeTransferWithPermit,
-  encodeTransferWithPermitReplacement: encodeTransferWithPermitReplacement,
   encodeMintWithSig: encodeMintWithSig,
-  encodeMintWithSigReplacement: encodeMintWithSigReplacement
+  encodeMintWithSigReplacement: encodeMintWithSigReplacement，
+  encodeTransfer: encodeTransfer,
+  encodeTransferReplacement: encodeTransferReplacement
 }
 
 module.exports = Utils;
@@ -501,28 +475,29 @@ buy_order_0 = new Order(
         PRICE, // 支付、接受价格；要求买单价格大于卖方价格，最后以买单价格执行
         royaltyRecipient.address, // 创作者地址
         0, // 版权费万分比，设置为0代表不收取版权费
-        encodeTransferWithPermit(committable.address, ZERO_ADDRESS, buyer.address, tokenId_0),
-  			// 对交易转账行为进行编码TransferWithPermit，四个参数分别指：
-  			// committable nft合约地址
+  			committable.address // 外部调用地址，即nft地址
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_0),
+  			// 对交易转账行为进行编码TransferWithPermit，三个参数分别指：
   			// nft卖家地址，即from地址，此处设置为0，卖方不关心卖家地址
   			// nft买家地址，即to地址，此处设置成买方自己的地址
   			// 代币编号
-        encodeTransferWithPermitReplacement(true),
+        encodeTransferReplacement(true),
   			// 对交易转账行为制定替代规则，参数true指此处是买方编码
         0, //起始时间戳
         0, //截止时间戳（设置成0指无截止时间）
         Math.floor(Math.random() * 10000) //随机值
       )
-// 用ETH支付的卖单，购买已经完成铸币的CMT
-// 获取卖方的nonce值，并对准备出售的tokenId进行授权签名，以授权合约进行转账
-nonce = await committable.nonces(seller.address);
-// 调用hashPermit函数，对哈希结果进行签名
-// hashPermit包含以下几个参数
-// router.address：授权地址，授权router合约调用CMT。
-// tokenId_0：代币编号
-// nonce：获取的nonce值，该值作用是为了避免签名被重复利用
-// DEADLINE：授权签名的有效截止时间戳，设置成0代表不设置有效截止时间
-tokenId_0_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit(router.address, tokenId_0, nonce, DEADLINE)));
+
+   		// 查询卖家地址是否有创建过router，如果没有则发起交易创建router；
+      // 如果没未创建过router，getRouter返回0地址
+			let router = await controller.getRouter(seller.address);
+			// 卖家第一次出售，调用合约创建router
+			if (router == ZERO_ADDRESS) {
+        tx = await controller.connect(seller).registerRouter();
+        await tx.wait();
+      }
+  
+
       sell_order_0 = new Order(
         exchange.address,
         false,
@@ -532,15 +507,12 @@ tokenId_0_permit_sig = await seller.signMessage(ethers.utils.arrayify(hashPermit
         PRICE,
         royaltyRecipient.address,
         0,
-        encodeTransferWithPermit(committable.address, seller.address, ZERO_ADDRESS, tokenId_0, DEADLINE, tokenId_0_permit_sig),
-				// 对交易转账行为进行编码TransferWithPermit，六个参数分别指：
-        // committable.address：CMT合约地址
+        committable.address
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_0),
         // seller.address：卖方地址，即卖单提交者地址
         // ZERO_ADDRESS：买方地址，卖方此处不关心买方地址
         // tokenId_0：出售的代币编号
-        // DEADLINE：签名截止时间戳
-       	// tokenId_0_permit_sig：授权签名结果
-        encodeTransferWithPermitReplacement(false),
+        encodeTransferReplacement(false),
         // 对交易转账行为制定替代规则，参数false指此处是卖方编码
         0,
         0,
@@ -567,7 +539,8 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_4),
+        committable.address，
+        encodeMintWithSig(buyer.address, tokenId_4),
         // 对铸币行为进行编码MintWithSig，三个参数分别为：
         // committable.address：CMT合约地址
         // 买方地址
@@ -587,7 +560,8 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
         PRICE,
         ZERO_ADDRESS,
         0,
-        encodeMintWithSig(committable.address, buyer.address, tokenId_4, signature_4),
+        committable.address，
+        encodeMintWithSig(buyer.address, tokenId_4, signature_4),
         // 对铸币行为进行编码MintWithSig，四个参数分别为：
         // committable.address：CMT合约地址
         // 买方地址

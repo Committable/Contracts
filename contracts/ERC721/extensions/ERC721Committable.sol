@@ -12,7 +12,6 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
     // mapping from project to tokenIds belongging to this project
     mapping(uint96 => uint256[]) private _projectTokens;
 
-
     // solhint-disable-next-line
     function __ERC721Committable_init_unchained(address controller)
         internal
@@ -107,9 +106,9 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
      * Override isApprovedForAll to whitelist user's router accounts to enable gas-less listings.
      */
     function isApprovedForAll(address owner, address operator)
-        override(ERC721Upgradeable, IERC721Upgradeable)
         public
         view
+        override(ERC721Upgradeable, IERC721Upgradeable)
         returns (bool)
     {
         // Whitelist router contract for easy trading.

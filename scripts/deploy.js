@@ -50,12 +50,6 @@ async function main() {
   await exchange.deployed();
   console.log("exchange deployed to:", exchange.address);
   /* initialize contracts */
-  /* set default router */
-  console.log("setDefaultRouter...")
-  tx = await controller.setDefaultRouter(router.address);
-  await tx.wait();
-  let defaultRouter = await controller.getRouter();
-  console.log("default rouer set to: ", defaultRouter);
   /* set fee recipient */
   console.log("setRecipient...")
   // tx = await exchange.changeRecipient('0x92E0a5c7d7D806cD48Db15e220DC4440185b0787');
@@ -66,7 +60,7 @@ async function main() {
   console.log("setSigner...")
   tx = await controller.setSigner('0x95EC7c60F2150cb9CCdbc942278CfD71f0a47024');
   await tx.wait()
-  let signer = await controller.signer();
+  let signer = await controller.getSigner();
   console.log("signer set to: ", signer);
   /* approve exchange */
   console.log("approve exchange...");

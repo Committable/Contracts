@@ -36,6 +36,4 @@ interface IERC721Committable is IERC721EnumerableUpgradeable {
      * @dev Returns commit supply of a given tokenId
      */
     function commitOf(uint256 tokenId) external view returns (uint160);
-
-   
 }

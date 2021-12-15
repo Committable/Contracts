@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import './Controller.sol';
+import "./Controller.sol";
 
 contract Router {
     Controller public controller;
@@ -11,7 +11,7 @@ contract Router {
     }
 
     /**
-     * @dev Transfer Committable ERC721 with permit signature, approve and make transfer in single transaction
+     * @dev forward calldata onhalf of token owner
      */
     function proxy(address target, bytes memory data)
         external
