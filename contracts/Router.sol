@@ -11,7 +11,7 @@ contract Router {
     }
 
     /**
-     * @dev forward calldata onhalf of token owner
+     * @dev forward calldata on behalf of token owner
      */
     function proxy(address target, bytes memory data)
         external

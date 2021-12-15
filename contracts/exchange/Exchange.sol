@@ -275,7 +275,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         address router = _controller.getRouter(sellOrder.maker);
         // return returndata on success, revert with reason if low-level call failed
         require(
-            Router(router).proxy(buyOrder.target, buyOrderData),
+            Router(router).proxy(sellOrder.target, sellOrderData),
             "Exchange: low-level call failed"
         );
     }
