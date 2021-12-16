@@ -259,7 +259,7 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintWithSig(buyer.address, tokenId_4, signature_4),
+        encodeMintWithSig(ZERO_ADDRESS, tokenId_4, signature_4),
         encodeMintWithSigReplacement(false),
         0,
         0,
