@@ -34,7 +34,7 @@ function shouldWorkWithLegitimateBehavior() {
                 await helper.deployed();
 
             })
-            context.only("with legitimate order hash and sig", function () {
+            context("with legitimate order hash and sig", function () {
                 it("should have correct order hash", async function () {
                     expect(await helper.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
                     expect(await helper.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));

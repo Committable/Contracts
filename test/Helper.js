@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { encodeTransferWithPermit, encodeTransferWithPermitReplacement } = require('./utils.js');
+const { encodeTransfer, encodeTransferReplacement } = require('./utils.js');
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const ERC721_ADDRESS = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const { NAME, SYMBOL } = require('../.config.js');
@@ -67,12 +67,11 @@ describe('helper', function () {
     it('should have equal output after replacement', async function () {
         token_id = tokenId_0;
         // signer transfer ERC721 to another
-        let sig = '0xb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000b'
-        let buyData = encodeTransferWithPermit(ERC721_ADDRESS, ZERO_ADDRESS, another.address, token_id)
-        let sellData = encodeTransferWithPermit(ERC721_ADDRESS, signer.address, ZERO_ADDRESS, token_id, 1, sig)
+        let buyData = encodeTransfer(ZERO_ADDRESS, another.address, token_id)
+        let sellData = encodeTransfer(signer.address, ZERO_ADDRESS, token_id)
 
-        let buyReplacement = encodeTransferWithPermitReplacement(true);
-        let sellReplacement = encodeTransferWithPermitReplacement(false);
+        let buyReplacement = encodeTransferReplacement(true);
+        let sellReplacement = encodeTransferReplacement(false);
 
         let buyDataAfter = await helper.replace(buyData, sellData, buyReplacement);
         let sellDataAfter = await helper.replace(sellData, buyData, sellReplacement)

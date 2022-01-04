@@ -10,7 +10,6 @@ const tokenId = '0xaaaaaa'
 const interface = new ethers.utils.Interface([
   "function mint(address to, uint256 tokenId, bytes signature)",
   "function transferFrom(address from, address to, uint256 tokenId)",
-  "function transferWithPermit(address token, address from, address to, uint256 tokenId, uint256 deadline, bytes signature)",
   "function mintWithSig(address token, address to, uint256 tokenId, bytes signature)"
 ])
 
