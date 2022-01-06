@@ -36,18 +36,28 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
     }
 
     function mint(
-        address to,
+        address creator,
         uint256 tokenId,
         bytes memory signature
-    ) external virtual override {
+    ) public virtual override {
+        bytes32 hash = keccak256(abi.encode(creator, tokenId));
         require(
-            ECDSA.recover(bytes32(tokenId), signature) ==
-                _controller.getSigner(),
+            ECDSA.recover(hash, signature) == _controller.getSigner(),
             "invalid token signature"
         );
         uint96 project = uint96(tokenId >> 160);
         _projectTokens[project].push(tokenId);
-        _mint(to, tokenId);
+        _mint(creator, tokenId);
+    }
+
+    function mintAndTransfer(
+        address creator,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
+    ) external virtual override {
+        mint(creator, tokenId, signature);
+        transferFrom(creator, to, tokenId);
     }
 
     /**

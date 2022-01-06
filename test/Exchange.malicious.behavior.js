@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Order, hashOrder, encodeTransfer, encodeMintWithSig } = require("./utils.js");
+const { Order, hashOrder, hashMint, encodeTransfer, encodeMintAndTransfer } = require("./utils.js");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -18,11 +18,11 @@ function shouldRevertWithMaliciousBehavior() {
     context('with standard orders and lazy-mint orders', function () {
       beforeEach('with minted nft', async function () {
         // sign some tokenId
-        let abiCoder = new ethers.utils.AbiCoder();
-        let signature_0 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-        let signature_1 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-        let signature_2 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
-        let signature_3 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
+        
+        let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
+        let signature_1 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_1)));
+        let signature_2 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_2)));
+        let signature_3 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_3)));
 
         // mint tokenId_0, 1, 2 to seller
         tx = await committable.mint(seller.address, tokenId_0, signature_0);
@@ -431,7 +431,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ETH lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(buyer.address, tokenId_1)
+          let calldata = encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
           buy_order_4.data = calldata;
           buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
           try {
@@ -443,7 +443,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
-          let calldata = encodeMintWithSig(buyer.address, tokenId_1)
+          let calldata = encodeMintAndTransfer(ZERO_ADDRESS,buyer.address, tokenId_1)
           buy_order_5.data = calldata;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
           try {

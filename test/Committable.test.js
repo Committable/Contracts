@@ -7,7 +7,7 @@ const { projects, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
 const { project_0, project_1 } = projects;
 const { commit_0, commit_1, commit_2, commit_3 } = commits;
-const { hashPermit } = require('./utils.js');
+const { hashMint} = require('./utils.js');
 
 describe('Committable', function () {
     context('with deployed contracts', function () {
@@ -39,10 +39,10 @@ describe('Committable', function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
                     /* sign some tokenId */
                     let abiCoder = new ethers.utils.AbiCoder;
-                    let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-                    let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-                    let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
-                    let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
+                    let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
+                    let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_1)));
+                    let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_2)));
+                    let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
                     /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
                     await committable.mint(signer.address, tokenId_0, signature_0);
                     await committable.mint(signer.address, tokenId_1, signature_1);

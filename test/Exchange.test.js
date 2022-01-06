@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Asset, hashAsset, Order, hashOrder, encodeTransferFrom, encodeTransferFromReplacement, encodeTransfer, hashPermit, encodeTransferReplacement, encodeMintWithSig, encodeMintWithSigReplacement } = require("./utils.js");
+const { Asset, hashAsset, Order, hashOrder, hashMint, encodeTransferFrom, encodeTransferFromReplacement, encodeTransfer, hashPermit, encodeTransferReplacement, encodeMintAndTransfer, encodeMintAndTransferReplacement } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
@@ -20,8 +20,13 @@ DEADLINE = 0;
 describe('Exchange', function () {
   context('with deployed contracts initialized orders and fees', function () {
     beforeEach(async function () {
+     
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
+       /* deploy helper */
+       const Helper = await ethers.getContractFactory('Helper');
+       helper = await Helper.deploy();
+       await helper.deployed();
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
@@ -39,10 +44,7 @@ describe('Exchange', function () {
       await committable.deployed();
       /* attach token proxy contract with logic contract abi */
       committable = await CommittableV1.attach(committable.address);
-      /* deploy router contract */
-      let Router = await ethers.getContractFactory("Router");
-      router = await Router.deploy(controller.address);
-      await router.deployed();
+    
       /* deploy exchange contract */
       let Exchange = await ethers.getContractFactory("Exchange");
       exchange = await Exchange.deploy(controller.address);
@@ -231,7 +233,7 @@ describe('Exchange', function () {
       // generate order pairs: pay eth to mint erc721, no royalty
       // sign tokenId from server
       let abiCoder = new ethers.utils.AbiCoder();
-      let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_4])));
+      let signature_4 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_4)));
 
       buy_order_4 = new Order(
         exchange.address,
@@ -243,8 +245,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintWithSig(buyer.address, tokenId_4),
-        encodeMintWithSigReplacement(true),
+        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_4),
+        encodeMintAndTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -259,8 +261,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintWithSig(ZERO_ADDRESS, tokenId_4, signature_4),
-        encodeMintWithSigReplacement(false),
+        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_4, signature_4),
+        encodeMintAndTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -273,7 +275,7 @@ describe('Exchange', function () {
 
         // generate order pairs: pay erc20 to mint erc721, no royalty
       // sign tokenId from server
-      let signature_5 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_5])));
+      let signature_5 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_5)));
 
       buy_order_5 = new Order(
         exchange.address,
@@ -285,8 +287,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintWithSig(buyer.address, tokenId_5),
-        encodeMintWithSigReplacement(true),
+        encodeMintAndTransfer(ZERO_ADDRESS ,buyer.address, tokenId_5),
+        encodeMintAndTransferReplacement(true),
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -301,8 +303,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintWithSig(buyer.address, tokenId_5, signature_5),
-        encodeMintWithSigReplacement(false),
+        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_5, signature_5),
+        encodeMintAndTransferReplacement(false),
         0,
         0,
         Math.floor(Math.random() * 10000)

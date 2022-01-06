@@ -8,17 +8,10 @@ const SIG = '0x00000000000000000000000000000000000000000000000000000000000000000
 const tokenId = '0xaaaaaa'
 
 const interface = new ethers.utils.Interface([
-  "function mint(address to, uint256 tokenId, bytes signature)",
+  "function mint(address creator, uint256 tokenId, bytes signature)",
   "function transferFrom(address from, address to, uint256 tokenId)",
-  "function mintWithSig(address token, address to, uint256 tokenId, bytes signature)"
+  "function mintAndTransfer(address creator, address to, uint256 tokenId, bytes signature)"
 ])
-
-
-
-
-const encodeTransferWithPermit = (ERC721ContractAddress, from, to, tokenId, deadline = 0, signature = SIG) => {
-  return interface.encodeFunctionData("transferWithPermit", [ERC721ContractAddress, from, to, tokenId, deadline, signature]);
-}
 
 const encodeTransfer = (from, to, tokenId) => {
   return interface.encodeFunctionData("transferFrom", [from, to, tokenId]);
@@ -40,24 +33,29 @@ const encodeTransferReplacement = (isBuyer) => {
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
 
-const encodeTransferWithPermitReplacement = (isBuyer) => {
+const encodeMintWithSig = (to, tokenId, signature = SIG) => {
+  return interface.encodeFunctionData("mint", [to, tokenId, signature]);
+}
+
+const encodeMintAndTransfer = (creator, to, tokenId, signature = SIG) => {
+  return interface.encodeFunctionData("mintAndTransfer", [creator, to, tokenId, signature]);
+
+}
+
+const encodeMintAndTransferReplacement = (isBuyer) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let functionReplacement = '0x00000000';
   let paramsReplacement;
   if (isBuyer) {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
   } else {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
   }
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
-}
-
-const encodeMintWithSig = (to, tokenId, signature = SIG) => {
-  return interface.encodeFunctionData("mint", [to, tokenId, signature]);
 }
 
 const encodeMintWithSigReplacement = (isBuyer) => {
@@ -94,12 +92,16 @@ const Order = class {
     this.salt = salt;
   }
 }
-const hashPermit = (operator, tokenId, nonce, deadline) => {
+
+
+
+const hashMint = (creator, tokenId) => {
   let abiCoder = new ethers.utils.AbiCoder();
-  let permit_encode =
-    abiCoder.encode(['address', 'uint256', 'uint256', 'uint256'], [operator, tokenId, nonce, deadline])
-  return permit_hash = ethers.utils.keccak256(permit_encode);
+  let mint_encode =
+    abiCoder.encode(['address', 'uint256'], [creator, tokenId])
+    return mint_hash = ethers.utils.keccak256(mint_encode);
 }
+
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let order_encode =
@@ -108,16 +110,15 @@ const hashOrder = (order) => {
       order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
       order.start, order.end, order.salt]
     );
-
   return order_hash = ethers.utils.keccak256(order_encode);
 }
 
 const Utils = {
   Order: Order,
   hashOrder: hashOrder,
-  hashPermit: hashPermit,
-  encodeTransferWithPermit: encodeTransferWithPermit,
-  encodeTransferWithPermitReplacement: encodeTransferWithPermitReplacement,
+  hashMint: hashMint,
+  encodeMintAndTransfer: encodeMintAndTransfer,
+  encodeMintAndTransferReplacement: encodeMintAndTransferReplacement,
   encodeMintWithSig: encodeMintWithSig,
   encodeMintWithSigReplacement: encodeMintWithSigReplacement,
   encodeTransfer: encodeTransfer,

@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Order, hashOrder } = require("./utils.js");
+const { Order, hashOrder, hashMint } = require("./utils.js");
 const { check } = require("prettier");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
 const life_span = 60 * 60 * 24 * 7 // one week
@@ -15,11 +15,12 @@ function shouldWorkWithLegitimateBehavior() {
             beforeEach('with minted nft', async function () {
                 // sign some tokenId
                 let abiCoder = new ethers.utils.AbiCoder();
-                let signature_0 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-                let signature_1 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-                let signature_2 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
-                let signature_3 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
-                // mint tokenId_0, 1, 2 to seller
+
+                let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
+                let signature_1 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_1)));
+                let signature_2 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_2)));
+                let signature_3 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_3)));
+                // // mint tokenId_0, 1, 2 to seller
                 tx = await committable.mint(seller.address, tokenId_0, signature_0);
                 await tx.wait();
                 tx = await committable.mint(seller.address, tokenId_1, signature_1);
@@ -408,7 +409,9 @@ function shouldWorkWithLegitimateBehavior() {
                 it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
                     expect(tx).to.emit(committable, 'Transfer')
-                        .withArgs(ZERO_ADDRESS, buyer.address, tokenId_4);
+                        .withArgs(ZERO_ADDRESS, seller.address, tokenId_4);
+                    expect(tx).to.emit(committable, 'Transfer')
+                        .withArgs(seller.address, buyer.address, tokenId_4);
                 })
             })
 
@@ -425,7 +428,9 @@ function shouldWorkWithLegitimateBehavior() {
                 it('emit desired committable event', async function () {
                     let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
                     expect(tx).to.emit(committable, 'Transfer')
-                        .withArgs(ZERO_ADDRESS, buyer.address, tokenId_5);
+                        .withArgs(ZERO_ADDRESS, seller.address, tokenId_5);
+                    expect(tx).to.emit(committable, 'Transfer')
+                        .withArgs(seller.address, buyer.address, tokenId_5);
                 })
                 it('emit desired token event', async function () {
                     let fee = await exchange.getFee();

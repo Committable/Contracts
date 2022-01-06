@@ -11,6 +11,13 @@ interface IERC721Committable is IERC721EnumerableUpgradeable {
         bytes memory signature
     ) external;
 
+    function mintAndTransfer(
+        address creator,
+        address to,
+        uint256 tokenId,
+        bytes memory signature
+    ) external;
+
     /**
      * @dev Returns project of a given tokenId
      */

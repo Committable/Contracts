@@ -4,7 +4,7 @@ const { encodeTransfer, encodeTransferReplacement } = require('./utils.js');
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const ERC721_ADDRESS = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const { NAME, SYMBOL } = require('../.config.js');
-
+const { hashMint } = require('./utils.js')
 const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 describe('helper', function () {
@@ -36,10 +36,10 @@ describe('helper', function () {
          committable = await CommittableV1.attach(committable.address);
          /* sign some tokenId */
          let abiCoder = new ethers.utils.AbiCoder;
-         let signature_0 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-         let signature_1 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
-         let signature_2 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_2])));
-         let signature_3 = await signer.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_3])));
+         let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
+         let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_1)));
+         let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_2)));
+         let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
          /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
          await committable.mint(signer.address, tokenId_0, signature_0);
          await committable.mint(signer.address, tokenId_1, signature_1);

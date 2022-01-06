@@ -6,7 +6,7 @@ const ether = require("@openzeppelin/test-helpers/src/ether");
 const { ZERO_ADDRESS } = constants;
 const { tokenIds, projects, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
-
+const { hashMint } = require('./utils.js');
 describe('ERC721', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
@@ -31,8 +31,8 @@ describe('ERC721', function () {
       committable = await CommittableV1.attach(committable.address)
       /* sign some tokenId */
       let abiCoder = new ethers.utils.AbiCoder;
-      let signature_0 = await owner.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_0])));
-      let signature_1 = await owner.signMessage(ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId_1])));
+      let signature_0 = await owner.signMessage(ethers.utils.arrayify(hashMint(owner.address, tokenId_0)));
+      let signature_1 = await owner.signMessage(ethers.utils.arrayify(hashMint(owner.address, tokenId_1)));
       /* mint tokenId_0, tokenId_1 to owner */
       let tx = await committable.mint(owner.address, tokenId_0, signature_0);
       await tx.wait();

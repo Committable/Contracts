@@ -21,7 +21,7 @@ contract Controller is ProxyAdmin {
     }
 
     function registerRouter() external {
-        address userRouter = address(new Router(address(this)));
+        address userRouter = address(new Router(address(this), msg.sender));
         _userRouters[msg.sender] = userRouter;
         emit RouterRegistered(msg.sender, userRouter);
     }
