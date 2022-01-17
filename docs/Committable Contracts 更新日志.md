@@ -2,7 +2,7 @@
 
 ## 铸币签名漏洞修复
 
-2022.01.05
+Committable deployed to: **0x05574A8dac4799Df6A408328AD22F38F39204761**
 
 ### 前端
 
