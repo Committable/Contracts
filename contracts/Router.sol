@@ -17,24 +17,28 @@ contract Router {
      */
     function proxy(address target, bytes memory data)
         external
-        returns (bool result)
+        returns (bytes memory)
     {
         require(
             controller.isApproved(msg.sender) == true || msg.sender == user,
             "invalid request"
         );
-        (result, data) = target.call(data);
-        // assembly {
-        //     returndatacopy(0, 0, returndatasize())
-        //      switch result
-        //     // delegatecall returns 0 on error.
-        //     case 0 {
-        //         revert(0, returndatasize())
-        //     }
-        //     default {
-        //         return(0, returndatasize())
-        //     }
-        // }
-        return result;
+        (bool success, bytes memory returndata) = target.call(data);
+
+        if (success) {
+            return returndata;
+        } else {
+            // Look for revert reason and bubble it up if present
+            if (returndata.length > 0) {
+                // The easiest way to bubble the revert reason is using memory via assembly
+
+                assembly {
+                    let returndata_size := mload(returndata)
+                    revert(add(32, returndata), returndata_size)
+                }
+            } else {
+                revert('low level call failed');
+            }
+        }
     }
 }

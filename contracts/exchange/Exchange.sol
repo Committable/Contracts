@@ -273,10 +273,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "invalid data replacement"
         );
         address router = _controller.getRouter(sellOrder.maker);
-        // return returndata on success, revert with reason if low-level call failed
-        require(
-            Router(router).proxy(sellOrder.target, sellOrderData),
-            "Exchange: low-level call failed"
-        );
+        Router(router).proxy(sellOrder.target, sellOrderData);
     }
 }

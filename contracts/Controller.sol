@@ -27,7 +27,9 @@ contract Controller is ProxyAdmin {
     }
 
     function getRouter(address user_) external view returns (address) {
-        return _userRouters[user_];
+        address router = _userRouters[user_];
+        // require(router != address(0), "?");
+        return router;
     }
 
     function setSigner(address signer_) external onlyOwner {

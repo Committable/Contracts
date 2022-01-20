@@ -2,7 +2,11 @@
 
 ## 铸币签名漏洞修复
 
-Committable deployed to: **0x05574A8dac4799Df6A408328AD22F38F39204761**
+Controller deployed to: **0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a**
+
+Committable deployed to: **0x378E528a275Cd9735837f1b14F735f88BC8661E7**
+
+Exchange deployed to: **0x48aEe3F428D7cc41555f2FeFB2d5436849e50400**
 
 ### 前端
 

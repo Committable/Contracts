@@ -38,11 +38,11 @@ async function main() {
   await committable.deployed();
   console.log("Committable deployed to:", committable.address);
   /* deploy router contract */
-  console.log('waiting for deployment: Router')
-  let Router = await ethers.getContractFactory("Router");
-  router = await Router.deploy(controller.address);
-  await router.deployed();
-  console.log("router deployed to:", router.address);
+  // console.log('waiting for deployment: Router')
+  // let Router = await ethers.getContractFactory("Router");
+  // router = await Router.deploy(controller.address);
+  // await router.deployed();
+  // console.log("router deployed to:", router.address);
   /* deploy exchange contract */
   console.log('waiting for deployment: Exchange...')
   let Exchange = await ethers.getContractFactory("Exchange");

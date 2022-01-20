@@ -6,6 +6,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
+const controller_address = '0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6';
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -16,12 +17,6 @@ async function main() {
   // await hre.run('compile');
 
   // We get the contract to deploy
-  /* deploy controller contract */
-  console.log('waiting for deployment: Controller...')
-  let Controller = await ethers.getContractFactory("Controller");
-  controller = await Controller.deploy();
-  await controller.deployed();
-  console.log("controller deployed to:", controller.address);
   /* deploy token logic contract */
   console.log('waiting for deployment: CommittableV1...')
   let CommittableV1 = await ethers.getContractFactory("CommittableV1");
@@ -33,8 +28,8 @@ async function main() {
   let Committable = await ethers.getContractFactory("Committable");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);
-  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-  committable = await Committable.deploy(committableV1.address, controller.address, calldata);
+  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller_address]);
+  committable = await Committable.deploy(committableV1.address, controller_address, calldata);
   await committable.deployed();
   console.log("Committable deployed to:", committable.address);
 }

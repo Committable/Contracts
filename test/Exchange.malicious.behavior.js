@@ -872,12 +872,29 @@ function shouldRevertWithMaliciousBehavior() {
         it('revert when the seller does not own the token', async function () {
           let tx = await committable.transferFrom(seller.address, buyer.address, tokenId_0);
           await tx.wait();
+
           try {
             tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait()
             throw null;
           } catch (err) {
-            expect(err.message).to.include('Exchange: low-level call failed');
+            expect(err.message).to.include('ERC721: transfer caller is not owner nor approved');
+          }
+        })
+      })
+      context('when mint sig is invalid', function () {
+        it('revert when mint sig is invali', async function () {
+          let signature_5 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, 123)));
+          let sell_data = encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_4, signature_5);
+          sell_order_4.data = sell_data;
+          sell_order_sig_4 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_4)));
+
+          try {
+            tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait()
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include('invalid token signature');
           }
         })
       })
