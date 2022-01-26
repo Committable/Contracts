@@ -19,19 +19,25 @@ Committable smart contracts enable software developers to tokenize their contrib
 
   ~~0xC042025a4f72d8CCb6C0ce558d98bA2a134f8a24~~
 
-  **0xB15F0d2e4a7416bdf9bb766a6ff2aB704A5E0392** (Updated at 2nd Dec)
+  ~~0xB15F0d2e4a7416bdf9bb766a6ff2aB704A5E0392~~ (Updated at 2nd Dec)
+
+  **0x48aEe3F428D7cc41555f2FeFB2d5436849e50400** (Updated at 20th Jan)
 
 - **Committable**：
 
   ~~0xAa30D69a35d9BC2c3f59949b96efeEfBD84BBC27~~
 
-  **0x2b9059EB406254c71aB9c0F90FB3be638a1147b4** (Updated at 2nd Dec)
+  ~~0x2b9059EB406254c71aB9c0F90FB3be638a1147b4~~ (Updated at 2nd Dec)
 
-- Helper：**0x67886c1203aAFC191Cbf878454D73b2825783dd1**
+  **0x378E528a275Cd9735837f1b14F735f88BC8661E7** (Updated at 20th Jan)
+
+- Helper：
+
+  **0x67886c1203aAFC191Cbf878454D73b2825783dd1**
 
 - Router：
 
-  ~~0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622**~~**
+  ~~0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622~~
 
   **0x7759f72A371debC182208024A3D33E287e799527** (Updated at 2nd Dec)
 
@@ -45,12 +51,14 @@ Committable smart contracts enable software developers to tokenize their contrib
 
   ~~0xB90EDA1295e35115D19a138cdC3A697D59eD87b0~~
 
-  **0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6** (Updated at 2nd Dec)
+  ~~0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6~~ (Updated at 2nd Dec)
+  
+  **0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a** (Updated at 20th Jan)
 
 ### 管理地址
 
 - Exchange & Controller合约管理员地址: 0xaa3376682A0fF472c716E23927D4200DB69E8A9C
-- Reserve地址:：0x92E0a5c7d7D806cD48Db15e220DC4440185b0787
+- Reserve地址:：0xaa3376682A0fF472c716E23927D4200DB69E8A9C
 - 铸币签名地址：0x95EC7c60F2150cb9CCdbc942278CfD71f0a47024
 
 ## Contracts

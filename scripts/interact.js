@@ -5,12 +5,12 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
-const controller_address = '0x82D477c25dbFC5238dB0e0C680b15E816EA8721C';
+const controller_address = '0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a';
 const helper_address = '0xb606d030aC9AFCdc5f37fA8e38049304F453427e';
-const committable_adress = '0x2f518f2d98f385CA569c1F2b9CA74e838D9E6F49';
+const committable_adress = '0x378E528a275Cd9735837f1b14F735f88BC8661E7';
 const committableV1_address = '0x2ceDC191d4bDE246e72af86E5c66EbAD9Ed16968';
 const router_address = '0x7759f72A371debC182208024A3D33E287e799527'
-const exchange_address = '0xe2b473735C828AFb208fBbFDCABf1AB10057a9B1';
+const exchange_address = '0x48aEe3F428D7cc41555f2FeFB2d5436849e50400';
 const { hashOrder, hashMint, encodeMintAndTransfer } = require('../test/utils.js');
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
@@ -33,11 +33,7 @@ async function main() {
   const Helper = await ethers.getContractFactory("Helper");
   const helper = await Helper.attach(helper_address);
 
-  const Router = await ethers.getContractFactory("Router");
-  let router_address = await controller.getRouter(admin.address);
-
-  const router = await Router.attach(router_address);
-  console.log('now router is :', router.address);
+ 
   const CommittableV1 = await ethers.getContractFactory("CommittableV1");
   const committable = await CommittableV1.connect(admin).attach(committable_adress);
 
@@ -56,11 +52,15 @@ async function main() {
   // await tx.wait()
   let signer = await controller.getSigner();
   console.log("signer set to: ", signer);
+
+
+  let reserve = await exchange.getRecipient();
+  console.log("exchange recipient set to: ", reserve)
   // /* approve exchange */
   // console.log("approve exchange...");
   // let tx = await controller.approveOrCancel('0xDB8e70Ee7c760E7033E1663AC307EaE42531c682', true);
   // await tx.wait();
-  console.log("exchange has been approved?: ", await controller.isApproved('0xDB8e70Ee7c760E7033E1663AC307EaE42531c682'));
+  console.log("exchange has been approved?: ", await controller.isApproved(exchange.address));
   // let order = {
   //   data: "0x94d008ef0000000000000000000000000000000000000000000000000000000000000000000000000000000018484bd64dd59067c76dea4a0e8e4bfdda41877a6b16dedc000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000417e2be074aa2bb768d95cfed38f1379293124d9c6768deb58d3265ba392360a784c13d4b7735c39bd6618da369d2233b39847860721737a8e3bd569b5f72e2e1d1b00000000000000000000000000000000000000000000000000000000000000"
   //   , end: 0
@@ -88,10 +88,10 @@ async function main() {
 
   // console.log(baseNounce);
   let data = encodeMintAndTransfer(creator, to, tokenId, sig)
-  let tx = await router.proxy(committable.address, data);
+  // let tx = await router.proxy(committable.address, data);
   // let tx = await controller.registerRouter();
   
-  await tx.wait();
+  // await tx.wait();
   // console.log(await controller.getRouter(admin.address))
   // try {
   //   tx = await exchange.cancelOrder(order)
