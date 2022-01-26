@@ -1,6 +1,8 @@
 # AirdropPool 
 
-**AirdropPool: 0xD8bd5D05f4F5f956D9097C1C1eAc3E8D3Da3b6d1** (Updated at 26th Jan)
+**AirdropPool: ~~0xD8bd5D05f4F5f956D9097C1C1eAc3E8D3Da3b6d1~~** (Updated at 26th Jan)
+
+**AirdropPool: 0x04fbA4D3d98ACEBB5Ba394557425e78884dDC721**(Updated at 26th Jan: allow input for index)
 
 ### Functions (Read-Only)
 
@@ -42,7 +44,7 @@ struct PoolInfo {
 
 ### Functions (State-Changing)
 
-##### **create(rewardToken, rewardAmount, start, end)**
+##### **create(index, rewardToken, rewardAmount, start, end)**
 
 创建空投池
 
@@ -50,6 +52,7 @@ struct PoolInfo {
 
 **输入**
 
+1. `index` - `整型`：空投池编号（不能重复）
 1. `rewardToken` - `地址`：空投代币合约地址
 2. `rewardAmount` - `整型`：空投代币金额 （注意输入时乘以decimal值）
 3. `start` - `整型`：空投开始时间戳（秒）
@@ -65,7 +68,7 @@ struct PoolInfo {
 
 **输入**
 
-1. `index` - `整型`：空投池编号（编号从0开始）
+1. `index` - `整型`：空投池编号
 2. `amount` - `整型`：领取数额
 3. `sig` - `动态长度字节码`：签名
 
@@ -87,7 +90,7 @@ sig = await signer.signMessage(ethers.utils.arrayify(hash));
 
 **输入**
 
-1. `index` - `整型`：空投池编号（编号从0开始）
+1. `index` - `整型`：空投池编号
 
 **释放事件**：RewardClaimed
 

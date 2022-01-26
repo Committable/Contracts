@@ -37,7 +37,7 @@ describe('AirdropPool', function () {
       end = '10000000000'
       // current = '1643013611'
       rewardAmount = '10000'
-      tx = await airdropPool.create(token.address, rewardAmount, start, end);
+      tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
       await tx.wait()
       /* sign a user airdrop */
       abiCoder = new ethers.utils.AbiCoder();
@@ -110,11 +110,21 @@ describe('AirdropPool', function () {
         await tx.wait()
         throw null;
       } catch (err) {
-        expect(err.message).to.include('index out of bounds');
+        expect(err.message).to.include('query of non-existence pool');
+      }
+    })
+    it.only("should revert with duplicated index", async function () {
+     
+      try {
+        tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
+        await tx.wait()
+        throw null;
+      } catch (err) {
+        expect(err.message).to.include('pool already exists');
       }
     })
     it.only('should claim unclaimed token after end-time', async function () {
-      // set net block timestamp to end-time
+      /* set network block timestamp to end-time */
       await network.provider.send("evm_setNextBlockTimestamp", [10000000000])
       let poolInfo = await airdropPool.getPoolInfo(index);
       let unclaimedAmount = poolInfo.unclaimedAmount;
@@ -125,6 +135,6 @@ describe('AirdropPool', function () {
       unclaimedAmount = poolInfo.unclaimedAmount;
       expect(unclaimedAmount).to.equal(0)
     })
-    
-  })  
+
+  })
 })

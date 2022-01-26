@@ -11,8 +11,8 @@ import "../library/ECDSA.sol";
 
 contract AirdropPool is Ownable, ReentrancyGuard {
     Controller internal _controller;
-    PoolInfo[] public poolInfo;
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+    mapping(uint256 => PoolInfo) public poolInfo;
     struct UserInfo {
         bool isClaimed;
     }
@@ -57,7 +57,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev return user info by pool index and address, return true when user has claimed the token  
+     * @dev return user info by pool index and address, return true when user has claimed the token
      */
     function getUserInfo(uint256 index, address user)
         external
@@ -71,19 +71,20 @@ contract AirdropPool is Ownable, ReentrancyGuard {
      * @dev create airdrop pool and provide reward tokens
      */
     function create(
+        uint256 index,
         address rewardToken,
         uint256 rewardAmount,
         uint256 start,
         uint256 end
     ) external nonReentrant {
+        require(poolInfo[index].creator == address(0), "pool already exists");
         SafeERC20.safeTransferFrom(
             IERC20(rewardToken),
             msg.sender,
             address(this),
             rewardAmount
         );
-        uint256 index = poolInfo.length;
-        poolInfo.push(
+        poolInfo[index] = (
             PoolInfo({
                 creator: msg.sender,
                 rewardToken: IERC20(rewardToken),
@@ -113,8 +114,8 @@ contract AirdropPool is Ownable, ReentrancyGuard {
         bytes memory sig
     ) external nonReentrant {
         require(
-            index < poolInfo.length,
-            "index out of bounds"
+            poolInfo[index].creator != address(0),
+            "query of non-existence pool"
         );
         require(
             block.timestamp > poolInfo[index].start &&
@@ -138,6 +139,10 @@ contract AirdropPool is Ownable, ReentrancyGuard {
      * @dev creator can withdrawl unclaimed rewardToken after end-time
      */
     function withdraw(uint256 index) external nonReentrant {
+        require(
+            poolInfo[index].creator != address(0),
+            "query of non-existence pool"
+        );
         require(msg.sender == poolInfo[index].creator, "only creator");
         require(block.timestamp >= poolInfo[index].end, "invalid timestamp");
         IERC20 rewardToken = poolInfo[index].rewardToken;
