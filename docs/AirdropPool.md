@@ -2,7 +2,9 @@
 
 **AirdropPool: ~~0xD8bd5D05f4F5f956D9097C1C1eAc3E8D3Da3b6d1~~** (Updated at 26th Jan)
 
-**AirdropPool: 0x04fbA4D3d98ACEBB5Ba394557425e78884dDC721**(Updated at 26th Jan: allow input for index)
+**AirdropPool: ~~0x04fbA4D3d98ACEBB5Ba394557425e78884dDC721~~**(Updated at 26th Jan: allow input for index)
+
+**AirdropPool: 0x206b78B162545a9C5216b8ef0B59D3B8792A61C8** (Updated at 26th Jan)
 
 ### Functions (Read-Only)
 

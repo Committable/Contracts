@@ -10,8 +10,11 @@ import "../Controller.sol";
 import "../library/ECDSA.sol";
 
 contract AirdropPool is Ownable, ReentrancyGuard {
+    /** query controller for signer address */
     Controller internal _controller;
+    /** mapping from pool index to user address to userInfo */
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
+    /** mapping from pool index to poolInfo */
     mapping(uint256 => PoolInfo) public poolInfo;
     struct UserInfo {
         bool isClaimed;
@@ -47,6 +50,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
 
     /**
      * @dev return pool info by index
+     * @param index pool index
      */
     function getPoolInfo(uint256 index)
         external
@@ -58,6 +62,8 @@ contract AirdropPool is Ownable, ReentrancyGuard {
 
     /**
      * @dev return user info by pool index and address, return true when user has claimed the token
+     * @param index pool index
+     * @param user user address
      */
     function getUserInfo(uint256 index, address user)
         external
@@ -69,6 +75,11 @@ contract AirdropPool is Ownable, ReentrancyGuard {
 
     /**
      * @dev create airdrop pool and provide reward tokens
+     * @param index pool index
+     * @param rewardToken reward token contract address
+     * @param rewardAmount reward amount
+     * @param start airdrop pool start-time
+     * @param end airdrop pool end-time
      */
     function create(
         uint256 index,
@@ -78,6 +89,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
         uint256 end
     ) external nonReentrant {
         require(poolInfo[index].creator == address(0), "pool already exists");
+        require(start < end, 'invalid timestamp');
         SafeERC20.safeTransferFrom(
             IERC20(rewardToken),
             msg.sender,
@@ -107,6 +119,9 @@ contract AirdropPool is Ownable, ReentrancyGuard {
 
     /**
      * @dev claim airdrop tokens, must provide server signature
+     * @param index pool index
+     * @param amount airdrop amount to claim
+     * @param sig signature offered by server
      */
     function claim(
         uint256 index,
@@ -136,7 +151,8 @@ contract AirdropPool is Ownable, ReentrancyGuard {
     }
 
     /**
-     * @dev creator can withdrawl unclaimed rewardToken after end-time
+     * @dev creator withdrawl unclaimed rewardToken after end-time
+     * @param index pool index
      */
     function withdraw(uint256 index) external nonReentrant {
         require(

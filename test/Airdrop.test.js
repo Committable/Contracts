@@ -35,7 +35,7 @@ describe('AirdropPool', function () {
       /* create an airdrop */
       start = '0';
       end = '10000000000'
-      // current = '1643013611'
+      // current is around'1643013611'
       rewardAmount = '10000'
       tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
       await tx.wait()
@@ -47,7 +47,7 @@ describe('AirdropPool', function () {
       sig = await signer.signMessage(ethers.utils.arrayify(hash));
     })
 
-    it.only('should return poolInfo', async function () {
+    it('should return poolInfo', async function () {
       let result = await airdropPool.getPoolInfo(0);
       expect(result.creator).to.equal(creator.address);
       expect(result.rewardToken).to.equal(token.address);
@@ -56,7 +56,11 @@ describe('AirdropPool', function () {
       expect(result.start).to.equal(start);
       expect(result.end).to.equal(end);
     })
-    it.only('should claim airdrop successfully', async function () {
+    it('should create airdrop successfully', async function () {
+      let tx = await airdropPool.create(1, token.address, rewardAmount, start, end);
+      expect(tx).to.emit(airdropPool, 'PoolCreated').withArgs(1, token.address, rewardAmount,creator.address, start, end);
+    })
+    it('should claim airdrop successfully', async function () {
       let tx = await airdropPool.connect(user).claim(index, claimAmount, sig);
       expect(tx).to.emit(airdropPool, 'RewardClaimed').withArgs(index, token.address, claimAmount, user.address);
       expect(tx).to.emit(token, 'Transfer').withArgs(airdropPool.address, user.address, claimAmount);
@@ -66,7 +70,7 @@ describe('AirdropPool', function () {
       let userInfo = await airdropPool.getUserInfo(index, user.address);
       expect(userInfo).to.equal(true)
     })
-    it.only('cannot claim twice', async function () {
+    it('cannot claim twice', async function () {
       let tx = await airdropPool.connect(user).claim(index, claimAmount, sig);
       await tx.wait();
       try {
@@ -75,7 +79,7 @@ describe('AirdropPool', function () {
         expect(err.message).to.include("claim once only")
       }
     })
-    it.only('cannot claim with invalid sig', async function () {
+    it('cannot claim with invalid sig', async function () {
       let invalidSig = await user.signMessage(ethers.utils.arrayify(hash));
       try {
         let tx = await airdropPool.connect(user).claim(index, claimAmount, invalidSig);
@@ -85,7 +89,7 @@ describe('AirdropPool', function () {
         expect(err.message).to.include("invalid signature")
       }
     })
-    it.only('cannot claim amount that succeed unclaimed amount', async function () {
+    it('cannot claim amount that succeed unclaimed amount', async function () {
       /* sign a user airdrop */
       let index = '0'
       let claimAmount = '100000'
@@ -99,7 +103,7 @@ describe('AirdropPool', function () {
         expect(err.message).to.include('underflowed');
       }
     })
-    it.only("should revert invalid request", async function () {
+    it("should revert when query of non-existence pool", async function () {
       /* sign a user airdrop */
       let index = '1'
       let claimAmount = '10000'
@@ -113,7 +117,16 @@ describe('AirdropPool', function () {
         expect(err.message).to.include('query of non-existence pool');
       }
     })
-    it.only("should revert with duplicated index", async function () {
+    it("should revert with calling address 0 when creating", async function() {
+      try {
+        let tx = await airdropPool.create(1, ZERO_ADDRESS, rewardAmount, start, end);
+        await tx.wait();
+        throw null
+      } catch(err) {
+        expect(err.message).to.include('Address: call to non-contract');
+      }
+    })
+    it("should revert with duplicated index", async function () {
      
       try {
         tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
@@ -123,7 +136,8 @@ describe('AirdropPool', function () {
         expect(err.message).to.include('pool already exists');
       }
     })
-    it.only('should claim unclaimed token after end-time', async function () {
+    /** from this unit, we manipulate timestamp to overdue */
+    it('should be able to claim unclaimed token after end-time', async function () {
       /* set network block timestamp to end-time */
       await network.provider.send("evm_setNextBlockTimestamp", [10000000000])
       let poolInfo = await airdropPool.getPoolInfo(index);
@@ -135,6 +149,17 @@ describe('AirdropPool', function () {
       unclaimedAmount = poolInfo.unclaimedAmount;
       expect(unclaimedAmount).to.equal(0)
     })
-
+    it('should revert when claim airdrop after end-time', async function () {
+      /* set network block timestamp to end-time */
+      // await network.provider.send("evm_setNextBlockTimestamp", [10000000000])
+      try {
+        let tx = await airdropPool.claim(index, claimAmount, sig);
+        await tx.wait()
+        throw null
+      } catch(err) {
+        expect(err.message).to.include('invalid timestamp')
+      }
+    })
   })
 })
+
