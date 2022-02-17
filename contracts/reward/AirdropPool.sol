@@ -10,7 +10,6 @@ import "../Controller.sol";
 import "../library/ECDSA.sol";
 
 contract AirdropPool is Ownable, ReentrancyGuard {
-    /** query controller for signer address */
     Controller internal _controller;
     /** mapping from pool index to user address to userInfo */
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -161,6 +160,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
         );
         require(msg.sender == poolInfo[index].creator, "only creator");
         require(block.timestamp >= poolInfo[index].end, "invalid timestamp");
+        require(poolInfo[index].unclaimedAmount > 0 , "non-unclaimed tokens");
         IERC20 rewardToken = poolInfo[index].rewardToken;
         uint256 unclaimedAmount = poolInfo[index].unclaimedAmount;
         SafeERC20.safeTransfer(rewardToken, msg.sender, unclaimedAmount);
