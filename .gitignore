@@ -1,7 +1,7 @@
 node_modules
 .env
 .setting.js
-
+./scripts/interact.js
 #Hardhat files
 cache
 artifacts

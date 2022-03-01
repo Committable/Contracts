@@ -6,7 +6,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
-const controller_address = '0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6';
+const controller_address = '0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a';
 
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command

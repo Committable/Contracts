@@ -5,6 +5,8 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
+const { NAME, SYMBOL } = require('../.config.js');
+
 const controller_address = '0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a';
 const helper_address = '0xb606d030aC9AFCdc5f37fA8e38049304F453427e';
 const committable_adress = '0x378E528a275Cd9735837f1b14F735f88BC8661E7';
@@ -23,9 +25,9 @@ async function main() {
   // get provider accounts
   const accounts = await ethers.provider.listAccounts();
   console.log(accounts);
-  [admin] = await ethers.getSigners();
+  [admin, secondAdmin] = await ethers.getSigners();
 
-  // console.log(signer.address)
+  console.log(secondAdmin.address)
   // We get the contract to interact
   const Controller = await ethers.getContractFactory("Controller");
   const controller = await Controller.connect(admin).attach(controller_address);
@@ -33,73 +35,40 @@ async function main() {
   const Helper = await ethers.getContractFactory("Helper");
   const helper = await Helper.attach(helper_address);
 
- 
-  const CommittableV1 = await ethers.getContractFactory("CommittableV1");
-  const committable = await CommittableV1.connect(admin).attach(committable_adress);
+
+  // const CommittableV1 = await ethers.getContractFactory("CommittableV1");
+  // const committable = await CommittableV1.connect(admin).attach(committable_adress);
 
   const Exchange = await ethers.getContractFactory("Exchange");
   const exchange = await Exchange.connect(admin).attach(exchange_address);
 
-  /* set fee recipient */
-  // console.log("setRecipient...")
-  // tx = await exchange.changeRecipient('0xaa3376682A0fF472c716E23927D4200DB69E8A9C');
-  // await tx.wait()
-  // let recipient = await exchange.getRecipient();
-  // console.log("recipient set to: ", recipient);
-  // /* set mint signer */
-  // console.log("setSigner...")
-  // tx = await controller.setSigner('0x95EC7c60F2150cb9CCdbc942278CfD71f0a47024');
-  // await tx.wait()
-  let signer = await controller.getSigner();
-  console.log("signer set to: ", signer);
+  /* deploy token proxy contract */
+  // console.log('waiting for deployment: Committable...')
+  // let Committable = await ethers.getContractFactory("Committable");
+  // let ABI = ["function initialize(string,string,address)"];
+  // let iface = new ethers.utils.Interface(ABI);
+  // let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller_address]);
+  // committable = await Committable.deploy(committableV1_address, controller_address, calldata);
+  // await committable.deployed();
+  // console.log("Committable deployed to:", committable.address);
 
-
-  let reserve = await exchange.getRecipient();
-  console.log("exchange recipient set to: ", reserve)
-  // /* approve exchange */
-  // console.log("approve exchange...");
-  // let tx = await controller.approveOrCancel('0xDB8e70Ee7c760E7033E1663AC307EaE42531c682', true);
-  // await tx.wait();
-  console.log("exchange has been approved?: ", await controller.isApproved(exchange.address));
-  // let order = {
-  //   data: "0x94d008ef0000000000000000000000000000000000000000000000000000000000000000000000000000000018484bd64dd59067c76dea4a0e8e4bfdda41877a6b16dedc000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000417e2be074aa2bb768d95cfed38f1379293124d9c6768deb58d3265ba392360a784c13d4b7735c39bd6618da369d2233b39847860721737a8e3bd569b5f72e2e1d1b00000000000000000000000000000000000000000000000000000000000000"
-  //   , end: 0
-  //   , exchange: "0xe2b473735C828AFb208fBbFDCABf1AB10057a9B1"
-  //   , isBuySide: false
-  //   , maker: "0x77b249debbdc83e945941a6b20263f6f10001391"
-  //   , paymentToken: "0xc778417E063141139Fce010982780140Aa0cD5Ab"
-  //   , replacementPattern: "0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
-  //   , royalty: 0
-  //   , royaltyRecipient: "0x77b249debbdc83e945941a6b20263f6f10001391"
-  //   , salt: 7282
-  //   , start: 0
-  //   , taker: "0x0000000000000000000000000000000000000000"
-  //   , target: "0xaeb676387E1Af4D71A258aD31D6Fd6cd1eC554C9"
-  //   , value: "100000000000000"
-  // }
-
-  let creator = '0xDB8e70Ee7c760E7033E1663AC307EaE42531c682'
-  let to = '0x77b249dEBbdC83E945941A6B20263F6f10001391'
-  let tokenId = '0x18484bd6b19ff868aaef9336de9c83bd400ab40a598b1875';
-
-  let sig = "0x556d363c09fd5bac43106733ee1a6e1542c1b38164d108d0496b69af55b7987a4c69735469705bb2b8160690defd2d8cda3375e73ec14d75e0c26f4666d568671c";
-
-  // baseNounce = await ethers.provider.getTransactionCount('0xaa3376682A0fF472c716E23927D4200DB69E8A9C');
-
-  // console.log(baseNounce);
-  let data = encodeMintAndTransfer(creator, to, tokenId, sig)
-  // let tx = await router.proxy(committable.address, data);
-  // let tx = await controller.registerRouter();
-  
-  // await tx.wait();
-  // console.log(await controller.getRouter(admin.address))
-  // try {
-  //   tx = await exchange.cancelOrder(order)
-  //   await tx.wait();
-  //   throw null;
-  // } catch (err) {
-  //   console.log(err.message)
-  // }
+    // We get the contract to deploy
+  /* deploy token logic contract */
+  console.log('waiting for deployment: CommittableV1...')
+  let CommittableV1 = await ethers.getContractFactory("CommittableV1");
+  committableV1 = await CommittableV1.connect(secondAdmin).deploy();
+  console.log(committableV1)
+  await committableV1.deployed();
+  console.log("CommittableV1 deployed to:", committableV1.address);
+  /* deploy token proxy contract */
+  console.log('waiting for deployment: Committable...')
+  let Committable = await ethers.getContractFactory("Committable");
+  let ABI = ["function initialize(string,string,address)"];
+  let iface = new ethers.utils.Interface(ABI);
+  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller_address]);
+  committable = await Committable.connect(secondAdmin).deploy(committableV1.address, controller_address, calldata);
+  await committable.deployed();
+  console.log("Committable deployed to:", committable.address);
 
 }
 

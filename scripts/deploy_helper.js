@@ -6,7 +6,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
-
+// deployed to 0xeA459814c304530c36E579dA319dbF1AE86dfF97 (21 Feb)
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
