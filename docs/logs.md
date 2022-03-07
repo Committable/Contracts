@@ -1,5 +1,11 @@
 # Committable Contract Logs
 
+## 20220307 - Re-deploy Contracts
+
+Committable deployed to: 0x6E5f43470e301b8508176F58a77e8C83e59FF1E2
+
+CommittableV1 deployed to: 0x64fe9358538318C537c11233a04c67B388Da1933
+
 ## 20220307 - Fix Exchange Vulnerability
 
 exchange deployed to: 0xB976678B0dA3F1632A2E442325c9eB8CB9E00BdC
