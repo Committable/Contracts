@@ -7,7 +7,7 @@ exchange deployed to: 0xB976678B0dA3F1632A2E442325c9eB8CB9E00BdC
 ```javascript
 // 移除订单结构体taker字段（移除与之相关的逻辑）
 // 添加isAuction字段 （false代表定价出售，true代表拍卖）
-
+// 接口参数调整，注意更新abi
 class Order {
   constructor(exchange, isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
     this.exchange = exchange;
