@@ -6,8 +6,8 @@
 // Runtime Environment's members available in the global scope.
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
-const old_exchange_address = '0x7c63d26347dFeaBD11FD93776C6A7D783f57d11f';
-const controller_address = '0x50CD7c242aCc7F803b4322d6Cf9C5b3Ba732582f';
+const old_exchange_address = '0xB976678B0dA3F1632A2E442325c9eB8CB9E00BdC';
+const controller_address = '0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a';
 
 async function main() {
     // Hardhat always runs the compile task when running scripts with its command
@@ -22,22 +22,24 @@ async function main() {
 
 
     // We get the contract to interact
-    const Exchange = await ethers.getContractFactory("Exchange");
-    const exchange = await Exchange.deploy(controller_address);
-    await exchange.deployed();
-    console.log("exchange deployed to:", exchange.address);
+    // const Exchange = await ethers.getContractFactory("Exchange");
+    // const exchange = await Exchange.deploy(controller_address);
+    // await exchange.deployed();
+    // console.log("exchange deployed to:", exchange.address);
 
     // do sth
     const Controller = await ethers.getContractFactory("Controller");
     const controller = await Controller.attach(controller_address);
-    let tx = await controller.grantAuthentication(exchange.address);
-    await tx.wait();
-    console.log("grant exchange contract: ", exchange.address);
-    console.log("is new exchange address is authenticated: ", await controller.contracts(exchange.address));
+    // let tx = await controller.approveOrCancel(exchange.address, true);
+    // await tx.wait();
+    // console.log("grant exchange contract: ", exchange.address);
+    // console.log("is new exchange address is authenticated: ", await controller.isApproved(exchange.address));
+    console.log("is new exchange address is authenticated: ", await controller.isApproved(old_exchange_address));
 
-    tx = await controller.revokeAuthentication(old_exchange_address);
-    await tx.wait();
-    console.log("revoke exchange contract: ", old_exchange_address);
+
+    // tx = await controller.revokeAuthentication(old_exchange_address);
+    // await tx.wait();
+    // console.log("revoke exchange contract: ", old_exchange_address);
 
 }
 

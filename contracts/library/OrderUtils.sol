@@ -8,11 +8,11 @@ library OrderUtils {
         address exchange;
         // order side: true for order from buyer, false for order from seller
         bool isBuySide;
+        // order transaction type
+        bool isAuction;
         // order maker address
         address maker;
-        // order taker address, if specified
-        address taker;
-        // paymentToken contract address, zero-address as sentinal value for ether
+        // // paymentToken contract address, zero-address as sentinal value for ether
         address paymentToken;
         // paymentToken amount that a buyer is willing to pay, or a seller's minimal ask price
         uint256 value;
@@ -40,8 +40,8 @@ library OrderUtils {
                 abi.encode(
                     order.exchange,
                     order.isBuySide,
+                    order.isAuction,
                     order.maker,
-                    order.taker,
                     order.paymentToken,
                     order.value,
                     order.royaltyRecipient,

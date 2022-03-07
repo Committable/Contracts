@@ -4,7 +4,7 @@ const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
 const { Order, hashOrder, hashMint, encodeTransfer, encodeMintAndTransfer } = require("./utils.js");
-const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
 const ERC721_CLASS = '0x73ad2146';
@@ -18,11 +18,13 @@ function shouldRevertWithMaliciousBehavior() {
     context('with standard orders and lazy-mint orders', function () {
       beforeEach('with minted nft', async function () {
         // sign some tokenId
-        
+
         let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
         let signature_1 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_1)));
         let signature_2 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_2)));
         let signature_3 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_3)));
+        let signature_6 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_6)));
+
 
         // mint tokenId_0, 1, 2 to seller
         tx = await committable.mint(seller.address, tokenId_0, signature_0);
@@ -32,6 +34,8 @@ function shouldRevertWithMaliciousBehavior() {
         tx = await committable.mint(seller.address, tokenId_2, signature_2);
         await tx.wait();
         tx = await committable.mint(seller.address, tokenId_3, signature_3);
+        await tx.wait();
+        tx = await committable.mint(seller.address, tokenId_6, signature_6);
         await tx.wait();
       })
       context('when buy order value is modified', function () {
@@ -122,7 +126,24 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
       })
-
+      context('when called by unexpected user', function () {
+        it('revert with buyer call erc20 standard order', async function () {
+          try {
+            await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include("must be called by legit user")
+          }
+        })
+        it('revert with buyer call erc20 lazy-mint order', async function () {
+          try {
+            await exchange.connect(buyer).matchOrder(buy_order_7, buy_order_sig_7, sell_order_7, sell_order_sig_7);
+            throw null;
+          } catch (err) {
+            expect(err.message).to.include("must be called by legit user")
+          }
+        })
+      })
       context('when buy order exchange address does not match', function () {
         it('revert with ETH standard orders', async function () {
           try {
@@ -443,7 +464,7 @@ function shouldRevertWithMaliciousBehavior() {
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
-          let calldata = encodeMintAndTransfer(ZERO_ADDRESS,buyer.address, tokenId_1)
+          let calldata = encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
           buy_order_5.data = calldata;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
           try {
@@ -796,18 +817,10 @@ function shouldRevertWithMaliciousBehavior() {
             expect(err.message).to.include('invalid payment');
           }
         })
-        it('revert with sending ethers from seller in ETH order', async function () {
-          try {
-            tx = await exchange.connect(seller).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid payment');
-          }
-        })
+
         it('revert with sending ethers from seller in ERC20 order', async function () {
           try {
-            tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: PRICE });
+            tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {

@@ -6,7 +6,7 @@ const { ZERO_ADDRESS } = constants;
 const { Asset, hashAsset, Order, hashOrder, hashMint, encodeTransferFrom, encodeTransferFromReplacement, encodeTransfer, hashPermit, encodeTransferReplacement, encodeMintAndTransfer, encodeMintAndTransferReplacement } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 
-const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5 } = tokenIds;
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const { shouldWorkWithLegitimateBehavior } = require('./Exchange.legitimate.behavior.js');
 const { shouldRevertWithMaliciousBehavior } = require('./Exchange.malicious.behavior.js')
 
@@ -20,13 +20,13 @@ DEADLINE = 0;
 describe('Exchange', function () {
   context('with deployed contracts initialized orders and fees', function () {
     beforeEach(async function () {
-     
+
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
-       /* deploy helper */
-       const Helper = await ethers.getContractFactory('Helper');
-       helper = await Helper.deploy();
-       await helper.deployed();
+      /* deploy helper */
+      const Helper = await ethers.getContractFactory('Helper');
+      helper = await Helper.deploy();
+      await helper.deployed();
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy();
@@ -44,13 +44,13 @@ describe('Exchange', function () {
       await committable.deployed();
       /* attach token proxy contract with logic contract abi */
       committable = await CommittableV1.attach(committable.address);
-    
+
       /* deploy exchange contract */
       let Exchange = await ethers.getContractFactory("Exchange");
       exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
       // /* set router address & exchange in controller contract */
-     
+
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("ERC20Test");
       token = await ERC20.connect(buyer).deploy("Tether", "USDT");
@@ -78,14 +78,16 @@ describe('Exchange', function () {
        * order_3: standard order pairs using ERC20 with royalty
        * order_4: lazy-mint order pairs using ETH without royalty
        * order_5: lazy-mint order pairs using ERC20 without royalty
+       * order_6: standard order pairs using ERC20 with royalty (Auction)
+       * order_7: lazy-mint order pairs using ERC20 without royalty (Auction)
        */
 
       // generate order pairs: pay eth to transfer erc721, no royalty
       buy_order_0 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         royaltyRecipient.address,
@@ -100,8 +102,8 @@ describe('Exchange', function () {
       sell_order_0 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         royaltyRecipient.address,
@@ -121,8 +123,8 @@ describe('Exchange', function () {
       buy_order_1 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         royaltyRecipient.address,
@@ -137,8 +139,8 @@ describe('Exchange', function () {
       sell_order_1 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         royaltyRecipient.address,
@@ -158,8 +160,8 @@ describe('Exchange', function () {
       buy_order_2 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         royaltyRecipient.address,
@@ -174,8 +176,8 @@ describe('Exchange', function () {
       sell_order_2 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         royaltyRecipient.address,
@@ -196,8 +198,8 @@ describe('Exchange', function () {
       buy_order_3 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         royaltyRecipient.address,
@@ -212,8 +214,8 @@ describe('Exchange', function () {
       sell_order_3 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         royaltyRecipient.address,
@@ -238,8 +240,8 @@ describe('Exchange', function () {
       buy_order_4 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         ZERO_ADDRESS,
@@ -254,8 +256,8 @@ describe('Exchange', function () {
       sell_order_4 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         ZERO_ADDRESS,
@@ -267,27 +269,27 @@ describe('Exchange', function () {
         0,
         Math.floor(Math.random() * 10000)
       )
-      
+
 
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
       buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
       sell_order_sig_4 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_4)));
 
-        // generate order pairs: pay erc20 to mint erc721, no royalty
+      // generate order pairs: pay erc20 to mint erc721, no royalty
       // sign tokenId from server
       let signature_5 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_5)));
 
       buy_order_5 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(ZERO_ADDRESS ,buyer.address, tokenId_5),
+        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_5),
         encodeMintAndTransferReplacement(true),
         0,
         0,
@@ -296,8 +298,8 @@ describe('Exchange', function () {
       sell_order_5 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         token.address,
         PRICE,
         ZERO_ADDRESS,
@@ -313,10 +315,92 @@ describe('Exchange', function () {
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
       buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
       sell_order_sig_5 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_5)));
+
+      // generate order pairs: pay erc20 to transfer erc721, have royalty (Auction type)
+      buy_order_6 = new Order(
+        exchange.address,
+        true,
+        true,
+        buyer.address,
+        token.address,
+        PRICE,
+        royaltyRecipient.address,
+        ROYALTY,
+        committable.address,
+        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_6),
+        encodeTransferReplacement(true),
+        0,
+        0,
+        Math.floor(Math.random() * 10000)
+      )
+      sell_order_6 = new Order(
+        exchange.address,
+        false,
+        true,
+        seller.address,
+        token.address,
+        PRICE,
+        royaltyRecipient.address,
+        ROYALTY,
+        committable.address,
+        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_6, DEADLINE),
+        encodeTransferReplacement(false),
+        0,
+        0,
+        Math.floor(Math.random() * 10000)
+      )
+
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_6 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_6)));
+      sell_order_sig_6 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_6)));
+
+      // generate order pairs: pay erc20 to mint erc721, no royalty (Auction type)
+      // sign tokenId from server
+      let signature_7 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_7)));
+
+      buy_order_7 = new Order(
+        exchange.address,
+        true,
+        true,
+        buyer.address,
+        token.address,
+        PRICE,
+        ZERO_ADDRESS,
+        0,
+        committable.address,
+        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_7),
+        encodeMintAndTransferReplacement(true),
+        0,
+        0,
+        Math.floor(Math.random() * 10000)
+      )
+      sell_order_7 = new Order(
+        exchange.address,
+        false,
+        true,
+        seller.address,
+        token.address,
+        PRICE,
+        ZERO_ADDRESS,
+        0,
+        committable.address,
+        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_7, signature_7),
+        encodeMintAndTransferReplacement(false),
+        0,
+        0,
+        Math.floor(Math.random() * 10000)
+      )
+
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_7 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_7)));
+      sell_order_sig_7 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_7)));
+
+
+
+
     })
 
     shouldWorkWithLegitimateBehavior();
     shouldRevertWithMaliciousBehavior();
   })
-
 })

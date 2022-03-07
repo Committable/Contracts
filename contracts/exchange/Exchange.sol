@@ -106,6 +106,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
             _orderParamsValidation(buyOrder, sellOrder),
             "invalid order parameters"
         );
+        require(
+            _canSettle(buyOrder, sellOrder),
+            "must be called by legit user"
+        );
         _beforeTransfer(buyOrder, sellOrder);
         _transferToken(buyOrder, sellOrder);
         _transitState(buyOrder, sellOrder);
@@ -137,12 +141,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (sellOrder.exchange == address(this)) &&
             // must be opposite order side
             (buyOrder.isBuySide == true && sellOrder.isBuySide == false) &&
-            // must be valid taker
-            (buyOrder.taker == address(0) ||
-                buyOrder.taker == sellOrder.maker) &&
-            // must be valid taker
-            (sellOrder.taker == address(0) ||
-                sellOrder.taker == buyOrder.maker) &&
+            // must match order type
+            (buyOrder.isAuction == sellOrder.isAuction) &&
             // must match paymentToken
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
             // buyOrder value must be larger than sellOrder
@@ -168,7 +168,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev set order status
+     * @dev make change to order status
      */
     function _beforeTransfer(
         OrderUtils.Order memory buyOrder,
@@ -176,6 +176,20 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal {
         _isCancelledOrFinished[OrderUtils.hash(buyOrder)] = true;
         _isCancelledOrFinished[OrderUtils.hash(sellOrder)] = true;
+    }
+
+    /**
+     * @dev check whether the transaction is made by legit user
+     */
+    function _canSettle(
+        OrderUtils.Order memory buyOrder,
+        OrderUtils.Order memory sellOrder
+    ) internal view returns (bool) {
+        if (buyOrder.isAuction) {
+            return msg.sender == sellOrder.maker;
+        } else {
+            return msg.sender == buyOrder.maker;
+        }
     }
 
     /**
@@ -193,7 +207,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         // pay by ether
         if (paymentToken == address(0)) {
             require(
-                msg.sender == buyOrder.maker && msg.value == buyOrder.value,
+                !buyOrder.isAuction && msg.value == buyOrder.value,
                 "invalid payment"
             );
             // transfer fee

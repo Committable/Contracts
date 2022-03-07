@@ -14,12 +14,15 @@ const commit_5 = '0x521f4d0aac73309294cdaf9deddb945f17323ced';
 
 
 
+
 const tokenId_0 = ethers.utils.hexConcat([project_0, commit_0]);
 const tokenId_1 = ethers.utils.hexConcat([project_0, commit_1]);
 const tokenId_2 = ethers.utils.hexConcat([project_1, commit_2]);
 const tokenId_3 = ethers.utils.hexConcat([project_1, commit_3]);
 const tokenId_4 = ethers.utils.hexConcat([project_1, commit_4]);
 const tokenId_5 = ethers.utils.hexConcat([project_1, commit_5]);
+const tokenId_6 = '0xaaaaaaa';
+const tokenId_7 = '0xbbbbbb'
 
 
 projects = {
@@ -42,7 +45,9 @@ tokenIds = {
     tokenId_2: tokenId_2,
     tokenId_3: tokenId_3,
     tokenId_4: tokenId_4,
-    tokenId_5: tokenId_5
+    tokenId_5: tokenId_5,
+    tokenId_6: tokenId_6,
+    tokenId_7: tokenId_7
 }
 
 module.exports = { projects, commits, tokenIds };

@@ -1,5 +1,46 @@
 # Committable Contract Logs
 
+## 20220307 - Fix Exchange Vulnerability
+
+exchange deployed to: 0xB976678B0dA3F1632A2E442325c9eB8CB9E00BdC
+
+```javascript
+// 移除订单结构体taker字段（移除与之相关的逻辑）
+// 添加isAuction字段 （false代表定价出售，true代表拍卖）
+
+class Order {
+  constructor(exchange, isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
+    this.exchange = exchange;
+    this.isBuySide = isBuySide;
+    this.isAuction = isAuction;
+    this.maker = maker;
+    this.paymentToken = paymentToken;
+    this.value = value;
+    this.royaltyRecipient = royaltyRecipient;
+    this.royalty = royalty;
+    this.target = target;
+    this.data = data;
+    this.replacementPattern = replacementPattern;
+    this.start = start;
+    this.end = end;
+    this.salt = salt;
+  }
+}
+
+const hashOrder = (order) => {
+  let abiCoder = new ethers.utils.AbiCoder();
+  let order_encode =
+    abiCoder.encode(['address', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
+      [order.exchange, order.isBuySide, order.isAuction, order.maker,
+      order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
+      order.start, order.end, order.salt]
+    );
+  return order_hash = ethers.utils.keccak256(order_encode);
+}
+```
+
+
+
 ## 20220301 - Re-deploy ERC721 contracts as requested
 
 ****

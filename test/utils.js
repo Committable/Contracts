@@ -74,12 +74,31 @@ const encodeMintWithSigReplacement = (isBuyer) => {
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
 
-const Order = class {
-  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
+// const Order = class {
+//   constructor(exchange, isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
+//     this.exchange = exchange;
+//     this.isBuySide = isBuySide;
+//     this.isAuction = isAuction;
+//     this.maker = maker;
+//     this.paymentToken = paymentToken;
+//     this.value = value;
+//     this.royaltyRecipient = royaltyRecipient;
+//     this.royalty = royalty;
+//     this.target = target;
+//     this.data = data;
+//     this.replacementPattern = replacementPattern;
+//     this.start = start;
+//     this.end = end;
+//     this.salt = salt;
+//   }
+// }
+
+class Order {
+  constructor(exchange, isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
     this.exchange = exchange;
     this.isBuySide = isBuySide;
+    this.isAuction = isAuction;
     this.maker = maker;
-    this.taker = taker;
     this.paymentToken = paymentToken;
     this.value = value;
     this.royaltyRecipient = royaltyRecipient;
@@ -93,20 +112,18 @@ const Order = class {
   }
 }
 
-
-
 const hashMint = (creator, tokenId) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let mint_encode =
     abiCoder.encode(['address', 'uint256'], [creator, tokenId])
-    return mint_hash = ethers.utils.keccak256(mint_encode);
+  return mint_hash = ethers.utils.keccak256(mint_encode);
 }
 
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let order_encode =
-    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
-      [order.exchange, order.isBuySide, order.maker, order.taker,
+    abiCoder.encode(['address', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
+      [order.exchange, order.isBuySide, order.isAuction, order.maker,
       order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
       order.start, order.end, order.salt]
     );
