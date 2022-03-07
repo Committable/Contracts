@@ -54,21 +54,27 @@ async function main() {
 
     // We get the contract to deploy
   /* deploy token logic contract */
-  console.log('waiting for deployment: CommittableV1...')
-  let CommittableV1 = await ethers.getContractFactory("CommittableV1");
-  committableV1 = await CommittableV1.connect(secondAdmin).deploy();
-  console.log(committableV1)
-  await committableV1.deployed();
-  console.log("CommittableV1 deployed to:", committableV1.address);
-  /* deploy token proxy contract */
-  console.log('waiting for deployment: Committable...')
-  let Committable = await ethers.getContractFactory("Committable");
-  let ABI = ["function initialize(string,string,address)"];
-  let iface = new ethers.utils.Interface(ABI);
-  let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller_address]);
-  committable = await Committable.connect(secondAdmin).deploy(committableV1.address, controller_address, calldata);
-  await committable.deployed();
-  console.log("Committable deployed to:", committable.address);
+  // console.log('waiting for deployment: CommittableV1...')
+  // let CommittableV1 = await ethers.getContractFactory("CommittableV1");
+  // committableV1 = await CommittableV1.connect(secondAdmin).deploy();
+  // console.log(committableV1)
+  // await committableV1.deployed();
+  // console.log("CommittableV1 deployed to:", committableV1.address);
+  // /* deploy token proxy contract */
+  // console.log('waiting for deployment: Committable...')
+  // let Committable = await ethers.getContractFactory("Committable");
+  // let ABI = ["function initialize(string,string,address)"];
+  // let iface = new ethers.utils.Interface(ABI);
+  // let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller_address]);
+  // committable = await Committable.connect(secondAdmin).deploy(committableV1.address, controller_address, calldata);
+  // await committable.deployed();
+  // console.log("Committable deployed to:", committable.address);
+  // We get the contract to interact
+  const AirdropPool = await ethers.getContractFactory("AirdropPool");
+  const airdropPool = await AirdropPool.deploy(controller_address);
+  await airdropPool.deployed();
+  console.log("airdropPool deployed to:", airdropPool.address);
+
 
 }
 
