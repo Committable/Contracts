@@ -2,6 +2,12 @@
 
 ## 20220307 - Re-deploy Contracts
 
+Committable deployed to: 0x569Acd67399A90c2b04B49b93E6ed07bE4751255
+
+CommittableV1 deployed to: 0x1Be89BfB9aca45A2008608BB4bEa341BEA57dE11
+
+## 20220307 - Re-deploy Contracts
+
 Committable deployed to: 0x6E5f43470e301b8508176F58a77e8C83e59FF1E2
 
 CommittableV1 deployed to: 0x64fe9358538318C537c11233a04c67B388Da1933
