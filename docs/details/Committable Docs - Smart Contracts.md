@@ -2,60 +2,47 @@
 
 ## Overview
 
-Committable smart contracts enable software developers to tokenize their contributions (the **’commit‘**) to open source projects in the form of ERC721 and provide flexible and secure exchange protocols for trading them.
+Committable smart contracts enable software developers to tokenize their contributions (the **’commit‘**) to open source projects in the form of ERC721 and provide flexible and secure protocols for trading and bringing rewards with them.
 
 ### 合约概要
 
-- **Exchange：负责交易订单匹配和执行（订单交易CMT，订单交易未上链的CMT）**
-- **Committable：CMT的ERC721合约，非订单交易行为可以调用该合约进行转账和铸币**
-- Helper：提供批量查询和哈希查询接口，主要用于Debug
-- Router：负责合并授权和转账
+- Exchange：负责交易订单匹配和执行（订单交易CMT，订单交易未上链的CMT）
+- Committable：CMT的ERC721合约，非订单交易行为可以调用该合约进行转账和铸币
+- Payroll:：负责创建和领取payroll
+- Router：用户代理转账地址
 - CommittableV1：CMT的逻辑合约V1版，通过Transparent Proxy实现CMT的逻辑可更新性，该合约仅提供访问逻辑
-- Controller：负责各合约的参数调整和管理用户Router合约，仅管理员地址可以调用该合约
+- Controller：负责各合约的参数管理和管理用户Router合约，当前该合约管理权限为EOA账号
+- Helper：提供批量查询和哈希查询接口，主要用于Debug
+
+![流程图 (1)](/Users/aolin/Projects/committable-contracts/docs/details/architecture.jpg)
 
 ### 合约地址(Ropsten)
 
-- **Exchange**：
+- **Payroll**
 
-  ~~0xC042025a4f72d8CCb6C0ce558d98bA2a134f8a24~~
+  0x55c72CE0B3BA067fAfFF43126e5f56992148e8Df
 
-  ~~0xB15F0d2e4a7416bdf9bb766a6ff2aB704A5E0392~~ (Updated at 2nd Dec)
+- **Exchange**
 
-  **0x48aEe3F428D7cc41555f2FeFB2d5436849e50400** (Updated at 20th Jan)
+  0xB976678B0dA3F1632A2E442325c9eB8CB9E00BdC
 
-- **Committable**：
+- **Committable**
 
-  ~~0xAa30D69a35d9BC2c3f59949b96efeEfBD84BBC27~~
+  0x569Acd67399A90c2b04B49b93E6ed07bE4751255
 
-  ~~0x2b9059EB406254c71aB9c0F90FB3be638a1147b4~~ (Updated at 2nd Dec)
+- **Helper**
 
-  **0x378E528a275Cd9735837f1b14F735f88BC8661E7** (Updated at 20th Jan)
+  0xb606d030aC9AFCdc5f37fA8e38049304F453427e
 
-- Helper：
+- **CommittableV1**
 
-  **0x67886c1203aAFC191Cbf878454D73b2825783dd1**
+  0x1Be89BfB9aca45A2008608BB4bEa341BEA57dE11
 
-- Router：
+- **Controller**
 
-  ~~0xaA9cDB8106B3c25E4e604C039a2bD966A6B42622~~
+  0x82D477c25dbFC5238dB0e0C680b15E816EA8721C
 
-  **0x7759f72A371debC182208024A3D33E287e799527** (Updated at 2nd Dec)
-
-- CommittableV1：
-
-  ~~0xF326F9dd019dCE7864C1e2d295eD1a57fC1F7205~~
-
-  **0xF1DA55A6026D6fdddc88F73e45CB4cA35c034b3E** (Updated at 2nd Dec)
-
-- Controller：
-
-  ~~0xB90EDA1295e35115D19a138cdC3A697D59eD87b0~~
-
-  ~~0x8553357ab4aD7f7fBBF6b7A490A88dAa3b4870f6~~ (Updated at 2nd Dec)
-  
-  **0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a** (Updated at 20th Jan)
-
-### 管理地址
+### EOA地址
 
 - Exchange & Controller合约管理员地址: 0xaa3376682A0fF472c716E23927D4200DB69E8A9C
 - Reserve地址:：0xaa3376682A0fF472c716E23927D4200DB69E8A9C
@@ -83,20 +70,24 @@ let tokenId = '0xaaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58';
 
 Committable为mint函数添加了签名验证，铸币者必须通过app获得**服务器端签名**才能进行铸币行为
 
-具体签名规则如下：
+服务器对铸币签名对象为： 铸币地址（创作者）+ tokenId，进行abi编码的keccak256哈希结果
 
 ```javascript
-// 对tokenId进行签名
-let tokenId = '0xaaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58';
-// 对tokenId进行编码（不足32字节部分补上0）
-// raw_data = '0x0000000000000000aaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58'
-let raw_data = ethers.utils.arrayify(abiCoder.encode(['uint256'], [tokenId]));
-// 调用服务器存储的私钥对该raw值签名（注意数据类型，该处应是对hex签名，而非string），该私钥对应的公钥将存储在Controller合约中（可以更新）
-let signature = await signer.signMessage(raw_data);
-// 通过geth客户端签名时，实际签名内容是keccak256("\x19Ethereum Signed Message:\n32" + raw_data)，合约内部在验签时会自动加上该签名前缀并进行一次哈希运算
+// 
+const hashMint = (creator, tokenId) => {
+  let abiCoder = new ethers.utils.AbiCoder();
+  let mint_encode =
+    abiCoder.encode(['address', 'uint256'], [creator, tokenId])
+    return mint_hash = ethers.utils.keccak256(mint_encode);
+}
+// creator_address= 0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+// tokenId = 0xaaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58
+// mint_encode = 0x000000000000000000000000f39fd6e51aad88f6f4ce6ab8827279cfffb922660000000000000000aaaaaaaa041d9634c70ef59d320cc1224a6e46a46ea7de58
+// mint_hash = keccak256(mint_encode)
+let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
 ```
 
-签名完成后，用户调用mint函数传入tokenId和对应的签名即可完成铸币
+调用铸币相关接口时，用户调用传入tokenId和对应的签名即可完成铸币
 
 #### Functions (Read-Only)
 
@@ -254,6 +245,32 @@ let signature = await signer.signMessage(raw_data);
 
 #### Functions (State-Changing)
 
+##### approve(operator, tokenId)
+
+授权指定地址对应tokenId的使用权
+
+**输入**
+
+1. `operator` - `地址`：获得授权的地址
+2. `tokenId` - `uint256`：代币编号
+
+**释放事件**
+
+1. Approval
+
+##### setApprovalForAll(operator, bool)
+
+授权指定地址对授权者所有token的使用权
+
+**输入**
+
+1. `operator` - `地址`：获得授权的地址
+2. `bool` - `布尔值`：是否授权
+
+**释放事件**
+
+1. ApprovalForAll
+
 ##### transferFrom(from, to tokenId)
 
 对指定编号的ERC721代币发起转账
@@ -284,18 +301,18 @@ let signature = await signer.signMessage(raw_data);
 
 1. Transfer
 
-##### permit(operator, tokenId, deadline, signature)
+##### mintAndTransfer(creator, to, tokenId, signature)
 
-签名授权指定地址对指定代币的使用权
+铸币并完成一次转账
 
 > 具体授权签名规则参考Rationale
 
 **输入**
 
-1. `operator` - `地址`：授权地址
-2. `tokenId` - `uint256`：代币编号
-3. `deadline` - `uint256`：授权截止时间戳（秒）
-4. `signature` - `bytes`：授权签名
+1. `creator` - `地址`：创建者地址
+2. `to` - `地址`：接受者地址
+3. `tokenId` - `uint256`：代币编号
+4. `signature` - `bytes`：代币签名
 
 #### Event
 
@@ -307,6 +324,22 @@ let signature = await signer.signMessage(raw_data);
 2. `to` - `地址`：代币收款者
 3. `tokenId` - `整型`：代币编号
 
+##### Approval(indexed owner, indexed approved, indexed tokenId)
+
+**输入**
+
+1. `owner` - `地址`：代币拥有者
+2. `approved` - `地址`：获得授权的地址
+3. `tokenId` - `整型`：代币编号
+
+##### ApprovalForAll(indexed owner, indexed approved, bool)
+
+**输入**
+
+1. `owner` - `地址`：代币拥有者
+2. `approved` - `地址`：获得授权的地址
+3. `bool` - `布尔值`：获得授权与否
+
 ### Exchange
 
 #### Rationale
@@ -316,16 +349,16 @@ let signature = await signer.signMessage(raw_data);
 订单结构体定义如下
 
 ```solidity
-    struct Order {
+ struct Order {
         // exchange address to execute orders
         address exchange;
         // order side: true for order from buyer, false for order from seller
         bool isBuySide;
+        // order transaction type
+        bool isAuction;
         // order maker address
         address maker;
-        // order taker address, if specified
-        address taker;
-        // paymentToken contract address, zero-address as sentinal value for ether
+        // // paymentToken contract address, zero-address as sentinal value for ether
         address paymentToken;
         // paymentToken amount that a buyer is willing to pay, or a seller's minimal ask price
         uint256 value;
@@ -353,8 +386,8 @@ let signature = await signer.signMessage(raw_data);
 
 - exchange代表当前正在使用的交易合约地址；
 - isBuySide是布尔值，true代表买方订单，false代表卖方订单
+- isAuction是布尔值，true代表订单拍卖类型，false代表订单是定价出售
 - maker是订单发起人地址
-- taker是订单接收人地址，把taker值设置为以太坊0地址代表任意地址均可以匹配该订单
 - paymentToken指支付代币的合约地址，该值设置为以太坊0地址代表用ETH进行支付
 - value值指实际支付数量
 - royaltyRecipient指该笔交易的版权费接受地址（从当前版本开始，合约不再记录版权费和创作者信息，依赖外部参数输入）
@@ -364,6 +397,7 @@ let signature = await signer.signMessage(raw_data);
 - replacementPattern表示外部调用数据的匹配规则（转账NFT或者进行延迟铸币等操作，在数据编码中会详细介绍）
 - start：该订单有效起始时间戳（秒）：设置成0表示即可生效
 - end：该订单有效截止时间戳（秒）：设置成0表示永久有效
+- salt：随机值：用来区分内容一致的订单
 
 ##### 数据编码与订单类
 
@@ -379,9 +413,9 @@ const SIG = '0x00000000000000000000000000000000000000000000000000000000000000000
 // const { ethers } = require('hardhat');
 // 初始化abi
 const interface = new ethers.utils.Interface([
-  "function mint(address to, uint256 tokenId, bytes signature)",
+  "function mint(address creator, uint256 tokenId, bytes signature)",
   "function transferFrom(address from, address to, uint256 tokenId)",
-  "function mintWithSig(address to, uint256 tokenId, bytes signature)"
+  "function mintAndTransfer(address creator, address to, uint256 tokenId, bytes signature)"
 ])
 // 对调用transfer进行编码，其中encodeTransfer传入调用参数，Replacement传入买卖方布尔值
 const encodeTransfer = (from, to, tokenId) => {
@@ -402,33 +436,34 @@ const encodeTransferReplacement = (isBuyer) => {
   }
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
-// 对调用encodeMintWithSig进行编码，其中encodeMintWithSig传入调用参数，Replacement传入买卖方布尔值
-const encodeMintWithSig = (to, tokenId, signature = SIG) => {
-  return interface.encodeFunctionData("mint", [to, tokenId, signature]);
+// 对调用encodeMintAndTransdfer进行编码，其中encodeMintAndTransfer传入调用参数，Replacement传入买卖方布尔值
+const encodeMintAndTransfer = (creator, to, tokenId, signature = SIG) => {
+  return interface.encodeFunctionData("mintAndTransfer", [creator, to, tokenId, signature]);
+
 }
 
-const encodeMintWithSigReplacement = (isBuyer) => {
+const encodeMintAndTransferReplacement = (isBuyer) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let functionReplacement = '0x00000000';
   let paramsReplacement;
   if (isBuyer) {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT, REPLACEMENT])
   } else {
     paramsReplacement = abiCoder.encode(
-      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
-      [REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
+      ['bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32', 'bytes32'],
+      [NON_REPLACEMENT, REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT, NON_REPLACEMENT])
   }
   return ethers.utils.hexConcat([functionReplacement, paramsReplacement]);
 }
-// 订单类
-const Order = class {
-  constructor(exchange, isBuySide, maker, taker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
+// 订单结构体
+class Order {
+  constructor(exchange, isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, data, replacementPattern, start, end, salt) {
     this.exchange = exchange;
     this.isBuySide = isBuySide;
+    this.isAuction = isAuction;
     this.maker = maker;
-    this.taker = taker;
     this.paymentToken = paymentToken;
     this.value = value;
     this.royaltyRecipient = royaltyRecipient;
@@ -445,22 +480,23 @@ const Order = class {
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
   let order_encode =
-    abiCoder.encode(['address', 'bool', 'address', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
-      [order.exchange, order.isBuySide, order.maker, order.taker,
+    abiCoder.encode(['address', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'bytes', 'bytes', 'uint256', 'uint256', 'uint256'],
+      [order.exchange, order.isBuySide, order.isAuction, order.maker,
       order.paymentToken, order.value, order.royaltyRecipient, order.royalty, order.target, order.data, order.replacementPattern,
       order.start, order.end, order.salt]
     );
-
   return order_hash = ethers.utils.keccak256(order_encode);
 }
-// 转账授权哈希
+// export
 
 const Utils = {
   Order: Order,
   hashOrder: hashOrder,
-  hashPermit: hashPermit,
+  hashMint: hashMint,
+  encodeMintAndTransfer: encodeMintAndTransfer,
+  encodeMintAndTransferReplacement: encodeMintAndTransferReplacement,
   encodeMintWithSig: encodeMintWithSig,
-  encodeMintWithSigReplacement: encodeMintWithSigReplacement，
+  encodeMintWithSigReplacement: encodeMintWithSigReplacement,
   encodeTransfer: encodeTransfer,
   encodeTransferReplacement: encodeTransferReplacement
 }
@@ -470,15 +506,15 @@ module.exports = Utils;
 
 ##### 订单构造示例
 
-**支付ETH购买已铸造的CMT**
+**支付ETH购买已铸造的CMT（定价出售）**
 
 ```javascript
 // 用ETH支付的买单，购买已经完成铸币的CMT
 buy_order_0 = new Order(
         exchange.address, // 当前交易所地址
         true, // true指买方
+  			false, // false指定价出售
         buyer.address, // 该订单的发起地址，既买家地址
-        ZERO_ADDRESS, // 该订单的接受地址，此处输入0地址代表不指定接受者
         ZERO_ADDRESS, // 支付货币的合约地址，此处输入0地址代表以太坊
         PRICE, // 支付、接受价格；要求买单价格大于卖方价格，最后以买单价格执行
         royaltyRecipient.address, // 创作者地址
@@ -504,13 +540,12 @@ buy_order_0 = new Order(
         tx = await controller.connect(seller).registerRouter();
         await tx.wait();
       }
-  
 
       sell_order_0 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         royaltyRecipient.address,
@@ -541,19 +576,20 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
       buy_order_4 = new Order(
         exchange.address,
         true,
+        false,
         buyer.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         ZERO_ADDRESS,
         0,
         committable.address，
-        encodeMintWithSig(buyer.address, tokenId_4),
-        // 对铸币行为进行编码MintWithSig，三个参数分别为：
-        // committable.address：CMT合约地址
+        encodeMintAndTransfer(seller.address, buyer.address, tokenId_4, signature_4),
+        // 对铸币行为进行编码MintWithSig，四个参数分别为：
+        // 卖方地址
         // 买方地址
-        // 代币编码
-        encodeMintWithSigReplacement(true),
+        // 代币编号
+        // 铸币签名
+        encodeMintAndTransferReplacement(true),
         // 对铸币行为制定替代规则，参数true指此处是买方编码
         0,
         0,
@@ -562,20 +598,20 @@ let signature_4 = await seller.signMessage(ethers.utils.arrayify(abiCoder.encode
       sell_order_4 = new Order(
         exchange.address,
         false,
+        false,
         seller.address,
-        ZERO_ADDRESS,
         ZERO_ADDRESS,
         PRICE,
         ZERO_ADDRESS,
         0,
         committable.address，
-        encodeMintWithSig(buyer.address, tokenId_4, signature_4),
-        // 对铸币行为进行编码MintWithSig，四个参数分别为：
-        // committable.address：CMT合约地址
+        encodeMintAndTransfer(seller.address ZERO_ADDRESS, tokenId_4, signature_4), // 卖方不关心买家地址
+        // 对铸币行为进行编码encodeMintAndTransfer，四个参数分别为：
+        // 卖方地址
         // 买方地址
-        // 代币编码
+        // 代币编号
         // 铸币签名（由服务器完成签名，并提供给前端）
-        encodeMintWithSigReplacement(false),
+        encodeMintAndTransferReplacement(false),
         // 对铸币行为制定替代规则，参数false指此处是卖方编码
         0,
         0,
@@ -717,56 +753,245 @@ Helper contract enables batch requests and debug functions
 **输入**
 
 1. `token` - `地址`：ERC721合约地址，即Committable合约地址
+
 2. `indexes` - `整型数组`：从0开始的索引数组（index值必须小于代币总量）
 
-1. **输出**
+   **输出**
 
 1. `tokenIds` - `整型数组`：代币编号数组
 
 ### Router
 
-Router contract forwards external calls to Committable contract, integrating permit & transfer in one message call.
+Router contract forwards external calls to Committable contract, only accessbie for approved address (managed by controller)
 
 #### Functions (Read-Only)
 
+##### user()
+
+查询router的拥有者
+
+**输出**
+
+1. `owner` - `地址`：拥有者地址
+
+##### controller()
+
+查询controller地址
+
+**输出**
+
+1. `controller` - `地址`：controller地址
+
 #### Function (State-Changing)
 
-##### transferWithPermit(token, from, to, tokenId, deadline, signature)
+##### proxy(target, data)
 
-调用目标ERC721代币合约，完成授权并转账（ERC721合约需支持签名授权）
+对目前合约发起调用
 
-> 具体授权签名规则参考Committable Rationale
-
-**输入**
-
-1. `token` - `地址`：调用的代币合约地址
-2. `from` - `地址`：代币拥有者地址
-3. `to` - `地址`：代币接收者地址
-4. `tokenId` - `uint256`：代币编号
-5. `deadline` - `uint256`：签名授权有效截止时间
-6. `signature` - `bytes`：授权签名
-
-##### mintWithSig(token, to, tokenId, signature)
-
-调用目标ERC721代币合约，传入签名完成铸币
-
-> 具体授权签名规则参考Committable Rationale
+> 仅被授权的地址和router拥有者地址可以调用该方法
 
 **输入**
 
-1. `token` - `地址`：调用的代币合约地址
-2. `to` - `地址`：代币接收者地址
-3. `tokenId` - `uint256`：代币编号
-4. `signature` - `bytes`：铸币签名
+1. `target` - `地址`：调用目标地址
+6. `data` - `bytes`：调用数据
 
-##### transferFrom(token, from, to, tokenId)
+### Controller
 
-调用目标ERC721代币合约完成转账
+Controller contract is the owner of other contracts and is designed to responsible for router registration and exchange authentication
+
+#### Functions (Read-Only)
+
+##### getRouter(user)
+
+查询对应用户的router地址
 
 **输入**
 
-1. `token` - `地址`：调用的代币合约地址
-2. `from` - `地址`：代币拥有者地址
-3. `to` - `地址`：代币接收者地址
-4. `tokenId` - `uint256`：代币编号
+1. `user` - `地址`：用户地址
 
+**输出**
+
+1. `router` - `地址`：该用户的router地址
+
+##### getSigner()
+
+查询签名地址
+
+**输出**
+
+1. `signer` - `地址`：签名地址
+
+##### isApproved(exchange)
+
+查询对应地址是否被授权访问router
+
+**输入**
+
+1. `exchange` - `地址`：查询地址
+
+**输出**
+
+1. `bool` - `布尔值`
+
+#### Function (State-Changing)
+
+##### registerRouter()
+
+注册router地址
+
+**释放事件**
+
+1. RouterRegistered
+
+##### setSigner(signer)
+
+设置签名地址
+
+> 仅管理员可调用
+
+**输入**
+
+1. `signer` - `地址`：签名地址
+
+##### approveOrCancel(exchange, bool)
+
+授权或取消授权
+
+> 仅管理员可调用
+
+**输入**
+
+1. `exchange` - `地址`：授权地址
+2. `bool` - `布尔值`
+
+**释放事件**
+
+ExchangeApprovedOrCancelled()
+
+#### Event
+
+##### RouterRegistered(indexed user, indexed router)
+
+**输入**
+
+1. `user` - `地址`：用户地址
+2. `router` - `地址`：注册的router地址
+
+##### ExchangeApprovedOrCancelled (indexed exchange, bool authorized)
+
+**输入**
+
+1. `exchange` - `地址`：获得授权的地址
+2. `authorized` - `布尔值`
+
+### Payroll
+
+Payroll contract allows creating payroll based on ERC20 token, it relies on ECDSA signature verification when users try to claim the rewards
+
+#### Functions (Read-Only)
+
+##### getPoolInfo (index)
+
+查询对应编号的payroll数据
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+
+**输出**
+
+1. `poolInfo` - `结构体`：pool结构体
+
+```solidity
+  struct PoolInfo {
+        address creator;
+        IERC20 rewardToken;
+        uint256 rewardAmount;
+        uint256 unclaimedAmount;
+        uint256 start;
+        uint256 end;
+    }
+```
+
+##### getUserInfo (index, user)
+
+查询用户是否已经领取对应编号的payroll
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+2. `user` - `地址`：用户地址
+
+**输出**
+
+1. `bool` - `布尔值`：已经领取返回true
+
+#### Function (State-Changing)
+
+##### create(index, rewardToken, rewardAmount, start, end)
+
+创建新的payroll
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+2. `rewardToken` - `整型`：payroll编号
+3. `rewardAmount` - `整型`：payroll编号
+4. `start` - `整型`：payroll编号
+5. `end` - `整型`：payroll编号
+
+**释放事件**
+
+1. PoolCreated()
+
+##### claim(index. amount, sig)
+
+领取payroll
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+2. `amount` - `整型`：payroll金额
+3. `sig` - `字节码`：签名数据
+
+**释放事件**
+
+1. RewardClaimed()
+
+##### withdraw(index)
+
+领取剩余未领取payroll
+
+> 仅payroll创建在payroll有效期过后可调用
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+
+**释放事件**
+
+1. RewardClaimed()
+
+#### Event
+
+##### PoolCreated(indexed index, indexed rewardToken, rewardAmount, indexed creator, start, end)
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+2. `rewardToken` - `地址`：奖励token的合约地址
+3. `rewardAmount` - `整型`：奖励总金额
+4. `creator` - `地址`：payroll创建者
+5. `start` - `整型`：payroll开始时间
+6. `end` - `整型`：payroll结束时间
+
+#####   RewardClaimed(indexed index,indexed rewardToken,rewardAmount,indexed user）
+
+**输入**
+
+1. `index` - `整型`：payroll编号
+2. `rewardToken` - `地址`：奖励token的合约地址
+3. `rewardAmount` - `整型`：奖励金额
+4. `user` - `地址`：奖励领取地址
+
+##### 

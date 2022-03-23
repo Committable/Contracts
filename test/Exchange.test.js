@@ -15,7 +15,7 @@ const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 DEADLINE = 0;
-
+UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 
 describe('Exchange', function () {
   context('with deployed contracts initialized orders and fees', function () {
@@ -55,7 +55,10 @@ describe('Exchange', function () {
       let ERC20 = await ethers.getContractFactory("ERC20Test");
       token = await ERC20.connect(buyer).deploy("Tether", "USDT");
       await token.deployed();
-      tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());
+
+      // tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());
+      tx = await token.approve(exchange.address, UINT256_MAX);
+
       await tx.wait();
       /* set platform fee and change recipient */
       tx = await exchange.changeFee(FEE);
