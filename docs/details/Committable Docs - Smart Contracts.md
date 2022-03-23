@@ -14,7 +14,7 @@ Committable smart contracts enable software developers to tokenize their contrib
 - Controller：负责各合约的参数管理和管理用户Router合约，当前该合约管理权限为EOA账号
 - Helper：提供批量查询和哈希查询接口，主要用于Debug
 
-![流程图 (1)](/Users/aolin/Projects/committable-contracts/docs/details/architecture.jpg)
+![流程图 (1)](./architecture.jpg)
 
 ### 合约地址(Ropsten)
 
