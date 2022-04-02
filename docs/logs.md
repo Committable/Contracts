@@ -1,5 +1,16 @@
 # Committable Contract Logs
 
+## 20220402 - Update Committable Contract (gas optimization)
+
+Committable deployed to: 0x2AF8B6f5538bDf831c9066Ca27bFF2bc8e3Ff258
+
+CommittableV1 deployed to: 0xAD8BA8983cFda26deD359d81258877D454961f33
+
+```javascript
+//移除了Committable合约的tokenOfOwnerByIndex和tokenByIndex方法
+//相关索引方式通过thegraph（eventHandlers）获取
+```
+
 ## 20220307 - Re-deploy Contracts
 
 Committable deployed to: 0x569Acd67399A90c2b04B49b93E6ed07bE4751255

@@ -31,37 +31,4 @@ contract Helper {
         return ArrayUtils.guardedArrayReplace(data, desired, mask);
     }
 
-    /**
-     * @dev Returns token IDs at a given arrary of `index` of user owned tokens stored by token contract
-     */
-    function tokenOfOwnerByIndexBatch(
-        address _token,
-        address owner,
-        uint256[] memory indexes
-    ) external view virtual returns (uint256[] memory) {
-        uint256[] memory tokenIds = new uint256[](indexes.length);
-        for (uint256 i = 0; i < indexes.length; ++i) {
-            tokenIds[i] = CommittableV1(_token).tokenOfOwnerByIndex(
-                owner,
-                indexes[i]
-            );
-        }
-        return tokenIds;
-    }
-
-    /**
-     * @dev Returns token IDs at a given arrary of `index` of all the tokens stored by token contract.
-     */
-    function tokenByIndexBatch(address _token, uint256[] memory indexes)
-        external
-        view
-        virtual
-        returns (uint256[] memory)
-    {
-        uint256[] memory tokenIds = new uint256[](indexes.length);
-        for (uint256 i = 0; i < indexes.length; ++i) {
-            tokenIds[i] = CommittableV1(_token).tokenByIndex(indexes[i]);
-        }
-        return tokenIds;
-    }
 }

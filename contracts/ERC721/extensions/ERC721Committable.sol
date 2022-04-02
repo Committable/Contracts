@@ -4,13 +4,12 @@ pragma solidity ^0.8.0;
 import "../../Controller.sol";
 import "../../library/ECDSA.sol";
 import "./IERC721Committable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "../../Router.sol";
 
-contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
+contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
     Controller internal _controller;
-    // mapping from project to tokenIds belongging to this project
-    mapping(uint96 => uint256[]) private _projectTokens;
+    uint256 internal _totalSupply;
 
     // solhint-disable-next-line
     function __ERC721Committable_init_unchained(address controller)
@@ -27,7 +26,7 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
         public
         view
         virtual
-        override(IERC165Upgradeable, ERC721EnumerableUpgradeable)
+        override(IERC165Upgradeable, ERC721Upgradeable)
         returns (bool)
     {
         return
@@ -35,6 +34,9 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
             super.supportsInterface(interfaceId);
     }
 
+    /**
+     * @dev Mint a token to address with signature check
+     */
     function mint(
         address creator,
         uint256 tokenId,
@@ -45,11 +47,13 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
             ECDSA.recover(hash, signature) == _controller.getSigner(),
             "invalid token signature"
         );
-        uint96 project = uint96(tokenId >> 160);
-        _projectTokens[project].push(tokenId);
+
         _mint(creator, tokenId);
     }
 
+    /**
+     * @dev Mint a token to address with signature check and transfer it to another
+     */
     function mintAndTransfer(
         address creator,
         address to,
@@ -61,59 +65,7 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
     }
 
     /**
-     * @dev Returns project of a given tokenId
-     */
-    function projectOf(uint256 tokenId)
-        external
-        view
-        virtual
-        override
-        returns (uint96)
-    {
-        return uint96(tokenId >> 160);
-    }
-
-    /**
-     * @dev Returns tokenId of a project at a given index
-     */
-    function tokenOfProjectByIndex(uint96 project, uint256 index)
-        external
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _projectTokens[project][index];
-    }
-
-    /**
-     * @dev Returns token supply of a given project
-     */
-    function totalSupplyOfProject(uint96 project)
-        external
-        view
-        virtual
-        override
-        returns (uint256)
-    {
-        return _projectTokens[project].length;
-    }
-
-    /**
-     * @dev Returns commit of a tokenId
-     */
-    function commitOf(uint256 tokenId)
-        external
-        view
-        virtual
-        override
-        returns (uint160)
-    {
-        return uint160(tokenId);
-    }
-
-    /**
-     * Override isApprovedForAll to whitelist user's router accounts to enable gas-less listings.
+     * @dev Override isApprovedForAll to whitelist user's router accounts to enable gas-less approval.
      */
     function isApprovedForAll(address owner, address operator)
         public
@@ -127,6 +79,24 @@ contract ERC721Committable is ERC721EnumerableUpgradeable, IERC721Committable {
         }
 
         return super.isApprovedForAll(owner, operator);
+    }
+
+    function totalSupply() external view override returns (uint256) {
+        return _totalSupply;
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, tokenId);
+        if (from == address(0)) {
+            // assume totalSupply is less than 2**256-1, overflow is unrealistic
+            unchecked {
+                _totalSupply = _totalSupply + 1;
+            }
+        }
     }
 
     uint256[48] private __gap;

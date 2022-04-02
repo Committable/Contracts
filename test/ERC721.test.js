@@ -99,10 +99,7 @@ describe('ERC721', function () {
         expect(await committable.balanceOf(owner.address)).to.equal('1');
         expect(await committable.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async function () {
-        expect(await committable.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
-        expect(await committable.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
-      })
+    
       it('clears the approval for the tokenId', async function () {
         expect(await committable.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
@@ -123,10 +120,7 @@ describe('ERC721', function () {
         expect(await committable.balanceOf(owner.address)).to.equal('1');
         expect(await committable.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async function () {
-        expect(await committable.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
-        expect(await committable.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
-      })
+    
       it('clears the approval for the tokenId', async function () {
         expect(await committable.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
@@ -148,10 +142,7 @@ describe('ERC721', function () {
         expect(await committable.balanceOf(owner.address)).to.equal('1');
         expect(await committable.balanceOf(recipient.address)).to.equal('1');
       })
-      it('adjust owners and recipient tokens by index', async function () {
-        expect(await committable.tokenOfOwnerByIndex(recipient.address, 0)).to.equal(tokenId);
-        expect(await committable.tokenOfOwnerByIndex(owner.address, 0)).to.not.equal(tokenId);
-      })
+  
       it('clears the approval for the tokenId', async function () {
         expect(await committable.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })

@@ -80,25 +80,5 @@ describe('helper', function () {
 
     })
    
-  
-      context('with legitimate batch request', function () {
-        it('return batch tokenIds sorted by all tokens', async function () {
-          let tokenIds = [tokenId_0, tokenId_1, tokenId_2, tokenId_3];
-          let tokenIds_bn = tokenIds.map((tokenId) => { return ethers.BigNumber.from(tokenId) });
-          expect((await helper.tokenByIndexBatch(committable.address, [0, 1, 2, 3])))
-            .deep.to.equal(tokenIds_bn)
-        })
-        it('return batch tokenIds sorted by owner', async function () {
-          let tokenIds_signer = [tokenId_0, tokenId_1, tokenId_2];
-          let tokenIds_user = [tokenId_3];
-  
-          let tokenIds_signer_bn = tokenIds_signer.map((tokenIds_signer) => { return ethers.BigNumber.from(tokenIds_signer) });
-          let tokenIds_user_bn = tokenIds_user.map((tokenIds_user) => { return ethers.BigNumber.from(tokenIds_user) });
-  
-          expect((await helper.tokenOfOwnerByIndexBatch(committable.address, signer.address, [0, 1, 2])))
-            .deep.to.equal(tokenIds_signer_bn)
-          expect((await helper.tokenOfOwnerByIndexBatch(committable.address, user.address, [0])))
-            .deep.to.equal(tokenIds_user_bn)
-        })
-      })
+ 
 })

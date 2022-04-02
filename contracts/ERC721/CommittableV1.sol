@@ -14,7 +14,6 @@ contract CommittableV1 is ERC721Committable, ICommittableV1 {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
-        __ERC721Enumerable_init_unchained();
         __ERC721Committable_init_unchained(controller);
     }
 

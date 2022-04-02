@@ -55,11 +55,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @param orderHash - the hash value of order to check
      */
     function checkOrderStatus(bytes32 orderHash) external view returns (bool) {
-        if (!_isCancelledOrFinished[orderHash]) {
-            return true;
-        } else {
-            return false;
-        }
+        return (!_isCancelledOrFinished[orderHash]);
     }
 
     /**
@@ -73,11 +69,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
     {
         bool[] memory bools = new bool[](orderHashs.length);
         for (uint256 i = 0; i < orderHashs.length; ++i) {
-            if (!_isCancelledOrFinished[orderHashs[i]]) {
-                bools[i] = true;
-            } else {
-                bools[i] = false;
-            }
+            bools[i] = !_isCancelledOrFinished[orderHashs[i]];
         }
         return bools;
     }
