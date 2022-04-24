@@ -343,7 +343,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid order parameters');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
         it('revert with ERC20 standard order', async function () {
@@ -354,7 +354,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid order parameters');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
         it('revert with ETH lazy-mint order', async function () {
@@ -365,7 +365,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid order parameters');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
@@ -376,7 +376,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid order parameters');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
       })
@@ -793,7 +793,8 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('ERC20: transfer amount exceeds allowance');
+            console.log(err.message)
+            expect(err.message).to.include('ERC20: insufficient allowance');
           }
         })
         it('revert with not enough tokens in ERC20 order', async function () {

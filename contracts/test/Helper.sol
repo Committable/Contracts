@@ -23,6 +23,10 @@ contract Helper {
         return ECDSA.recover(hash, sig);
     }
 
+    function toSignedMessage(bytes32 hash) external pure returns (bytes32) {
+        return ECDSA.toEthSignedMessageHash(hash);
+    }
+
     function replace(
         bytes memory data,
         bytes memory desired,
@@ -30,5 +34,4 @@ contract Helper {
     ) external pure returns (bytes memory) {
         return ArrayUtils.guardedArrayReplace(data, desired, mask);
     }
-
 }

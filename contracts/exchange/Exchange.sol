@@ -137,8 +137,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.isAuction == sellOrder.isAuction) &&
             // must match paymentToken
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
-            // buyOrder value must be larger than sellOrder
-            (buyOrder.value >= sellOrder.value) &&
             // royaltyRecipient must match
             (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
             // royalty must match
@@ -177,10 +175,12 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
-        if (buyOrder.isAuction) {
-            return msg.sender == sellOrder.maker;
+        // in fixed-price orders, if bid price >= ask price, order match can be triggered by both
+        // in auction orders and if bid price < ask price in fixed-price orders, order match can only be triggered by seller   
+        if(!buyOrder.isAuction && buyOrder.value >= sellOrder.value){
+            return true;
         } else {
-            return msg.sender == buyOrder.maker;
+            return msg.sender == sellOrder.maker;
         }
     }
 
