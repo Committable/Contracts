@@ -72,23 +72,7 @@ describe('Committable', function () {
             })
 
         })
-        context("[mintAndTransfer] function test", function () {
-            beforeEach('mint tokens with legitimate signature', async function () {
-                /* sign some tokenId */
-                let abiCoder = new ethers.utils.AbiCoder;
-                let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
-                /* mint tokenId_3 to user */
-                await committable.mint(user.address, tokenId_3, signature_3);
-            })
-            it("should mint and transfer successfully", async function () {
-                /* sign some tokenId */
-                let abiCoder = new ethers.utils.AbiCoder;
-                let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
-                await committable.mintAndTransfer(signer.address, user.address, tokenId_0, signature_0)
-                expect(await committable.ownerOf(tokenId_0)).to.equal(user.address)
 
-            })
-        })
 
 
 

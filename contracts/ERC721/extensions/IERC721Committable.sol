@@ -5,14 +5,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol"
 import "../../library/ECDSA.sol";
 
 interface IERC721Committable is IERC721Upgradeable {
-    function mint(
-        address to,
-        uint256 tokenId,
-        bytes memory signature
-    ) external;
 
-    function mintAndTransfer(
-        address creator,
+    function mint(
         address to,
         uint256 tokenId,
         bytes memory signature

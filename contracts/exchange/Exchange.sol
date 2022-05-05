@@ -4,10 +4,9 @@ pragma solidity ^0.8.0;
 
 import "../library/OrderUtils.sol";
 import "../library/ECDSA.sol";
-import "../library/ArrayUtils.sol";
 import "./FeePanel.sol";
 import "../Controller.sol";
-import "../Router.sol";
+import "../TransferProxy.sol";
 import "../ERC721/CommittableV1.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -129,9 +128,11 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
-        return ((buyOrder.exchange == address(this)) &&
+        return (
+            // must match exchange
+            (buyOrder.exchange == address(this)) &&
             (sellOrder.exchange == address(this)) &&
-            // must be opposite order side
+            // msut match order side
             (buyOrder.isBuySide == true && sellOrder.isBuySide == false) &&
             // must match order type
             (buyOrder.isAuction == sellOrder.isAuction) &&
@@ -143,8 +144,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             ((buyOrder.royalty + _fee) < 10000) &&
-            // must match target
+            // msut match target
             (buyOrder.target == sellOrder.target) &&
+            // must match tokenId
+            (buyOrder.tokenId == sellOrder.tokenId) &&
             // must reach start time
             (buyOrder.start < block.timestamp &&
                 sellOrder.start < block.timestamp) &&
@@ -176,8 +179,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
         // in fixed-price orders, if bid price >= ask price, order match can be triggered by both
-        // in auction orders and if bid price < ask price in fixed-price orders, order match can only be triggered by seller   
-        if(!buyOrder.isAuction && buyOrder.value >= sellOrder.value){
+        // in auction orders and if bid price < ask price in fixed-price orders, order match can only be triggered by seller
+        if (!buyOrder.isAuction && buyOrder.value >= sellOrder.value) {
             return true;
         } else {
             return msg.sender == sellOrder.maker;
@@ -264,21 +267,26 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal {
-        bytes memory buyOrderData = ArrayUtils.guardedArrayReplace(
-            buyOrder.data,
-            sellOrder.data,
-            buyOrder.replacementPattern
+        address transferProxy = _controller.getTransferProxy();
+        bytes memory data;
+        // mint first if tokenSig provided
+        // keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
+        if (keccak256(sellOrder.tokenSig) != 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a) {
+            data = abi.encodeWithSignature(
+                "mint(address,uint256,bytes)",
+                sellOrder.maker,
+                sellOrder.tokenId,
+                sellOrder.tokenSig
+            );
+            TransferProxy(transferProxy).proxy(sellOrder.target, data);
+        }
+        // standard ERC721 transfer
+        data = abi.encodeWithSignature(
+            "transferFrom(address,address,uint256)",
+            sellOrder.maker,
+            buyOrder.maker,
+            sellOrder.tokenId
         );
-        bytes memory sellOrderData = ArrayUtils.guardedArrayReplace(
-            sellOrder.data,
-            buyOrder.data,
-            sellOrder.replacementPattern
-        );
-        require(
-            keccak256(buyOrderData) == keccak256(sellOrderData),
-            "invalid data replacement"
-        );
-        address router = _controller.getRouter(sellOrder.maker);
-        Router(router).proxy(sellOrder.target, sellOrderData);
+        TransferProxy(transferProxy).proxy(sellOrder.target, data);
     }
 }

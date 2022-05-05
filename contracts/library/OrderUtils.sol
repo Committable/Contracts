@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 library OrderUtils {
     struct Order {
-        // exchange address to execute orders
         address exchange;
         // order side: true for order from buyer, false for order from seller
         bool isBuySide;
@@ -20,13 +19,13 @@ library OrderUtils {
         address royaltyRecipient;
         // royalty to pay, zero as non-royalty
         uint256 royalty;
-        // target to call
+        // tokenId to transfer
         address target;
+        // contract address to call
+        uint256 tokenId;
         // attached calldata to target
-        bytes data;
-        // data replacement pattern, empty bytes for no replacement;
-        bytes replacementPattern;
-        // timestamp for the starting time for executing this order
+        bytes tokenSig;
+        // tokenSig required for minting a new token, sentinel value for transfer
         uint256 start;
         // timestamp for the deadline for executing this order
         uint256 end;
@@ -47,8 +46,8 @@ library OrderUtils {
                     order.royaltyRecipient,
                     order.royalty,
                     order.target,
-                    order.data,
-                    order.replacementPattern,
+                    order.tokenId,
+                    order.tokenSig,
                     order.start,
                     order.end,
                     order.salt

@@ -5,6 +5,7 @@ const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
 const { Order, hashOrder, hashMint } = require("./utils.js");
 const { check } = require("prettier");
+const { outOfGas } = require("@openzeppelin/test-helpers/src/expectRevert");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const life_span = 60 * 60 * 24 * 7 // one week
 
@@ -49,12 +50,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await helper.hashOrder(sell_order_3)).to.equal(hashOrder(sell_order_3));
 
                 })
-                it("should have expected order sig", async function () {
-                    expect(await helper.recover(hashOrder(buy_order_0), buy_order_sig_0)).to.equal(buyer.address);
-                    expect(await helper.recover(hashOrder(sell_order_0), sell_order_sig_0)).to.equal(seller.address);
-                    expect(await helper.recover(hashOrder(buy_order_1), buy_order_sig_1)).to.equal(buyer.address);
-                    expect(await helper.recover(hashOrder(sell_order_1), sell_order_sig_1)).to.equal(seller.address);
-                })
+             
             })
 
             context("with ETH order: no royalty", function () {

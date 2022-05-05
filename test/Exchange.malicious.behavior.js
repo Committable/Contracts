@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Order, hashOrder, hashMint, encodeTransfer, encodeMintAndTransfer } = require("./utils.js");
+const { Order, hashOrder, hashMint } = require("./utils.js");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -428,51 +428,47 @@ function shouldRevertWithMaliciousBehavior() {
       })
       context('when tokenID does not match', function () {
         it('revert with ETH standard order', async function () {
-          let calldata = encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
-          buy_order_0.data = calldata;
+          buy_order_0.tokenId = tokenId_1;
           buy_order_sig_0 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_0)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ERC20 standard order', async function () {
-          let calldata = encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
-          buy_order_2.data = calldata;
+          buy_order_2.tokenId = tokenId_0;
           buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ETH lazy-mint order', async function () {
-          let calldata = encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
-          buy_order_4.data = calldata;
+          buy_order_4.tokenId = tokenId_1;
           buy_order_sig_4 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_4)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
-          let calldata = encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_1)
-          buy_order_5.data = calldata;
+          buy_order_5.tokenId = tokenId_1;
           buy_order_sig_5 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_5)));
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('invalid data replacement');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
       })
@@ -892,15 +888,14 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait()
             throw null;
           } catch (err) {
-            expect(err.message).to.include('ERC721: transfer caller is not owner nor approved');
+            expect(err.message).to.include('ERC721: transfer from incorrect owner');
           }
         })
       })
       context('when mint sig is invalid', function () {
         it('revert when mint sig is invali', async function () {
           let signature_5 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, 123)));
-          let sell_data = encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_4, signature_5);
-          sell_order_4.data = sell_data;
+          sell_order_4.tokenSig = signature_5;
           sell_order_sig_4 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_4)));
 
           try {

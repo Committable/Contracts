@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import "../library/OrderUtils.sol";
-import "../library/ArrayUtils.sol";
 import "../library/ECDSA.sol";
 import "../ERC721/CommittableV1.sol";
 
@@ -25,13 +24,5 @@ contract Helper {
 
     function toSignedMessage(bytes32 hash) external pure returns (bytes32) {
         return ECDSA.toEthSignedMessageHash(hash);
-    }
-
-    function replace(
-        bytes memory data,
-        bytes memory desired,
-        bytes memory mask
-    ) external pure returns (bytes memory) {
-        return ArrayUtils.guardedArrayReplace(data, desired, mask);
     }
 }

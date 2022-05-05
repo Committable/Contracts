@@ -3,13 +3,15 @@ pragma solidity ^0.8.0;
 
 import "./Controller.sol";
 
-contract Router {
-    address public user;
+/**
+ * this contract owns token transfer approvement of all users, the caller that allowed to call this contract must
+ * be able to verifiy the legitimacy of the transaction
+ */ 
+contract TransferProxy {
     Controller public controller;
 
-    constructor(address controller_, address user_) {
+    constructor(address controller_) {
         controller = Controller(controller_);
-        user = user_;
     }
 
     /**
@@ -20,8 +22,8 @@ contract Router {
         returns (bytes memory)
     {
         require(
-            controller.isApproved(msg.sender) == true || msg.sender == user,
-            "invalid request"
+            controller.isApproved(msg.sender) == true,
+            "TransferProxy: caller not registered"
         );
         (bool success, bytes memory returndata) = target.call(data);
 

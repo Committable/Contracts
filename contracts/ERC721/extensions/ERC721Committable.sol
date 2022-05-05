@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "../../Controller.sol";
-import "../../library/ECDSA.sol";
+// import "../../library/ECDSA.sol";
 import "./IERC721Committable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "../../Router.sol";
+import "../../TransferProxy.sol";
 
 contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
     Controller internal _controller;
@@ -42,27 +42,39 @@ contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
         uint256 tokenId,
         bytes memory signature
     ) public virtual override {
-        bytes32 hash = keccak256(abi.encode(creator, tokenId));
+        if (signature.length != 65) {
+            revert("ECDSA: invalid signature length");
+        }
+
+        // Divide the signature in r, s and v variables
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // ecrecover takes the signature parameters, and the only way to get them
+        // currently is to use assembly.
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(abi.encode(creator, tokenId))
+            )
+        );
         require(
-            ECDSA.recover(hash, signature) == _controller.getSigner(),
+            ecrecover(digest, v, r, s) ==
+                _controller.getSigner(),
             "invalid token signature"
         );
 
         _mint(creator, tokenId);
     }
 
-    /**
-     * @dev Mint a token to address with signature check and transfer it to another
-     */
-    function mintAndTransfer(
-        address creator,
-        address to,
-        uint256 tokenId,
-        bytes memory signature
-    ) external virtual override {
-        mint(creator, tokenId, signature);
-        transferFrom(creator, to, tokenId);
-    }
 
     /**
      * @dev Override isApprovedForAll to whitelist user's router accounts to enable gas-less approval.
@@ -73,8 +85,8 @@ contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
         override(ERC721Upgradeable, IERC721Upgradeable)
         returns (bool)
     {
-        // Whitelist router contract for easy trading.
-        if (address(_controller.getRouter(owner)) == operator) {
+        // Whitelist transferProxy for easy trading.
+        if (address(_controller.getTransferProxy()) == operator) {
             return true;
         }
 

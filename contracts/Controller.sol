@@ -3,14 +3,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "./Router.sol";
+import "./TransferProxy.sol";
 
 contract Controller is ProxyAdmin {
     address private _signer;
-    mapping(address => address) private _userRouters;
+    address private _transferProxy;
     mapping(address => bool) private _isApproved;
-
-    event RouterRegistered(address indexed user, address indexed router);
+    event TransferProxyRegistered(address indexed transferProxy);
     event ExchangeApprovedOrCancelled(
         address indexed exchange,
         bool authorized
@@ -20,20 +19,18 @@ contract Controller is ProxyAdmin {
         _signer = msg.sender;
     }
 
-    function registerRouter() external {
-        address userRouter = address(new Router(address(this), msg.sender));
-        _userRouters[msg.sender] = userRouter;
-        emit RouterRegistered(msg.sender, userRouter);
-    }
-
-    function getRouter(address user_) external view returns (address) {
-        address router = _userRouters[user_];
-        // require(router != address(0), "?");
-        return router;
+    function registerTransferProxy(address transferProxy_) external onlyOwner {
+        require(transferProxy_!=address(0), "Controller: Proxy cannot be address 0");
+        _transferProxy = transferProxy_;
+        emit TransferProxyRegistered(_transferProxy);
     }
 
     function setSigner(address signer_) external onlyOwner {
         _signer = signer_;
+    }
+
+    function getTransferProxy() external view returns (address) {
+        return _transferProxy;
     }
 
     function getSigner() external view returns (address) {

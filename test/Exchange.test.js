@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
-const { Asset, hashAsset, Order, hashOrder, hashMint, encodeTransferFrom, encodeTransferFromReplacement, encodeTransfer, hashPermit, encodeTransferReplacement, encodeMintAndTransfer, encodeMintAndTransferReplacement } = require("./utils.js");
+const { Order, hashOrder, hashMint } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
@@ -16,6 +16,7 @@ FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+UINT256_ZERO = '0x00'
 
 describe('Exchange', function () {
   context('with deployed contracts initialized orders and fees', function () {
@@ -49,7 +50,12 @@ describe('Exchange', function () {
       let Exchange = await ethers.getContractFactory("Exchange");
       exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
-      // /* set router address & exchange in controller contract */
+      /* deploy transferProxy contract */
+      let TransferProxy = await ethers.getContractFactory("TransferProxy");
+      transferProxy = await TransferProxy.deploy(controller.address);
+      await transferProxy.deployed();
+
+
 
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("ERC20Test");
@@ -69,8 +75,8 @@ describe('Exchange', function () {
       tx = await controller.approveOrCancel(exchange.address, true);
       await tx.wait();
 
-      // seller enable router
-      tx = await controller.connect(seller).registerRouter();
+      // register transferProxy
+      tx = await controller.registerTransferProxy(transferProxy.address);
       await tx.wait();
 
       /**
@@ -96,8 +102,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         committable.address,
-        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_0),
-        encodeTransferReplacement(true),
+        tokenId_0,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -112,8 +118,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         committable.address,
-        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_0, DEADLINE),
-        encodeTransferReplacement(false),
+        tokenId_0,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -133,8 +139,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_1),
-        encodeTransferReplacement(true),
+        tokenId_1,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -149,8 +155,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_1, DEADLINE),
-        encodeTransferReplacement(false),
+        tokenId_1,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -170,8 +176,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         committable.address,
-        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_2),
-        encodeTransferReplacement(true),
+        tokenId_2,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -186,8 +192,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         0,
         committable.address,
-        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_2, DEADLINE),
-        encodeTransferReplacement(false),
+        tokenId_2,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -208,8 +214,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_3),
-        encodeTransferReplacement(true),
+        tokenId_3,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -224,8 +230,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_3, DEADLINE),
-        encodeTransferReplacement(false),
+        tokenId_3,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -250,8 +256,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_4),
-        encodeMintAndTransferReplacement(true),
+        tokenId_4,
+        signature_4,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -266,8 +272,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_4, signature_4),
-        encodeMintAndTransferReplacement(false),
+        tokenId_4,
+        signature_4,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -292,8 +298,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_5),
-        encodeMintAndTransferReplacement(true),
+        tokenId_5,
+        signature_5,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -308,8 +314,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_5, signature_5),
-        encodeMintAndTransferReplacement(false),
+        tokenId_5,
+        signature_5,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -330,8 +336,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(ZERO_ADDRESS, buyer.address, tokenId_6),
-        encodeTransferReplacement(true),
+        tokenId_6,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -346,8 +352,8 @@ describe('Exchange', function () {
         royaltyRecipient.address,
         ROYALTY,
         committable.address,
-        encodeTransfer(seller.address, ZERO_ADDRESS, tokenId_6, DEADLINE),
-        encodeTransferReplacement(false),
+        tokenId_6,
+        UINT256_ZERO,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -371,8 +377,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(ZERO_ADDRESS, buyer.address, tokenId_7),
-        encodeMintAndTransferReplacement(true),
+        tokenId_7,
+        signature_7,
         0,
         0,
         Math.floor(Math.random() * 10000)
@@ -387,8 +393,8 @@ describe('Exchange', function () {
         ZERO_ADDRESS,
         0,
         committable.address,
-        encodeMintAndTransfer(seller.address, ZERO_ADDRESS, tokenId_7, signature_7),
-        encodeMintAndTransferReplacement(false),
+        tokenId_7,
+        signature_7,
         0,
         0,
         Math.floor(Math.random() * 10000)

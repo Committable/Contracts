@@ -38,8 +38,6 @@ contract FeePanel is Ownable {
 
     function changeRecipient(address recipient) external onlyOwner {
         require(recipient != address(0), "zero address not allowed");
-        require(recipient != _recipient, "same address not allowed");
-
         address originalRecipient = _recipient;
         _recipient = recipient;
         emit RecipientChanged(originalRecipient, _recipient);

@@ -46,39 +46,8 @@ describe('helper', function () {
         await committable.mint(signer.address, tokenId_2, signature_2);
         await committable.mint(user.address, tokenId_3, signature_3);
     })
-    it('should allow basic replacement', async function () {
-        expect(await helper.replace(
-            '0x23b872dd000000000000000000000000431e44389a003f0ec6e83b3578db5075a44ac5230000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006f',
-            '0x23b872dd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000065abe5f01cf94d37762780695cf19b151ed5809000000000000000000000000000000000000000000000000000000000000006f',
-            '0x000000000000000000000000000000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000000'
-        )).to.equal(
-            '0x23b872dd000000000000000000000000431e44389a003f0ec6e83b3578db5075a44ac523000000000000000000000000065abe5f01cf94d37762780695cf19b151ed5809000000000000000000000000000000000000000000000000000000000000006f'
-        )
-    })
-    it('should allow basic replacement B', async function () {
-        expect(await helper.replace(
-            '0x12340000',
-            '0x00005678',
-            '0x0fffffff'
-        )).to.equal(
-            '0x10005678'
-        )
-    })
-    it('should have equal output after replacement', async function () {
-        token_id = tokenId_0;
-        // signer transfer ERC721 to another
-        let buyData = encodeTransfer(ZERO_ADDRESS, another.address, token_id)
-        let sellData = encodeTransfer(signer.address, ZERO_ADDRESS, token_id)
+  
 
-        let buyReplacement = encodeTransferReplacement(true);
-        let sellReplacement = encodeTransferReplacement(false);
-
-        let buyDataAfter = await helper.replace(buyData, sellData, buyReplacement);
-        let sellDataAfter = await helper.replace(sellData, buyData, sellReplacement)
-
-        expect(buyDataAfter).to.equal(sellDataAfter);
-
-    })
 
     it('shoud recover from hsm', async function () {
         let rawSig =
