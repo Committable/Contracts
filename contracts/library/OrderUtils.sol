@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 library OrderUtils {
     struct Order {
-        address exchange;
         // order side: true for order from buyer, false for order from seller
         bool isBuySide;
         // order transaction type
@@ -33,11 +32,14 @@ library OrderUtils {
         uint256 salt;
     }
 
+    // keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)")
+    // bytes32 ORDER_TYPEHASH = 0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252;
     function hash(Order memory order) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
-                    order.exchange,
+                    // 0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252,
+                    keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)"),
                     order.isBuySide,
                     order.isAuction,
                     order.maker,
@@ -47,7 +49,7 @@ library OrderUtils {
                     order.royalty,
                     order.target,
                     order.tokenId,
-                    order.tokenSig,
+                    keccak256(order.tokenSig),
                     order.start,
                     order.end,
                     order.salt

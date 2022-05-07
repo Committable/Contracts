@@ -40,18 +40,18 @@ function shouldWorkWithLegitimateBehavior() {
                 await helper.deployed();
 
             })
-            context("with legitimate order hash and sig", function () {
-                it("should have correct order hash", async function () {
-                    expect(await helper.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
-                    expect(await helper.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));
-                    expect(await helper.hashOrder(buy_order_1)).to.equal(hashOrder(buy_order_1));
-                    expect(await helper.hashOrder(sell_order_1)).to.equal(hashOrder(sell_order_1));
-                    expect(await helper.hashOrder(sell_order_2)).to.equal(hashOrder(sell_order_2));
-                    expect(await helper.hashOrder(sell_order_3)).to.equal(hashOrder(sell_order_3));
+            // context("with legitimate order hash and sig", function () {
+            //     it("should have correct order hash", async function () {
+            //         expect(await helper.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
+            //         expect(await helper.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));
+            //         expect(await helper.hashOrder(buy_order_1)).to.equal(hashOrder(buy_order_1));
+            //         expect(await helper.hashOrder(sell_order_1)).to.equal(hashOrder(sell_order_1));
+            //         expect(await helper.hashOrder(sell_order_2)).to.equal(hashOrder(sell_order_2));
+            //         expect(await helper.hashOrder(sell_order_3)).to.equal(hashOrder(sell_order_3));
 
-                })
+            //     })
              
-            })
+            // })
 
             context("with ETH order: no royalty", function () {
                 beforeEach(async function () {
@@ -88,10 +88,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_0))).to.equal(false);
                 })
-                it('both orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_0), hashOrder(sell_order_0)])).
-                        to.deep.equal([false, false]);
-                })
+               
             })
 
             context("with ETH orders: have royalty", function () {
@@ -136,10 +133,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
                 })
-                it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1)])).
-                        to.deep.equal([false, false]);
-                })
+                
             })
 
             context("with ERC20 orders: no royalty", function () {
@@ -172,10 +166,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
                 })
-                it('both orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_2), hashOrder(sell_order_2)])).
-                        to.deep.equal([false, false]);
-                })
+              
             })
 
             context("with ERC20 orders: have royalty", function () {
@@ -215,10 +206,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_3))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_3))).to.equal(false);
                 })
-                it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_3), hashOrder(sell_order_3), hashOrder(buy_order_3), hashOrder(sell_order_3)])).
-                        to.deep.equal([false, false, false, false]);
-                })
+               
             })
 
             context("with ERC20 orders: have royalty (auction)", function () {
@@ -258,10 +246,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_6))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_6))).to.equal(false);
                 })
-                it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_6), hashOrder(sell_order_6), hashOrder(buy_order_6), hashOrder(sell_order_6)])).
-                        to.deep.equal([false, false, false, false]);
-                })
+               
             })
 
             context('[event test] with ETH orders: no royalty', function () {
@@ -391,10 +376,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_4))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_4))).to.equal(false);
                 })
-                it('both orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_4), hashOrder(sell_order_4)])).
-                        to.deep.equal([false, false]);
-                })
+               
             })
             context("with ERC20 orders", function () {
                 beforeEach(async function () {
@@ -433,10 +415,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_5))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_5))).to.equal(false);
                 })
-                it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_5), hashOrder(sell_order_5)])).
-                        to.deep.equal([false, false]);
-                })
+          
             })
 
             context("with ERC20 orders (Auction)", function () {
@@ -476,10 +455,7 @@ function shouldWorkWithLegitimateBehavior() {
                     expect(await exchange.checkOrderStatus(hashOrder(buy_order_7))).to.equal(false);
                     expect(await exchange.checkOrderStatus(hashOrder(sell_order_7))).to.equal(false);
                 })
-                it('four orders were flagged as finished via batch request', async function () {
-                    expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_7), hashOrder(sell_order_7)])).
-                        to.deep.equal([false, false]);
-                })
+               
             })
 
             context('[event test] with ETH orders', function () {

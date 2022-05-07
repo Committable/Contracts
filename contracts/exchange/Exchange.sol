@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "../library/OrderUtils.sol";
-import "../library/ECDSA.sol";
+// import "../library/ECDSA.sol";
 import "./FeePanel.sol";
 import "../Controller.sol";
 import "../TransferProxy.sol";
@@ -14,6 +14,10 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Exchange is ReentrancyGuard, FeePanel {
+    // solhint-disable-next-line
+    bytes32 public DOMAIN_SEPARATOR;
+
+    string public name = "Exchange";
     mapping(bytes32 => bool) private _isCancelledOrFinished;
     Controller _controller;
     event OrderMatched(
@@ -29,6 +33,17 @@ contract Exchange is ReentrancyGuard, FeePanel {
 
     constructor(address _address) {
         _controller = Controller(_address);
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes(name)),
+                keccak256(bytes("1")),
+                1,
+                address(this)
+            )
+        );
     }
 
     /**
@@ -57,21 +72,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
         return (!_isCancelledOrFinished[orderHash]);
     }
 
-    /**
-     * @dev check whether given orders are cancelled/finished or not
-     * @param orderHashs - the hash value array of orders to check
-     */
-    function checkOrderStatusBatch(bytes32[] memory orderHashs)
-        external
-        view
-        returns (bool[] memory)
-    {
-        bool[] memory bools = new bool[](orderHashs.length);
-        for (uint256 i = 0; i < orderHashs.length; ++i) {
-            bools[i] = !_isCancelledOrFinished[orderHashs[i]];
-        }
-        return bools;
-    }
 
     /**
      * @dev match orders, transfer tokens and trigger state transition
@@ -90,7 +90,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
         bytes memory sellOrderSig
     ) external payable nonReentrant {
         require(
-            _orderSigValidation(buyOrder, buyOrderSig, sellOrder, sellOrderSig),
+            _orderSigValidation(buyOrder, buyOrderSig) &&
+                _orderSigValidation(sellOrder, sellOrderSig),
             "invalid order signature"
         );
         require(
@@ -110,15 +111,35 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @dev check order signatures
      */
     function _orderSigValidation(
-        OrderUtils.Order memory buyOrder,
-        bytes memory buyOrderSig,
-        OrderUtils.Order memory sellOrder,
-        bytes memory sellOrderSig
-    ) internal pure returns (bool) {
-        bytes32 buyOrderHash = OrderUtils.hash(buyOrder);
-        bytes32 sellOrderHash = OrderUtils.hash(sellOrder);
-        return (ECDSA.recover(buyOrderHash, buyOrderSig) == buyOrder.maker &&
-            ECDSA.recover(sellOrderHash, sellOrderSig) == sellOrder.maker);
+        OrderUtils.Order memory order,
+        bytes memory signature
+    ) internal view returns (bool) {
+        if (signature.length != 65) {
+            revert("ECDSA: invalid signature length");
+        }
+
+        // Divide the signature in r, s and v variables
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // ecrecover takes the signature parameters, and the only way to get them
+        // currently is to use assembly.
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
+        // compute digest according to eip712
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                OrderUtils.hash(order)
+            )
+        );
+        return (ecrecover(digest, v, r, s) == order.maker);
     }
 
     /**
@@ -128,12 +149,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
-        return (
-            // must match exchange
-            (buyOrder.exchange == address(this)) &&
-            (sellOrder.exchange == address(this)) &&
-            // msut match order side
-            (buyOrder.isBuySide == true && sellOrder.isBuySide == false) &&
+        return (// must match order side
+        (buyOrder.isBuySide == true && sellOrder.isBuySide == false) &&
             // must match order type
             (buyOrder.isAuction == sellOrder.isAuction) &&
             // must match paymentToken
@@ -271,7 +288,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
         bytes memory data;
         // mint first if tokenSig provided
         // keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
-        if (keccak256(sellOrder.tokenSig) != 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a) {
+        if (
+            keccak256(sellOrder.tokenSig) !=
+            0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
+        ) {
             data = abi.encodeWithSignature(
                 "mint(address,uint256,bytes)",
                 sellOrder.maker,
