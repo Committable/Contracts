@@ -6,7 +6,7 @@
 const hre = require("hardhat");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
-
+const fs = require("fs");
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -19,7 +19,7 @@ async function main() {
   /* deploy controller contract */
   console.log('waiting for deployment: Controller...')
   let Controller = await ethers.getContractFactory("Controller");
-  controller = await Controller.deploy();
+  controller = await Controller.deploy("0x5dA5b801E128667c496D8C2527d21895d2cf24CB"); // set signer
   await controller.deployed();
   console.log("controller deployed to:", controller.address);
   /* deploy token logic contract */
@@ -37,37 +37,54 @@ async function main() {
   committable = await Committable.deploy(committableV1.address, controller.address, calldata);
   await committable.deployed();
   console.log("Committable deployed to:", committable.address);
-  /* deploy router contract */
-  // console.log('waiting for deployment: Router')
-  // let Router = await ethers.getContractFactory("Router");
-  // router = await Router.deploy(controller.address);
-  // await router.deployed();
-  // console.log("router deployed to:", router.address);
+  /* deploy transferProxy contract */
+  console.log('waiting for deployment: TransferProxy')
+  let TransferProxy = await ethers.getContractFactory("TransferProxy");
+  transferProxy = await TransferProxy.deploy(controller.address);
+  await transferProxy.deployed();
+  console.log("transferProxy deployed to:", transferProxy.address);
+  /* enable transferProxy contract in controller */
+  console.log('enable TransferProxy')
+  tx = await controller.registerTransferProxy(transferProxy.address);
+  await tx.wait();
   /* deploy exchange contract */
   console.log('waiting for deployment: Exchange...')
   let Exchange = await ethers.getContractFactory("Exchange");
   exchange = await Exchange.deploy(controller.address);
   await exchange.deployed();
   console.log("exchange deployed to:", exchange.address);
-  /* initialize contracts */
-  /* set fee recipient */
-  console.log("setRecipient...")
-  // tx = await exchange.changeRecipient('0x92E0a5c7d7D806cD48Db15e220DC4440185b0787');
-  // await tx.wait()
-  let recipient = await exchange.getRecipient();
-  console.log("recipient set to: ", recipient);
-  /* set mint signer */
-  console.log("setSigner...")
-  tx = await controller.setSigner('0x95EC7c60F2150cb9CCdbc942278CfD71f0a47024');
-  await tx.wait()
-  let signer = await controller.getSigner();
-  console.log("signer set to: ", signer);
   /* approve exchange */
   console.log("approve exchange...");
   tx = await controller.approveOrCancel(exchange.address, true);
   await tx.wait();
+  /* deploy payroll contract */
+  let PayrollPool = await ethers.getContractFactory("PayrollPool");
+  let payrollPool = await PayrollPool.deploy(controller.address);
+  await payrollPool.deployed();
+  console.log("payrollPool deployed to:", payrollPool.address);
+  /* initialize contracts */
+  /* set fee recipient */
+  // console.log("setRecipient...")
+  // tx = await exchange.changeRecipient('0x92E0a5c7d7D806cD48Db15e220DC4440185b0787');
+  // await tx.wait()
+  console.log("recipient set to: ", await exchange.getRecipient());
+
+  console.log("fee set to: ", await exchange.getFee());
+
+  console.log("signer set to: ", await controller.getSigner());
+
   console.log("exchange has been approved?: ", await controller.isApproved(exchange.address));
 
+  console.log("transferProxy set to?: ", await controller.getTransferProxy());
+
+
+  let content = "\nController: " + controller.address
+    + "\nCommittableV1: " + committableV1.address
+    + "\nCommittable: " + committable.address
+    + "\nTransferProxy: " + transferProxy.address
+    + "\nExchange: " + exchange.address
+    + "\nPayrollPool: " + payrollPool.address;
+  fs.appendFileSync("docs/addressList.txt", content)
 }
 
 // We recommend this pattern to be able to use async/await everywhere

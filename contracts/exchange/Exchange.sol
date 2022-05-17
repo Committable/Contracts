@@ -33,6 +33,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
 
     constructor(address _address) {
         _controller = Controller(_address);
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256(
@@ -40,7 +44,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
                 ),
                 keccak256(bytes(name)),
                 keccak256(bytes("1")),
-                1,
+                chainId,
                 address(this)
             )
         );
@@ -161,7 +165,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             ((buyOrder.royalty + _fee) < 10000) &&
-            // msut match target
+            // must match target
             (buyOrder.target == sellOrder.target) &&
             // must match tokenId
             (buyOrder.tokenId == sellOrder.tokenId) &&

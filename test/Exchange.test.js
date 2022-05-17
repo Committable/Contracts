@@ -34,11 +34,11 @@ describe('Exchange', function () {
       await helper.deployed();
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy();
+      controller = await Controller.deploy(seller.address); // seller address is token signer
       await controller.deployed();
       /* deploy token logic contract */
       let CommittableV1 = await ethers.getContractFactory("CommittableV1");
-      committableV1 = await CommittableV1.deploy();
+      committableV1 = await CommittableV1.deploy(); 
       await committableV1.deployed();
       /* deploy token proxy contract */
       let Committable = await ethers.getContractFactory("Committable");
@@ -64,8 +64,8 @@ describe('Exchange', function () {
 
 
       /* deploy erc20 and approve for test */
-      let ERC20 = await ethers.getContractFactory("ERC20Test");
-      token = await ERC20.connect(buyer).deploy("Tether", "USDT");
+      let ERC20 = await ethers.getContractFactory("USDTMock");
+      token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
       await token.deployed();
 
       // tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());

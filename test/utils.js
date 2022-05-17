@@ -17,7 +17,7 @@ const interface = new ethers.utils.Interface([
 const DOMAIN = {
   name: 'Exchange',
   version: '1',
-  chainId: 1,
+  chainId: 1337, // hardhat chianid
   verifyingContract: ZERO_ADDRESS // assign this value accordingly
 };
 

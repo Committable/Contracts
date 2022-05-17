@@ -39,7 +39,7 @@ contract CommittableV1 is ERC721Committable, ICommittableV1 {
      * here _tokenURI() will return "http://<DOMAIN-NAME>/token-id=<tokenId>"
      */
     function _baseURI() internal view virtual override returns (string memory) {
-        return "https://app.committable.io/nft/";
+        return "http://34.126.136.228:9091/api/main/mint/meta-data?id=";
     }
 
     uint256[50] private __gap;

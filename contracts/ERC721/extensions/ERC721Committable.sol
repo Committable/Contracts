@@ -42,6 +42,18 @@ contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
         uint256 tokenId,
         bytes memory signature
     ) public virtual override {
+        _verify(creator, tokenId, signature);
+        _mint(creator, tokenId);
+    }
+
+    /**
+     * @dev Verify signature
+     */
+    function _verify(
+        address creator,
+        uint256 tokenId,
+        bytes memory signature
+    ) internal view {
         if (signature.length != 65) {
             revert("ECDSA: invalid signature length");
         }
@@ -67,14 +79,10 @@ contract ERC721Committable is ERC721Upgradeable, IERC721Committable {
             )
         );
         require(
-            ecrecover(digest, v, r, s) ==
-                _controller.getSigner(),
+            ecrecover(digest, v, r, s) == _controller.getSigner(),
             "invalid token signature"
         );
-
-        _mint(creator, tokenId);
     }
-
 
     /**
      * @dev Override isApprovedForAll to whitelist user's router accounts to enable gas-less approval.

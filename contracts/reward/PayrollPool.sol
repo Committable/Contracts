@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "../Controller.sol";
 import "../library/ECDSA.sol";
 
-contract AirdropPool is Ownable, ReentrancyGuard {
+contract PayrollPool is Ownable, ReentrancyGuard {
     Controller internal _controller;
     /** mapping from pool index to user address to userInfo */
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -88,7 +88,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
         uint256 end
     ) external nonReentrant {
         require(poolInfo[index].creator == address(0), "pool already exists");
-        require(start < end, 'invalid timestamp');
+        require(start < end, "invalid timestamp");
         SafeERC20.safeTransferFrom(
             IERC20(rewardToken),
             msg.sender,
@@ -120,13 +120,15 @@ contract AirdropPool is Ownable, ReentrancyGuard {
      * @dev claim airdrop tokens, must provide server signature
      * @param index pool index
      * @param amount airdrop amount to claim
-     * @param sig signature offered by server
+     * @param signature signature offered by server
      */
     function claim(
         uint256 index,
         uint256 amount,
-        bytes memory sig
+        bytes memory signature
     ) external nonReentrant {
+        // verify signature
+        _verify(index, amount, signature);
         require(
             poolInfo[index].creator != address(0),
             "query of non-existence pool"
@@ -137,11 +139,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
             "invalid timestamp"
         );
         require(!userInfo[index][msg.sender].isClaimed, "claim once only");
-        bytes32 hash = keccak256(abi.encode(index, amount, msg.sender));
-        require(
-            ECDSA.recover(hash, sig) == _controller.getSigner(),
-            "invalid signature"
-        );
+
         userInfo[index][msg.sender].isClaimed = true;
         poolInfo[index].unclaimedAmount -= amount;
         IERC20 rewardToken = poolInfo[index].rewardToken;
@@ -160,7 +158,7 @@ contract AirdropPool is Ownable, ReentrancyGuard {
         );
         require(msg.sender == poolInfo[index].creator, "only creator");
         require(block.timestamp >= poolInfo[index].end, "invalid timestamp");
-        require(poolInfo[index].unclaimedAmount > 0 , "non-unclaimed tokens");
+        require(poolInfo[index].unclaimedAmount > 0, "non-unclaimed tokens");
         IERC20 rewardToken = poolInfo[index].rewardToken;
         uint256 unclaimedAmount = poolInfo[index].unclaimedAmount;
         SafeERC20.safeTransfer(rewardToken, msg.sender, unclaimedAmount);
@@ -171,5 +169,45 @@ contract AirdropPool is Ownable, ReentrancyGuard {
             msg.sender
         );
         poolInfo[index].unclaimedAmount = 0;
+    }
+
+    /**
+     * @dev verify signature
+     * @param index pool index
+     * @param amount airdrop amount to claim
+     * @param signature signature offered by server
+     */
+    function _verify(
+        uint256 index,
+        uint256 amount,
+        bytes memory signature
+    ) internal view {
+        if (signature.length != 65) {
+            revert("ECDSA: invalid signature length");
+        }
+        // Divide the signature in r, s and v variables
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+
+        // ecrecover takes the signature parameters, and the only way to get them
+        // currently is to use assembly.
+        // solhint-disable-next-line no-inline-assembly
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
+
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(abi.encode(index, amount, msg.sender))
+            )
+        );
+        require(
+            ecrecover(digest, v, r, s) == _controller.getSigner(),
+            "invalid signature"
+        );
     }
 }

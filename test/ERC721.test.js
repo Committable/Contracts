@@ -14,7 +14,7 @@ describe('ERC721', function () {
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy();
+      controller = await Controller.deploy(owner.address);
       await controller.deployed();
       /* deploy token logic contract */
       CommittableV1 = await ethers.getContractFactory("CommittableV1");

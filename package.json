@@ -8,6 +8,7 @@
     "compile": "hardhat compile",
     "test:logs": "hardhat test --logs",
     "ropsten": "hardhat run --network ropsten",
+    "rinkeby": "hardhat run --network rinkeby",
     "lint:js": "eslint './test/*.js'",
     "lint:js:fix": "eslint './test/*.js' --fix",
     "lint:sol": "npx solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",

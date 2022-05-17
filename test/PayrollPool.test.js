@@ -4,7 +4,7 @@ const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
 const { ZERO_ADDRESS } = constants;
 
-describe('AirdropPool', function () {
+describe('PayrollPool', function () {
   context('with deployed contracts', function () {
     beforeEach(async function () {
 
@@ -16,19 +16,19 @@ describe('AirdropPool', function () {
       await helper.deployed();
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy();
+      controller = await Controller.deploy(creator.address);
       await controller.deployed();
       tx = await controller.setSigner(signer.address);
       await tx.wait()
-      /* deploy airdropPool */
-      let AirdropPool = await ethers.getContractFactory("AirdropPool");
-      airdropPool = await AirdropPool.deploy(controller.address);
-      await airdropPool.deployed();
+      /* deploy payrollPool */
+      let PayrollPool = await ethers.getContractFactory("PayrollPool");
+      payrollPool = await PayrollPool.deploy(controller.address);
+      await payrollPool.deployed();
       /* deploy erc20 and approve for test */
-      let ERC20 = await ethers.getContractFactory("ERC20Test");
-      token = await ERC20.connect(creator).deploy("Tether", "USDT");
+      let ERC20 = await ethers.getContractFactory("USDTMock");
+      token = await ERC20.connect(creator).deploy("USDTMock", "USDT-M");
       await token.deployed();
-      tx = await token.approve(airdropPool.address, ethers.utils.parseEther('10000').toString());
+      tx = await token.approve(payrollPool.address, ethers.utils.parseEther('10000').toString());
       await tx.wait();
       /* get block info */
       blockInfo = await ethers.provider.getBlock("latest");
@@ -37,7 +37,7 @@ describe('AirdropPool', function () {
       end = '10000000000'
       // current is around'1643013611'
       rewardAmount = '10000'
-      tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
+      tx = await payrollPool.create(0, token.address, rewardAmount, start, end);
       await tx.wait()
       /* sign a user airdrop */
       abiCoder = new ethers.utils.AbiCoder();
@@ -48,7 +48,7 @@ describe('AirdropPool', function () {
     })
 
     it('should return poolInfo', async function () {
-      let result = await airdropPool.getPoolInfo(0);
+      let result = await payrollPool.getPoolInfo(0);
       expect(result.creator).to.equal(creator.address);
       expect(result.rewardToken).to.equal(token.address);
       expect(result.rewardAmount).to.equal(rewardAmount);
@@ -57,24 +57,24 @@ describe('AirdropPool', function () {
       expect(result.end).to.equal(end);
     })
     it('should create airdrop successfully', async function () {
-      let tx = await airdropPool.create(1, token.address, rewardAmount, start, end);
-      expect(tx).to.emit(airdropPool, 'PoolCreated').withArgs(1, token.address, rewardAmount,creator.address, start, end);
+      let tx = await payrollPool.create(1, token.address, rewardAmount, start, end);
+      expect(tx).to.emit(payrollPool, 'PoolCreated').withArgs(1, token.address, rewardAmount,creator.address, start, end);
     })
     it('should claim airdrop successfully', async function () {
-      let tx = await airdropPool.connect(user).claim(index, claimAmount, sig);
-      expect(tx).to.emit(airdropPool, 'RewardClaimed').withArgs(index, token.address, claimAmount, user.address);
-      expect(tx).to.emit(token, 'Transfer').withArgs(airdropPool.address, user.address, claimAmount);
+      let tx = await payrollPool.connect(user).claim(index, claimAmount, sig);
+      expect(tx).to.emit(payrollPool, 'RewardClaimed').withArgs(index, token.address, claimAmount, user.address);
+      expect(tx).to.emit(token, 'Transfer').withArgs(payrollPool.address, user.address, claimAmount);
       await tx.wait()
-      let poolInfo = await airdropPool.getPoolInfo(index);
+      let poolInfo = await payrollPool.getPoolInfo(index);
       expect(poolInfo.unclaimedAmount).to.equal(poolInfo.rewardAmount.sub(claimAmount));
-      let userInfo = await airdropPool.getUserInfo(index, user.address);
+      let userInfo = await payrollPool.getUserInfo(index, user.address);
       expect(userInfo).to.equal(true)
     })
     it('cannot claim twice', async function () {
-      let tx = await airdropPool.connect(user).claim(index, claimAmount, sig);
+      let tx = await payrollPool.connect(user).claim(index, claimAmount, sig);
       await tx.wait();
       try {
-        await airdropPool.connect(user).claim(index, claimAmount, sig);
+        await payrollPool.connect(user).claim(index, claimAmount, sig);
       } catch (err) {
         expect(err.message).to.include("claim once only")
       }
@@ -82,7 +82,7 @@ describe('AirdropPool', function () {
     it('cannot claim with invalid sig', async function () {
       let invalidSig = await user.signMessage(ethers.utils.arrayify(hash));
       try {
-        let tx = await airdropPool.connect(user).claim(index, claimAmount, invalidSig);
+        let tx = await payrollPool.connect(user).claim(index, claimAmount, invalidSig);
         await tx.wait();
         throw null;
       } catch (err) {
@@ -96,7 +96,7 @@ describe('AirdropPool', function () {
       let hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
       let sig = await signer.signMessage(ethers.utils.arrayify(hash));
       try {
-        let tx = await airdropPool.connect(user).claim(index, claimAmount, sig)
+        let tx = await payrollPool.connect(user).claim(index, claimAmount, sig)
         await tx.wait()
         throw null;
       } catch (err) {
@@ -110,7 +110,7 @@ describe('AirdropPool', function () {
       let hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
       let sig = await signer.signMessage(ethers.utils.arrayify(hash));
       try {
-        let tx = await airdropPool.connect(user).claim(index, claimAmount, sig)
+        let tx = await payrollPool.connect(user).claim(index, claimAmount, sig)
         await tx.wait()
         throw null;
       } catch (err) {
@@ -119,7 +119,7 @@ describe('AirdropPool', function () {
     })
     it("should revert with calling address 0 when creating", async function() {
       try {
-        let tx = await airdropPool.create(1, ZERO_ADDRESS, rewardAmount, start, end);
+        let tx = await payrollPool.create(1, ZERO_ADDRESS, rewardAmount, start, end);
         await tx.wait();
         throw null
       } catch(err) {
@@ -129,7 +129,7 @@ describe('AirdropPool', function () {
     it("should revert with duplicated index", async function () {
      
       try {
-        tx = await airdropPool.create(0, token.address, rewardAmount, start, end);
+        tx = await payrollPool.create(0, token.address, rewardAmount, start, end);
         await tx.wait()
         throw null;
       } catch (err) {
@@ -140,12 +140,12 @@ describe('AirdropPool', function () {
     it('should be able to claim unclaimed token after end-time', async function () {
       /* set network block timestamp to end-time */
       await network.provider.send("evm_setNextBlockTimestamp", [10000000000])
-      let poolInfo = await airdropPool.getPoolInfo(index);
+      let poolInfo = await payrollPool.getPoolInfo(index);
       let unclaimedAmount = poolInfo.unclaimedAmount;
-      let tx = await airdropPool.connect(creator).withdraw(index);
-      expect(tx).to.emit(airdropPool, 'RewardClaimed').withArgs(index, token.address, unclaimedAmount, creator.address);
-      expect(tx).to.emit(token, 'Transfer').withArgs(airdropPool.address, creator.address, unclaimedAmount);
-      poolInfo = await airdropPool.getPoolInfo(index);
+      let tx = await payrollPool.connect(creator).withdraw(index);
+      expect(tx).to.emit(payrollPool, 'RewardClaimed').withArgs(index, token.address, unclaimedAmount, creator.address);
+      expect(tx).to.emit(token, 'Transfer').withArgs(payrollPool.address, creator.address, unclaimedAmount);
+      poolInfo = await payrollPool.getPoolInfo(index);
       unclaimedAmount = poolInfo.unclaimedAmount;
       expect(unclaimedAmount).to.equal(0)
     })
@@ -153,10 +153,11 @@ describe('AirdropPool', function () {
       /* set network block timestamp to end-time */
       // await network.provider.send("evm_setNextBlockTimestamp", [10000000000])
       try {
-        let tx = await airdropPool.claim(index, claimAmount, sig);
+        let tx = await payrollPool.connect(user).claim(index, claimAmount, sig);
         await tx.wait()
         throw null
       } catch(err) {
+        // console.log(err.message)
         expect(err.message).to.include('invalid timestamp')
       }
     })

@@ -28,9 +28,9 @@ async function main() {
 
   // get provider accounts
   const accounts = await ethers.provider.listAccounts();
-  // console.log(accounts);
+  console.log(accounts);
   [signer, secondAdmin] = await ethers.getSigners();
-
+  // console.log(signer.address)
   // console.log(secondAdmin.address)
   // We get the contract to interact
 
@@ -58,13 +58,13 @@ async function main() {
       '0x9870efca526a134624a31087d9d5952ea5e2bf8c7a28941c64ec15699b0a95e57135c71c9f335a778dd5789b3bc0fc494b2756c65e6d028c0cef54bd972b5c131c'
     ]
 
-  hashed = data.map((data) => {
-    return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data))
-  })
-  console.log(hashed[0])
-  console.log(typeof (hashed[0]))
+  // hashed = data.map((data) => {
+  //   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data))
+  // })
+  // console.log(hashed[0])
+  // console.log(typeof (hashed[0]))
 
-  console.log(await helper.toSignedMessage(hashed[0]))
+  // console.log(await helper.toSignedMessage(hashed[0]))
   // console.log(await helper.recover(hashed[0], siganture[0]))
   // console.log(await helper.recover(hashed[1], siganture[1]))
   // console.log(await helper.recover(hashed[2], siganture[2]))

@@ -15,12 +15,12 @@ contract Controller is ProxyAdmin {
         bool authorized
     );
 
-    constructor() {
-        _signer = msg.sender;
+    // token signer is the address that sign token creator and tokenId
+    constructor(address signer) {
+        _signer = signer;
     }
 
     function registerTransferProxy(address transferProxy_) external onlyOwner {
-        require(transferProxy_!=address(0), "Controller: Proxy cannot be address 0");
         _transferProxy = transferProxy_;
         emit TransferProxyRegistered(_transferProxy);
     }

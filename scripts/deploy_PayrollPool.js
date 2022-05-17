@@ -21,10 +21,10 @@ async function main() {
 
 
     // We get the contract to interact
-    const AirdropPool = await ethers.getContractFactory("AirdropPool");
-    const airdropPool = await AirdropPool.deploy(controller_address);
-    await airdropPool.deployed();
-    console.log("airdropPool deployed to:", airdropPool.address);
+    const PayrollPool = await ethers.getContractFactory("PayrollPool");
+    const payrollPool = await PayrollPool.deploy(controller_address);
+    await payrollPool.deployed();
+    console.log("payrollPool deployed to:", payrollPool.address);
 
   
 
