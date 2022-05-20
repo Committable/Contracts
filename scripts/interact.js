@@ -17,7 +17,7 @@ const committableV1_address = '0x2ceDC191d4bDE246e72af86E5c66EbAD9Ed16968';
 const router_address = '0x7759f72A371debC182208024A3D33E287e799527'
 const exchange_address = '0x48aEe3F428D7cc41555f2FeFB2d5436849e50400';
 const { hashOrder, hashMint, encodeMintAndTransfer } = require('../test/utils.js');
-
+const usdt_address = '0xD2856Dfc2948711B1659FaaBcb200e0717470E2A'
 async function main() {
   // Hardhat always runs the compile task when running scripts with its command
   // line interface.
@@ -33,30 +33,34 @@ async function main() {
   // console.log(signer.address)
   // console.log(secondAdmin.address)
   // We get the contract to interact
+const USDT = await ethers.getContractFactory("USDTMock")
+const usdt = USDT.attach(usdt_address)
 
+let result = await usdt.allowance('0xaa3376682A0fF472c716E23927D4200DB69E8A9C', '0x99812f68D44ADF1A90E0Ec131d7833476EFfdE6C')
+console.log(result.toString())
 
-  const Helper = await ethers.getContractFactory("Helper");
-  const helper = await Helper.attach(helper_address);
+  // const Helper = await ethers.getContractFactory("Helper");
+  // const helper = await Helper.attach(helper_address);
 
-  let rawSig =
-    [
-      '0x3045022100a9ee9fe9fbfbc733f182f8046145def0162b0b0a7aeeedb4fa1b64ff3be32c65022062b7569700bf94173846296da764256e3de507bbae6eaea0e9c376f0c1f162d0',
-      '0x3045022100ec9fcaa104d218cd8e14f0a9662a7258f179e0eab499fa721e977c317a52798302204beeea5b6833daacf9defd64a54dd4067a8c8b24841dec12da85e18239262b95',
-      '0x30450221009870efca526a134624a31087d9d5952ea5e2bf8c7a28941c64ec15699b0a95e502207135c71c9f335a778dd5789b3bc0fc494b2756c65e6d028c0cef54bd972b5c13'
-    ]
-  let data =
-    [
-      'hello1',
-      'hello12',
-      'hello1'
-    ]
+  // let rawSig =
+  //   [
+  //     '0x3045022100a9ee9fe9fbfbc733f182f8046145def0162b0b0a7aeeedb4fa1b64ff3be32c65022062b7569700bf94173846296da764256e3de507bbae6eaea0e9c376f0c1f162d0',
+  //     '0x3045022100ec9fcaa104d218cd8e14f0a9662a7258f179e0eab499fa721e977c317a52798302204beeea5b6833daacf9defd64a54dd4067a8c8b24841dec12da85e18239262b95',
+  //     '0x30450221009870efca526a134624a31087d9d5952ea5e2bf8c7a28941c64ec15699b0a95e502207135c71c9f335a778dd5789b3bc0fc494b2756c65e6d028c0cef54bd972b5c13'
+  //   ]
+  // let data =
+  //   [
+  //     'hello1',
+  //     'hello12',
+  //     'hello1'
+  //   ]
 
-  let siganture =
-    [
-      '0xa9ee9fe9fbfbc733f182f8046145def0162b0b0a7aeeedb4fa1b64ff3be32c6562b7569700bf94173846296da764256e3de507bbae6eaea0e9c376f0c1f162d01c',
-      '0xec9fcaa104d218cd8e14f0a9662a7258f179e0eab499fa721e977c317a5279834beeea5b6833daacf9defd64a54dd4067a8c8b24841dec12da85e18239262b951c',
-      '0x9870efca526a134624a31087d9d5952ea5e2bf8c7a28941c64ec15699b0a95e57135c71c9f335a778dd5789b3bc0fc494b2756c65e6d028c0cef54bd972b5c131c'
-    ]
+  // let siganture =
+  //   [
+  //     '0xa9ee9fe9fbfbc733f182f8046145def0162b0b0a7aeeedb4fa1b64ff3be32c6562b7569700bf94173846296da764256e3de507bbae6eaea0e9c376f0c1f162d01c',
+  //     '0xec9fcaa104d218cd8e14f0a9662a7258f179e0eab499fa721e977c317a5279834beeea5b6833daacf9defd64a54dd4067a8c8b24841dec12da85e18239262b951c',
+  //     '0x9870efca526a134624a31087d9d5952ea5e2bf8c7a28941c64ec15699b0a95e57135c71c9f335a778dd5789b3bc0fc494b2756c65e6d028c0cef54bd972b5c131c'
+  //   ]
 
   // hashed = data.map((data) => {
   //   return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data))
