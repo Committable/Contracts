@@ -56,6 +56,7 @@ describe('Committable', function () {
                 it("should have correct totalSupply", async function () {
                     expect(await committable.totalSupply()).to.equal(4)
                 })
+              
             })
 
             context('with malicious minting signature', function () {
@@ -74,7 +75,38 @@ describe('Committable', function () {
         })
 
 
+        context("ownership test", function(){
+            beforeEach('mint tokens with legitimate signature', async function () {
+                /* sign some tokenId */
+                let abiCoder = new ethers.utils.AbiCoder;
+                let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
+                let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_1)));
+                let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_2)));
+                let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
+                /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
+                await committable.mint(signer.address, tokenId_0, signature_0);
+                await committable.mint(signer.address, tokenId_1, signature_1);
+                await committable.mint(signer.address, tokenId_2, signature_2);
+                await committable.mint(user.address, tokenId_3, signature_3);
+            })
+            it("owner can change baseuri", async function () {
+                let tx = await committable.connect(signer).changeBaseURI("http://www.google.com/")
+                let tokenId = ethers.BigNumber.from(tokenId_0)
 
+
+                expect(await committable.tokenURI(tokenId_0)).to.equal("http://www.google.com/"+tokenId.toString())
+                
+            
+            })
+            it("revert when non-owner try to change baseuri", async function () {
+                try {
+                    let tx = await committable.connect(user).changeBaseURI("http://www.google.com/")
+                    throw null
+                } catch(err) {
+                    expect(err.message).to.include("Ownable: caller is not the owner")
+                }
+            })
+        })
 
     })
 

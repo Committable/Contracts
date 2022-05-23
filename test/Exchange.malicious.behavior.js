@@ -352,7 +352,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('must be called by legit user');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ERC20 standard order', async function () {
@@ -364,7 +364,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('must be called by legit user');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ETH lazy-mint order', async function () {
@@ -376,7 +376,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('must be called by legit user');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
         it('revert with ERC20 lazy-mint order', async function () {
@@ -388,7 +388,7 @@ function shouldRevertWithMaliciousBehavior() {
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('must be called by legit user');
+            expect(err.message).to.include('invalid order parameters');
           }
         })
       })
@@ -931,11 +931,11 @@ function shouldRevertWithMaliciousBehavior() {
       context('when mint sig is invalid', function () {
         it('revert when mint sig is invali', async function () {
           let signature_5 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, 123)));
-          
+
           sell_order_4.tokenSig = signature_5;
 
           sell_order_sig_4 = await seller._signTypedData(domain, types, sell_order_4);
-          
+
           try {
             tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
             await tx.wait()
@@ -965,6 +965,24 @@ function shouldRevertWithMaliciousBehavior() {
           throw null;
         } catch (err) {
           expect(err.message).to.include('invalid request');
+        }
+      })
+      it('should revert when buyer trys to execute auction orders', async function () {
+        try {
+          let tx = await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
+          await tx.wait();
+          throw null;
+        } catch (err) {
+          expect(err.message).to.include('must be called by legit user');
+        }
+      })
+      it('should revert when seller trys to execute standard orders', async function () {
+        try {
+          let tx = await exchange.connect(seller).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+          await tx.wait();
+          throw null;
+        } catch (err) {
+          expect(err.message).to.include('must be called by legit user');
         }
       })
     })

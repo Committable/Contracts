@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import "../library/OrderUtils.sol";
-// import "../library/ECDSA.sol";
 import "./FeePanel.sol";
 import "../Controller.sol";
 import "../TransferProxy.sol";
@@ -159,6 +158,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.isAuction == sellOrder.isAuction) &&
             // must match paymentToken
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
+            // buy order value must large or equal to sell order value
+            (buyOrder.value >= sellOrder.value) &&
             // royaltyRecipient must match
             (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
             // royalty must match
@@ -199,12 +200,12 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal view returns (bool) {
-        // in fixed-price orders, if bid price >= ask price, order match can be triggered by both
-        // in auction orders and if bid price < ask price in fixed-price orders, order match can only be triggered by seller
-        if (!buyOrder.isAuction && buyOrder.value >= sellOrder.value) {
-            return true;
-        } else {
+        // in fixed-price orders, only buyer can match order
+        // in auction orders, only seller can match order
+        if (buyOrder.isAuction) {
             return msg.sender == sellOrder.maker;
+        } else {
+            return msg.sender == buyOrder.maker;
         }
     }
 
