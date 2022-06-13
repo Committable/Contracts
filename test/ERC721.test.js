@@ -1,9 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { BN, constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
-const ether = require("@openzeppelin/test-helpers/src/ether");
-const { ZERO_ADDRESS } = constants;
+const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
 const { tokenIds, projects, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { hashMint } = require('./utils.js');
@@ -88,6 +86,7 @@ describe('ERC721', function () {
       const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {
+        
         let tx = await committable.transferFrom(owner.address, recipient.address, tokenId);
         await tx.wait();
       })

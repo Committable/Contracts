@@ -1,8 +1,7 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
-const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
-const { ZERO_ADDRESS } = constants;
+const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
 
 describe('PayrollPool', function () {
   context('with deployed contracts', function () {

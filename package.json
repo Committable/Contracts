@@ -16,16 +16,14 @@
     "solhint": "npx solhint 'contracts/**/*.sol'"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Committable Team",
+  "license": "MIT",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-etherscan": "^3.0.1",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@openzeppelin/contracts": "^4.2.0",
     "@openzeppelin/contracts-upgradeable": "^4.2.0",
-    "@openzeppelin/test-helpers": "^0.5.13",
-    "@truffle/hdwallet-provider": "^1.4.3",
     "bn.js": "^5.2.0",
     "buffer-xor": "^2.0.2",
     "chai": "^4.3.4",

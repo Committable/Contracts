@@ -1,8 +1,8 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
-const { ZERO_ADDRESS } = constants;
+const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
+
 const { Order, hashOrder, hashMint, DOMAIN, TYPES } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 const { TypedDataUtils } = require('ethers-eip712')

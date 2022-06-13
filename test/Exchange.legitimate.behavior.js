@@ -1,11 +1,10 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
-const { ZERO_ADDRESS } = constants;
 const { Order, hashOrder, hashMint } = require("./utils.js");
+const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
+
 const { check } = require("prettier");
-const { outOfGas } = require("@openzeppelin/test-helpers/src/expectRevert");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const life_span = 60 * 60 * 24 * 7 // one week
 

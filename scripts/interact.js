@@ -11,7 +11,7 @@ const { projects, commits, tokenIds } = require('../test/tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 
 const controller_address = '0xd8d5502D907E41De5ac1fA1b129812da53eF4a7a';
-const helper_address = '0xb606d030aC9AFCdc5f37fA8e38049304F453427e';
+const helper_address = '0xA8Ab9FB51375BBbeE25f794F5491c335Fcc177F9';
 const committable_adress = '0x378E528a275Cd9735837f1b14F735f88BC8661E7';
 const committableV1_address = '0x2ceDC191d4bDE246e72af86E5c66EbAD9Ed16968';
 const router_address = '0x7759f72A371debC182208024A3D33E287e799527'
@@ -33,12 +33,11 @@ async function main() {
   // console.log(signer.address)
   // console.log(secondAdmin.address)
   // We get the contract to interact
-const USDT = await ethers.getContractFactory("USDTMock")
-const usdt = USDT.attach(usdt_address)
+  const Helper = await ethers.getContractFactory("Helper")
+  const helper = Helper.attach(helper_address)
 
-let result = await usdt.allowance('0xaa3376682A0fF472c716E23927D4200DB69E8A9C', '0x99812f68D44ADF1A90E0Ec131d7833476EFfdE6C')
-console.log(result.toString())
 
+  console.log(await helper.encodePayroll("21036", "199999800000000000000","0x75de29fd69b17604858078da900484d0ee085c3c"))
   // const Helper = await ethers.getContractFactory("Helper");
   // const helper = await Helper.attach(helper_address);
 

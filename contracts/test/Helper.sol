@@ -22,7 +22,18 @@ contract Helper {
         return ECDSA.recover(hash, sig);
     }
 
-    function toSignedMessage(bytes32 hash) external pure returns (bytes32) {
-        return ECDSA.toEthSignedMessageHash(hash);
+    function encodePayroll(
+        uint256 index,
+        uint256 amount,
+        address user
+    ) external pure returns(bytes32) {
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(abi.encode(index, amount, user))
+            )
+        );
+        return digest;
     }
+
 }
