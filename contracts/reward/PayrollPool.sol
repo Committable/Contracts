@@ -2,13 +2,14 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+
 import "../Controller.sol";
 
-contract PayrollPool is Ownable, ReentrancyGuard {
+contract PayrollPool is  ReentrancyGuard, Initializable {
     Controller internal _controller;
     /** mapping from pool index to user address to userInfo */
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -42,7 +43,11 @@ contract PayrollPool is Ownable, ReentrancyGuard {
         address indexed user
     );
 
-    constructor(address controller) {
+    // constructor(address controller) {
+    //     _controller = Controller(controller);
+    // }
+
+    function initialize(address controller) public initializer {
         _controller = Controller(controller);
     }
 
