@@ -23,20 +23,20 @@ async function main() {
   await controller.deployed();
   console.log("controller deployed to:", controller.address);
   /* deploy token logic contract */
-  console.log('waiting for deployment: CommittableV1...')
-  let CommittableV1 = await ethers.getContractFactory("CommittableV1");
-  committableV1 = await CommittableV1.deploy();
-  await committableV1.deployed();
-  console.log("CommittableV1 deployed to:", committableV1.address);
+  console.log('waiting for deployment: ERC721Committable...')
+  let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
+  erc721Committable = await ERC721Committable.deploy();
+  await erc721Committable.deployed();
+  console.log("ERC721Committable deployed to:", erc721Committable.address);
   /* deploy token proxy contract */
   console.log('waiting for deployment: Committable...')
-  let Committable = await ethers.getContractFactory("Committable");
+  let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
   let ABI = ["function initialize(string,string,address)"];
   let iface = new ethers.utils.Interface(ABI);
   let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-  committable = await Committable.deploy(committableV1.address, controller.address, calldata);
-  await committable.deployed();
-  console.log("Committable deployed to:", committable.address);
+  tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
+  await tokenProxy.deployed();
+  console.log("CommittableProxy deployed to:", tokenProxy.address);
   /* deploy transferProxy contract */
   console.log('waiting for deployment: TransferProxy')
   let TransferProxy = await ethers.getContractFactory("TransferProxy");
@@ -79,7 +79,7 @@ async function main() {
 
 
   let content = "\nController: " + controller.address
-    + "\nCommittableV1: " + committableV1.address
+    + "\nERC721Committable: " + erc721Committable.address
     + "\nCommittable: " + committable.address
     + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address

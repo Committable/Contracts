@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import "../TransferProxy.sol";
 import "../Controller.sol";
 
-contract CommittableV1 is ERC721Upgradeable, OwnableUpgradeable {
+contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
     Controller internal _controller;
     uint256 internal _totalSupply;
     string public baseURI;

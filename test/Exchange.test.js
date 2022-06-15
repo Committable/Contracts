@@ -37,18 +37,18 @@ describe('Exchange', function () {
       controller = await Controller.deploy(seller.address); // seller address is token signer
       await controller.deployed();
       /* deploy token logic contract */
-      let CommittableV1 = await ethers.getContractFactory("CommittableV1");
-      committableV1 = await CommittableV1.deploy(); 
-      await committableV1.deployed();
+      let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
+      erc721Committable = await ERC721Committable.deploy(); 
+      await erc721Committable.deployed();
       /* deploy token proxy contract */
-      let Committable = await ethers.getContractFactory("Committable");
+      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
       let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      committable = await Committable.deploy(committableV1.address, controller.address, calldata);
-      await committable.deployed();
+      tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
+      await tokenProxy.deployed();
       /* attach token proxy contract with logic contract abi */
-      committable = await CommittableV1.attach(committable.address);
+      tokenProxy = await ERC721Committable.attach(tokenProxy.address);
 
       /* deploy exchange contract */
       let Exchange = await ethers.getContractFactory("Exchange");
@@ -110,7 +110,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_0,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -126,7 +126,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_0,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -190,7 +190,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_1,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -206,7 +206,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_1,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -227,7 +227,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_2,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -243,7 +243,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_2,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -264,7 +264,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_3,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -280,7 +280,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_3,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -303,7 +303,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_4,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -319,7 +319,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_4,
         tokenSig: signature_4,
         start: 0,
@@ -343,7 +343,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_5,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -359,7 +359,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_5,
         tokenSig: signature_5,
         start: 0,
@@ -380,7 +380,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_6,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -396,7 +396,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: royaltyRecipient.address,
         royalty: ROYALTY,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_6,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -420,7 +420,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_7,
         tokenSig: UINT256_ZERO,
         start: 0,
@@ -436,7 +436,7 @@ describe('Exchange', function () {
         value: PRICE,
         royaltyRecipient: ZERO_ADDRESS,
         royalty: 0,
-        target: committable.address,
+        target: tokenProxy.address,
         tokenId: tokenId_7,
         tokenSig: signature_7,
         start: 0,

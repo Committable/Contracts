@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract Committable is TransparentUpgradeableProxy {
+contract CommittableProxy is TransparentUpgradeableProxy {
     constructor(
         address _logic,
         address admin_,

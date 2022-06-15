@@ -27,15 +27,15 @@ function shouldRevertWithMaliciousBehavior() {
 
 
         // mint tokenId_0, 1, 2 to seller
-        tx = await committable.mint(seller.address, tokenId_0, signature_0);
+        tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
         await tx.wait();
-        tx = await committable.mint(seller.address, tokenId_1, signature_1);
+        tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
         await tx.wait();
-        tx = await committable.mint(seller.address, tokenId_2, signature_2);
+        tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
         await tx.wait();
-        tx = await committable.mint(seller.address, tokenId_3, signature_3);
+        tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
         await tx.wait();
-        tx = await committable.mint(seller.address, tokenId_6, signature_6);
+        tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
         await tx.wait();
       })
       context('when buy order value is modified', function () {
@@ -916,7 +916,7 @@ function shouldRevertWithMaliciousBehavior() {
       })
       context('when seller does not own the token', function () {
         it('revert when the seller does not own the token', async function () {
-          let tx = await committable.transferFrom(seller.address, buyer.address, tokenId_0);
+          let tx = await tokenProxy.transferFrom(seller.address, buyer.address, tokenId_0);
           await tx.wait();
 
           try {

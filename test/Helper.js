@@ -22,18 +22,18 @@ describe('helper', function () {
         controller = await Controller.deploy(signer.address);
         await controller.deployed();
         /* deploy token logic contract */
-        CommittableV1 = await ethers.getContractFactory("CommittableV1");
-        committableV1 = await CommittableV1.deploy();
-        await committableV1.deployed();
+        ERC721Committable = await ethers.getContractFactory("ERC721Committable");
+        erc721Committable = await ERC721Committable.deploy();
+        await erc721Committable.deployed();
         /* deploy token proxy contract */
-        let Committable = await ethers.getContractFactory("Committable");
+        let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
         let ABI = ["function initialize(string,string,address)"];
         let iface = new ethers.utils.Interface(ABI);
         let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-        committable = await Committable.deploy(committableV1.address, controller.address, calldata);
-        await committable.deployed();
+        tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
+        await tokenProxy.deployed();
         /* attach token proxy contract with logic contract abi */
-        committable = await CommittableV1.attach(committable.address);
+        tokenProxy = await ERC721Committable.attach(tokenProxy.address);
         /* sign some tokenId */
         let abiCoder = new ethers.utils.AbiCoder;
         let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
@@ -41,10 +41,10 @@ describe('helper', function () {
         let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_2)));
         let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
         /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-        await committable.mint(signer.address, tokenId_0, signature_0);
-        await committable.mint(signer.address, tokenId_1, signature_1);
-        await committable.mint(signer.address, tokenId_2, signature_2);
-        await committable.mint(user.address, tokenId_3, signature_3);
+        await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+        await tokenProxy.mint(signer.address, tokenId_1, signature_1);
+        await tokenProxy.mint(signer.address, tokenId_2, signature_2);
+        await tokenProxy.mint(user.address, tokenId_3, signature_3);
     })
   
 
