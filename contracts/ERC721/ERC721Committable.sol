@@ -11,6 +11,8 @@ contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
     Controller internal _controller;
     uint256 internal _totalSupply;
     string public baseURI;
+    // solhint-disable-next-line
+    bytes32 public DOMAIN_SEPARATOR;
 
     function initialize(
         string memory _name,
@@ -21,7 +23,23 @@ contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __Ownable_init();
+
         _controller = Controller(controller);
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes(_name)),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
+            )
+        );
     }
 
     /**
@@ -79,10 +97,25 @@ contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
             v := byte(0, mload(add(signature, 0x60)))
         }
 
-        bytes32 digest = keccak256(
+        // bytes32 digest = keccak256(
+        //     abi.encodePacked(
+        //         "\x19Ethereum Signed Message:\n32",
+        //         keccak256(abi.encode(creator, tokenId))
+        //     )
+        // );
+
+         bytes32 digest = keccak256(
             abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encode(creator, tokenId))
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        //keccak256("Mint(address creator,uint256 tokenId)")
+                        0xe6c296e11cbaaec3fa9033cd6f86ffb254e2601a752ff969259c9aa361b35d89,
+                        creator,
+                        tokenId
+                    )
+                )
             )
         );
         require(

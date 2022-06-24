@@ -4,19 +4,19 @@ const { encodeTransfer, encodeTransferReplacement } = require('./utils.js');
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const ERC721_ADDRESS = '0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const { NAME, SYMBOL } = require('../.config.js');
-const { hashMint } = require('./utils.js')
+const { erc721_domain, mint_types } = require('./utils.js')
 const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 describe('helper', function () {
 
     beforeEach('deploy helper', async function () {
-        [signer, another, ...others] = await ethers.getSigners();
+        /* get signers */
+        [signer, user, ...others] = await ethers.getSigners();
         const Helper = await ethers.getContractFactory('Helper');
         helper = await Helper.deploy();
         await helper.deployed();
 
-        /* get signers */
-        [signer, user, ...others] = await ethers.getSigners();
+
         /* deploy controller contract */
         let Controller = await ethers.getContractFactory("Controller");
         controller = await Controller.deploy(signer.address);
@@ -34,19 +34,32 @@ describe('helper', function () {
         await tokenProxy.deployed();
         /* attach token proxy contract with logic contract abi */
         tokenProxy = await ERC721Committable.attach(tokenProxy.address);
+        erc721_domain.verifyingContract = tokenProxy.address
         /* sign some tokenId */
-        let abiCoder = new ethers.utils.AbiCoder;
-        let signature_0 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_0)));
-        let signature_1 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_1)));
-        let signature_2 = await signer.signMessage(ethers.utils.arrayify(hashMint(signer.address, tokenId_2)));
-        let signature_3 = await signer.signMessage(ethers.utils.arrayify(hashMint(user.address, tokenId_3)));
+        let signature_0 = await signer._signTypedData(erc721_domain, mint_types, {
+            creator: signer.address,
+            tokenId: tokenId_0
+        });
+        let signature_1 = await signer._signTypedData(erc721_domain, mint_types, {
+            creator: signer.address,
+            tokenId: tokenId_1
+        });
+        let signature_2 = await signer._signTypedData(erc721_domain, mint_types, {
+            creator: signer.address,
+            tokenId: tokenId_2
+        });
+        let signature_3 = await signer._signTypedData(erc721_domain, mint_types, {
+            creator: user.address,
+            tokenId: tokenId_3
+        });
+
         /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
         await tokenProxy.mint(signer.address, tokenId_0, signature_0);
         await tokenProxy.mint(signer.address, tokenId_1, signature_1);
         await tokenProxy.mint(signer.address, tokenId_2, signature_2);
         await tokenProxy.mint(user.address, tokenId_3, signature_3);
     })
-  
+
 
 
     it('shoud recover from hsm', async function () {
@@ -81,7 +94,7 @@ describe('helper', function () {
                 '0x6e638fbf465cb9faaef0c58d0f6b6045ce04dfaca45c882bc3d67bf79093b26d250f2638c2a356b367c191a259ea725c6c6166b862b138d771ea379793700eb51b',
                 '0x92d0d37d6f8f9634cb8d602be3c6d913c7d653e136a66ceefc59ed7939dddf0233cd71529cb6394c3dbd6e11dfb6ab44723dd6ec61fdcc3af0db39632292eed41b',
                 '0x7e53c9252137208b5d59af3b80c3c824de4af17b52248b8062a8293fb2cd2a3a0832efcc2052363b5f877adde44a671f21782cbf46dc238e4c0342db721e12f91b'
-      
+
             ]
 
         hashed = data.map((data) => {

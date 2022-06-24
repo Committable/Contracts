@@ -74,7 +74,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
         return (!_isCancelledOrFinished[orderHash]);
     }
 
-
     /**
      * @dev match orders, transfer tokens and trigger state transition
      * @param buyOrder - buy order struct

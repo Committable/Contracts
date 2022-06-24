@@ -1,10 +1,11 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
-const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { tokenIds, projects, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
-const { hashMint } = require('./utils.js');
+const { erc721_domain, mint_types } = require('./utils.js');
+
 describe('ERC721', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
@@ -28,9 +29,24 @@ describe('ERC721', function () {
       /* attach token proxy contract with logic contract abi */
       tokenProxy = await ERC721Committable.attach(tokenProxy.address)
       /* sign some tokenId */
-      let abiCoder = new ethers.utils.AbiCoder;
-      let signature_0 = await owner.signMessage(ethers.utils.arrayify(hashMint(owner.address, tokenId_0)));
-      let signature_1 = await owner.signMessage(ethers.utils.arrayify(hashMint(owner.address, tokenId_1)));
+      /* caculate erc721_domain seperator and type */
+      erc721_domain.verifyingContract = tokenProxy.address
+
+      mint_0 = {
+        creator: owner.address,
+        tokenId: tokenId_0,
+      }
+      mint_1 = {
+        creator: owner.address,
+        tokenId: tokenId_1,
+      }
+
+
+      /* sign some tokenId */
+
+      signature_0 = await owner._signTypedData(erc721_domain, mint_types, mint_0);
+      signature_1 = await owner._signTypedData(erc721_domain, mint_types, mint_1);
+
       /* mint tokenId_0, tokenId_1 to owner */
       let tx = await tokenProxy.mint(owner.address, tokenId_0, signature_0);
       await tx.wait();
@@ -86,7 +102,7 @@ describe('ERC721', function () {
       const tokenId = tokenId_0;
       const data = '0x42';
       beforeEach(async function () {
-        
+
         let tx = await tokenProxy.transferFrom(owner.address, recipient.address, tokenId);
         await tx.wait();
       })
@@ -98,7 +114,7 @@ describe('ERC721', function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-    
+
       it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
@@ -119,7 +135,7 @@ describe('ERC721', function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-    
+
       it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })
@@ -141,7 +157,7 @@ describe('ERC721', function () {
         expect(await tokenProxy.balanceOf(owner.address)).to.equal('1');
         expect(await tokenProxy.balanceOf(recipient.address)).to.equal('1');
       })
-  
+
       it('clears the approval for the tokenId', async function () {
         expect(await tokenProxy.getApproved(tokenId)).to.equal(ZERO_ADDRESS);
       })

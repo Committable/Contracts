@@ -9,19 +9,33 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenI
 const life_span = 60 * 60 * 24 * 7 // one week
 
 
-function shouldWorkWithLegitimateBehavior() {
+function shouldWorkWithLegitimateBehavior(exchange_domain, order_types) {
     context('with legitimate behaviors', function () {
         context('with minted nft', function () {
             beforeEach('with minted nft', async function () {
                 // sign some tokenId
                 let abiCoder = new ethers.utils.AbiCoder();
-
-                let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
-                let signature_1 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_1)));
-                let signature_2 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_2)));
-                let signature_3 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_3)));
-                let signature_6 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_6)));
-
+                let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+                    creator: seller.address,
+                    tokenId: tokenId_0
+                  });
+                  let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+                    creator: seller.address,
+                    tokenId: tokenId_1
+                  });
+                  let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+                    creator: seller.address,
+                    tokenId: tokenId_2
+                  });
+                  let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+                    creator: seller.address,
+                    tokenId: tokenId_3
+                  });
+                  let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+                    creator: seller.address,
+                    tokenId: tokenId_6
+                  });
+             
                 // // mint tokenId_0, 1, 2 to seller
                 tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
                 await tx.wait();

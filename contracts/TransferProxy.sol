@@ -6,7 +6,7 @@ import "./Controller.sol";
 /**
  * this contract owns token transfer approvement of all users, the caller that allowed to call this contract must
  * be able to verifiy the legitimacy of the transaction
- */ 
+ */
 contract TransferProxy {
     Controller public controller;
 

@@ -42,6 +42,7 @@ describe('PayrollPool', function () {
       await token.deployed();
       tx = await token.approve(payrollProxy.address, ethers.utils.parseEther('10000').toString());
       await tx.wait();
+
       /* get block info */
       blockInfo = await ethers.provider.getBlock("latest");
       /* create an airdrop */
@@ -55,15 +56,47 @@ describe('PayrollPool', function () {
       abiCoder = new ethers.utils.AbiCoder();
       index = '0'
       claimAmount = '100'
-      hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
-      sig = await signer.signMessage(ethers.utils.arrayify(hash));
+
+
+      /* caculate domain seperator and type */
+      domain = {
+        name: 'PayrollPool',
+        version: '1',
+        chainId: 1337, // hardhat chainid
+        verifyingContract: payrollProxy.address // assign this value accordingly
+      };
+
+      types = {
+        Claim: [
+          { name: 'index', type: 'uint256' },
+          { name: 'amount', type: 'uint256' },
+          { name: 'user', type: 'address' },
+        ]
+      };
+
+      claim = {
+        index: index,
+        amount: claimAmount,
+        user: user.address
+      }
+
+
+
+
+      // hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
+      // sig = await signer.signMessage(ethers.utils.arrayify(hash));
+
+      sig = await signer._signTypedData(domain, types, claim)
+
+
+      // console.log(payrollProxy.DOMAIN_SEPARATOR())
     })
     it('cannot initialize twice', async function () {
       try {
-  
+
         await payrollProxy.initialize(controller.address)
         throw null
-      } catch(err) {
+      } catch (err) {
         expect(err.message).to.include("Initializable: contract is already initialized")
       }
 
@@ -101,7 +134,8 @@ describe('PayrollPool', function () {
       }
     })
     it('cannot claim with invalid sig', async function () {
-      let invalidSig = await user.signMessage(ethers.utils.arrayify(hash));
+
+      let invalidSig =  await user._signTypedData(domain, types, claim)
       try {
         let tx = await payrollProxy.connect(user).claim(index, claimAmount, invalidSig);
         await tx.wait();
@@ -112,12 +146,15 @@ describe('PayrollPool', function () {
     })
     it('cannot claim amount that succeed unclaimed amount', async function () {
       /* sign a user airdrop */
-      let index = '0'
-      let claimAmount = '100000'
-      let hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
-      let sig = await signer.signMessage(ethers.utils.arrayify(hash));
+      let claim = {
+        index: '0',
+        amount: '100000',
+        user: user.address
+      }
+      
+      let sig = await signer._signTypedData(domain, types, claim)
       try {
-        let tx = await payrollProxy.connect(user).claim(index, claimAmount, sig)
+        let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)
         await tx.wait()
         throw null;
       } catch (err) {
@@ -126,12 +163,15 @@ describe('PayrollPool', function () {
     })
     it("should revert when query of non-existence pool", async function () {
       /* sign a user airdrop */
-      let index = '1'
-      let claimAmount = '10000'
-      let hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
-      let sig = await signer.signMessage(ethers.utils.arrayify(hash));
+      let claim = {
+        index: '1',
+        amount: '10000',
+        user: user.address
+      }
+      let sig = await signer._signTypedData(domain, types, claim)
+ 
       try {
-        let tx = await payrollProxy.connect(user).claim(index, claimAmount, sig)
+        let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)
         await tx.wait()
         throw null;
       } catch (err) {

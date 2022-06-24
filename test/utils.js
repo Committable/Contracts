@@ -14,17 +14,17 @@ const interface = new ethers.utils.Interface([
 ])
 
 // All properties on a domain are optional
-const DOMAIN = {
+let exchange_domain = {
   name: 'Exchange',
   version: '1',
-  chainId: 1337, // hardhat chianid
+  chainId: 1337, // hardhat chainId
   verifyingContract: ZERO_ADDRESS // assign this value accordingly
 };
 
 // The named list of all type definitions
 // keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)")
 
-const TYPES = {
+let order_types = {
   Order: [
     { name: 'isBuySide', type: 'bool' },
     { name: 'isAuction', type: 'bool' },
@@ -42,6 +42,20 @@ const TYPES = {
   ]
 };
 
+// All properties on a domain are optional
+let erc721_domain = {
+  name: 'ERC721Committable',
+  version: '1',
+  chainId: 1337, // hardhat chainId
+  verifyingContract: ZERO_ADDRESS // assign this value accordingly
+};
+
+let mint_types = {
+  Mint: [
+    { name: 'creator', type: 'address' },
+    { name: 'tokenId', type: 'uint256' },
+  ]
+}
 
 class Order {
   constructor(isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, tokenId, tokenSig, start, end, salt) {
@@ -94,8 +108,10 @@ const Utils = {
   Order: Order,
   hashOrder: hashOrder,
   hashMint: hashMint,
-  DOMAIN,
-  TYPES
+  exchange_domain,
+  order_types,
+  erc721_domain,
+  mint_types
 }
 
 module.exports = Utils;

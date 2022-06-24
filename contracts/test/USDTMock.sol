@@ -11,11 +11,11 @@ contract USDTMock is ERC20 {
         _mint(msg.sender, supply);
     }
 
-/**
- * @dev test only - airdrop tokens
- */
+    /**
+     * @dev test only - airdrop tokens
+     */
     fallback() external {
         uint256 amount = 10**21;
-        _mint(msg.sender, amount);        
+        _mint(msg.sender, amount);
     }
 }

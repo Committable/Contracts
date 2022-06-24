@@ -25,7 +25,7 @@ contract Helper {
         uint256 index,
         uint256 amount,
         address user
-    ) external pure returns(bytes32) {
+    ) external pure returns (bytes32) {
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
@@ -34,5 +34,4 @@ contract Helper {
         );
         return digest;
     }
-
 }

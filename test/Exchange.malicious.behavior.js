@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const  ZERO_ADDRESS  = "0x0000000000000000000000000000000000000000";
 
-const { Order, hashOrder, hashMint } = require("./utils.js");
+const { Order, hashOrder, hashMint,  } = require("./utils.js");
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 const ETH_CLASS = '0xaaaebeba';
 const ERC20_CLASS = '0x8ae85d84';
@@ -18,13 +18,27 @@ function shouldRevertWithMaliciousBehavior() {
     context('with standard orders and lazy-mint orders', function () {
       beforeEach('with minted nft', async function () {
         // sign some tokenId
-
-        let signature_0 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_0)));
-        let signature_1 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_1)));
-        let signature_2 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_2)));
-        let signature_3 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_3)));
-        let signature_6 = await seller.signMessage(ethers.utils.arrayify(hashMint(seller.address, tokenId_6)));
-
+        let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_0
+        });
+        let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_1
+        });
+        let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_2
+        });
+        let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_3
+        });
+        let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_6
+        });
+      
 
         // mint tokenId_0, 1, 2 to seller
         tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);

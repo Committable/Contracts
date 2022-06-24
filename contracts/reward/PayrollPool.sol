@@ -9,7 +9,10 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 import "../Controller.sol";
 
-contract PayrollPool is  ReentrancyGuard, Initializable {
+contract PayrollPool is ReentrancyGuard, Initializable {
+    // solhint-disable-next-line
+    bytes32 public DOMAIN_SEPARATOR;
+    string public name;
     Controller internal _controller;
     /** mapping from pool index to user address to userInfo */
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
@@ -49,6 +52,22 @@ contract PayrollPool is  ReentrancyGuard, Initializable {
 
     function initialize(address controller) public initializer {
         _controller = Controller(controller);
+        name = "PayrollPool";
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+        DOMAIN_SEPARATOR = keccak256(
+            abi.encode(
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes(name)),
+                keccak256(bytes("1")),
+                chainId,
+                address(this)
+            )
+        );
     }
 
     /**
@@ -205,8 +224,17 @@ contract PayrollPool is  ReentrancyGuard, Initializable {
 
         bytes32 digest = keccak256(
             abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(abi.encode(index, amount, msg.sender))
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        //keccak256("Claim(uint256 index,uint256 amount,address user)")
+                        0x2c400e34dccd136c63692253b13cbe502fc45768c04c0584e74b7cc15fda3487,
+                        index,
+                        amount,
+                        msg.sender
+                    )
+                )
             )
         );
         require(
