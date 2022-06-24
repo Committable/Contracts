@@ -9,10 +9,7 @@ describe('PayrollPool', function () {
 
       /* get signers */
       [creator, signer, user, ...others] = await ethers.getSigners();
-      /* deploy helper */
-      const Helper = await ethers.getContractFactory('Helper');
-      helper = await Helper.deploy();
-      await helper.deployed();
+      
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy(creator.address);

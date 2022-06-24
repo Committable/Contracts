@@ -3,7 +3,7 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
-import "./TransferProxy.sol";
+import "./exchange/TransferProxy.sol";
 
 contract Controller is ProxyAdmin {
     address private _signer;

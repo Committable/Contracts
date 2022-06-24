@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./Controller.sol";
+import "../Controller.sol";
 
 /**
  * this contract owns token transfer approvement of all users, the caller that allowed to call this contract must

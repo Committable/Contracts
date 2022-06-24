@@ -6,9 +6,6 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 let { hashOrder, exchange_domain, order_types, erc721_domain, mint_types } = require("./utils.js");
 const { projects, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
-const { shouldWorkWithLegitimateBehavior } = require('./Exchange.legitimate.behavior.js');
-const { shouldRevertWithMaliciousBehavior } = require('./Exchange.malicious.behavior.js')
-
 ROYALTY = '1000'; // 10%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
@@ -27,9 +24,7 @@ describe('Exchange', function () {
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
       /* deploy helper */
-      const Helper = await ethers.getContractFactory('Helper');
-      helper = await Helper.deploy();
-      await helper.deployed();
+
       /* deploy controller contract */
       let Controller = await ethers.getContractFactory("Controller");
       controller = await Controller.deploy(seller.address); // seller address is token signer
@@ -418,7 +413,6 @@ describe('Exchange', function () {
       context('with minted nft', function () {
         beforeEach('with minted nft', async function () {
           // sign some tokenId
-          let abiCoder = new ethers.utils.AbiCoder();
           let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
             creator: seller.address,
             tokenId: tokenId_0
@@ -452,23 +446,9 @@ describe('Exchange', function () {
           tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
           await tx.wait();
           // deploy Helper for test
-          let Helper = await ethers.getContractFactory("Helper");
-          helper = await Helper.deploy();
-          await helper.deployed();
+
 
         })
-        // context("with legitimate order hash and sig", function () {
-        //     it("should have correct order hash", async function () {
-        //         expect(await helper.hashOrder(buy_order_0)).to.equal(hashOrder(buy_order_0));
-        //         expect(await helper.hashOrder(sell_order_0)).to.equal(hashOrder(sell_order_0));
-        //         expect(await helper.hashOrder(buy_order_1)).to.equal(hashOrder(buy_order_1));
-        //         expect(await helper.hashOrder(sell_order_1)).to.equal(hashOrder(sell_order_1));
-        //         expect(await helper.hashOrder(sell_order_2)).to.equal(hashOrder(sell_order_2));
-        //         expect(await helper.hashOrder(sell_order_3)).to.equal(hashOrder(sell_order_3));
-
-        //     })
-
-        // })
 
         context("with ETH order: no royalty", function () {
           beforeEach(async function () {
@@ -753,6 +733,7 @@ describe('Exchange', function () {
               .withArgs(buyer.address, royaltyRecipient, _royalty.toString());
           })
         })
+
       })
       context('with lazy-minted nft', function () {
         beforeEach('with lazy-minted nft', async function () {
@@ -944,6 +925,8 @@ describe('Exchange', function () {
 
 
       })
+
+
     })
     context('with malicious order behaviors', function () {
       context('with standard orders and lazy-mint orders', function () {
@@ -1934,7 +1917,5 @@ describe('Exchange', function () {
         })
       })
     })
-    // shouldWorkWithLegitimateBehavior();
-    // shouldRevertWithMaliciousBehavior();
   })
 })
