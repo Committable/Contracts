@@ -23,7 +23,7 @@ contract PayrollPool is ReentrancyGuard, Initializable {
     }
     struct PoolInfo {
         address creator;
-        IERC20 rewardToken;
+        address rewardToken;
         uint256 rewardAmount;
         uint256 unclaimedAmount;
         uint256 start;
@@ -45,10 +45,6 @@ contract PayrollPool is ReentrancyGuard, Initializable {
         uint256 rewardAmount,
         address indexed user
     );
-
-    // constructor(address controller) {
-    //     _controller = Controller(controller);
-    // }
 
     function initialize(address controller) public initializer {
         _controller = Controller(controller);
@@ -96,12 +92,12 @@ contract PayrollPool is ReentrancyGuard, Initializable {
     }
 
     /**
-     * @dev create airdrop pool and provide reward tokens
+     * @dev create payroll pool and provide reward tokens
      * @param index pool index
      * @param rewardToken reward token contract address
      * @param rewardAmount reward amount
-     * @param start airdrop pool start-time
-     * @param end airdrop pool end-time
+     * @param start payroll pool start-time
+     * @param end payroll pool end-time
      */
     function create(
         uint256 index,
@@ -109,19 +105,34 @@ contract PayrollPool is ReentrancyGuard, Initializable {
         uint256 rewardAmount,
         uint256 start,
         uint256 end
-    ) external nonReentrant {
-        require(poolInfo[index].creator == address(0), "pool already exists");
-        require(start < end, "invalid timestamp");
-        SafeERC20.safeTransferFrom(
-            IERC20(rewardToken),
-            msg.sender,
-            address(this),
-            rewardAmount
+    ) external payable nonReentrant {
+        require(
+            poolInfo[index].creator == address(0),
+            "PayrollPool: pool already exists"
         );
+        require(start < end, "PayrollPool: invalid timestamp");
+        if (rewardToken == address(0)) {
+            require(
+                msg.value == rewardAmount,
+                "PayrollPool: insufficient ether"
+            );
+        } else {
+            require(
+                msg.value == 0,
+                "PayrollPool: sending ether with erc20 not allowed"
+            );
+            SafeERC20.safeTransferFrom(
+                IERC20(rewardToken),
+                msg.sender,
+                address(this),
+                rewardAmount
+            );
+        }
+
         poolInfo[index] = (
             PoolInfo({
                 creator: msg.sender,
-                rewardToken: IERC20(rewardToken),
+                rewardToken: rewardToken,
                 rewardAmount: rewardAmount,
                 unclaimedAmount: rewardAmount,
                 start: start,
@@ -140,9 +151,9 @@ contract PayrollPool is ReentrancyGuard, Initializable {
     }
 
     /**
-     * @dev claim airdrop tokens, must provide server signature
+     * @dev claim pool tokens, must provide server signature
      * @param index pool index
-     * @param amount airdrop amount to claim
+     * @param amount payroll amount to claim
      * @param signature signature offered by server
      */
     function claim(
@@ -165,9 +176,16 @@ contract PayrollPool is ReentrancyGuard, Initializable {
 
         userInfo[index][msg.sender].isClaimed = true;
         poolInfo[index].unclaimedAmount -= amount;
-        IERC20 rewardToken = poolInfo[index].rewardToken;
-        SafeERC20.safeTransfer(rewardToken, msg.sender, amount);
-        emit RewardClaimed(index, address(rewardToken), amount, msg.sender);
+
+        address rewardToken = poolInfo[index].rewardToken;
+        if (rewardToken == address(0)) {
+            address payable user = payable(msg.sender);
+            user.transfer(amount);
+        } else {
+            SafeERC20.safeTransfer(IERC20(rewardToken), msg.sender, amount);
+        }
+
+        emit RewardClaimed(index, rewardToken, amount, msg.sender);
     }
 
     /**
@@ -177,27 +195,47 @@ contract PayrollPool is ReentrancyGuard, Initializable {
     function withdraw(uint256 index) external nonReentrant {
         require(
             poolInfo[index].creator != address(0),
-            "query of non-existence pool"
+            "PayrollPool: query of non-existence pool"
         );
-        require(msg.sender == poolInfo[index].creator, "only creator");
-        require(block.timestamp >= poolInfo[index].end, "invalid timestamp");
-        require(poolInfo[index].unclaimedAmount > 0, "non-unclaimed tokens");
-        IERC20 rewardToken = poolInfo[index].rewardToken;
+        require(
+            msg.sender == poolInfo[index].creator,
+            "PayrollPool: only creator"
+        );
+        require(
+            block.timestamp >= poolInfo[index].end,
+            "PayrollPool: invalid timestamp"
+        );
+        require(
+            poolInfo[index].unclaimedAmount > 0,
+            "PayrollPool: non-unclaimed tokens"
+        );
         uint256 unclaimedAmount = poolInfo[index].unclaimedAmount;
-        SafeERC20.safeTransfer(rewardToken, msg.sender, unclaimedAmount);
+        poolInfo[index].unclaimedAmount = 0;
+
+        address rewardToken = poolInfo[index].rewardToken;
+        if (rewardToken == address(0)) {
+            address payable user = payable(msg.sender);
+            user.transfer(unclaimedAmount);
+        } else {
+            SafeERC20.safeTransfer(
+                IERC20(rewardToken),
+                msg.sender,
+                unclaimedAmount
+            );
+        }
+
         emit RewardClaimed(
             index,
             address(rewardToken),
             unclaimedAmount,
             msg.sender
         );
-        poolInfo[index].unclaimedAmount = 0;
     }
 
     /**
      * @dev verify signature
      * @param index pool index
-     * @param amount airdrop amount to claim
+     * @param amount payroll amount to claim
      * @param signature signature offered by server
      */
     function _verify(
