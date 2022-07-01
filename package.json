@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "hardhat test",
+    "test-coverage": "npx hardhat coverage --solcoverjs ./.solcover.js",
     "compile": "hardhat compile",
     "test:logs": "hardhat test --logs",
     "ropsten": "hardhat run --network ropsten",
@@ -39,6 +40,7 @@
   "dependencies": {
     "ethers-eip712": "^0.2.0",
     "hardhat-tracer": "^1.0.0-alpha.6",
-    "solhint": "^3.3.6"
+    "solhint": "^3.3.6",
+    "solidity-coverage": "^0.7.21"
   }
 }
