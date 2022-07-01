@@ -111,6 +111,17 @@ contract PayrollPool is ReentrancyGuard, Initializable {
             "PayrollPool: pool already exists"
         );
         require(start < end, "PayrollPool: invalid timestamp");
+        
+        poolInfo[index] = (
+            PoolInfo({
+                creator: msg.sender,
+                rewardToken: rewardToken,
+                rewardAmount: rewardAmount,
+                unclaimedAmount: rewardAmount,
+                start: start,
+                end: end
+            })
+        );
         if (rewardToken == address(0)) {
             require(
                 msg.value == rewardAmount,
@@ -128,17 +139,6 @@ contract PayrollPool is ReentrancyGuard, Initializable {
                 rewardAmount
             );
         }
-
-        poolInfo[index] = (
-            PoolInfo({
-                creator: msg.sender,
-                rewardToken: rewardToken,
-                rewardAmount: rewardAmount,
-                unclaimedAmount: rewardAmount,
-                start: start,
-                end: end
-            })
-        );
 
         emit PoolCreated(
             index,
