@@ -19,16 +19,15 @@ contract TransferProxy {
      */
     function proxy(address target, bytes memory data)
         external
-        returns (bytes memory)
+        returns (bool)
     {
         require(
             controller.isApproved(msg.sender) == true,
             "TransferProxy: caller not registered"
         );
         (bool success, bytes memory returndata) = target.call(data);
-
         if (success) {
-            return returndata;
+            return success;
         } else {
             // Look for revert reason and bubble it up if present
             if (returndata.length > 0) {

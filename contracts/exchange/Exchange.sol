@@ -216,8 +216,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal {
         address royaltyRecipient = buyOrder.royaltyRecipient;
         address paymentToken = buyOrder.paymentToken;
-        uint256 fee = buyOrder.value * _fee / 10000;
-        uint256 royalty = buyOrder.value  * buyOrder.royalty / 10000;
+        uint256 fee = (buyOrder.value * _fee) / 10000;
+        uint256 royalty = (buyOrder.value * buyOrder.royalty) / 10000;
         uint256 remainValue = buyOrder.value - fee - royalty;
         // pay by ether
         if (paymentToken == address(0)) {
@@ -281,7 +281,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev trigger state transition (message call to router) if buy order data match sell order data after replacement
+     * @dev trigger state transition (message call to router) 
      */
     function _transitState(
         OrderUtils.Order memory buyOrder,
@@ -289,27 +289,34 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal {
         address transferProxy = _controller.getTransferProxy();
         bytes memory data;
+        bool success;
         // mint first if tokenSig provided
         // keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
         if (
             keccak256(sellOrder.tokenSig) !=
             0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
         ) {
+            // mint token to the seller
             data = abi.encodeWithSignature(
                 "mint(address,uint256,bytes)",
                 sellOrder.maker,
                 sellOrder.tokenId,
                 sellOrder.tokenSig
             );
-            TransferProxy(transferProxy).proxy(sellOrder.target, data);
+            success = TransferProxy(transferProxy).proxy(
+                sellOrder.target,
+                data
+            );
+            require(success, "Exchange: transferProxy call failed");
         }
-        // standard ERC721 transfer
+        // standard ERC721 transfer from seller to buyer
         data = abi.encodeWithSignature(
             "transferFrom(address,address,uint256)",
             sellOrder.maker,
             buyOrder.maker,
             sellOrder.tokenId
         );
-        TransferProxy(transferProxy).proxy(sellOrder.target, data);
+        success = TransferProxy(transferProxy).proxy(sellOrder.target, data);
+        require(success, "Exchange: transferProxy call failed");
     }
 }
