@@ -216,8 +216,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal {
         address royaltyRecipient = buyOrder.royaltyRecipient;
         address paymentToken = buyOrder.paymentToken;
-        uint256 fee = (buyOrder.value / 10000) * _fee;
-        uint256 royalty = (buyOrder.value / 10000) * buyOrder.royalty;
+        uint256 fee = buyOrder.value * _fee / 10000;
+        uint256 royalty = buyOrder.value  * buyOrder.royalty / 10000;
         uint256 remainValue = buyOrder.value - fee - royalty;
         // pay by ether
         if (paymentToken == address(0)) {
