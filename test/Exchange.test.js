@@ -1,1572 +1,1921 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { constants } = require('@openzeppelin/test-helpers');
 const { NAME, SYMBOL } = require('../.config.js');
-const { ZERO_ADDRESS } = constants;
-const { BuyAsset, NftAsset, Order, hashOrder } = require("./utils.js");
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const firstTokenId = 5042;
-const secondTokenId = '0x79217';
-const nonExistentTokenId = '13';
-const fourthTokenId = 4;
-const ETH_CLASS = '0xaaaebeba';
-const ERC20_CLASS = '0x8ae85d84';
+let { hashOrder, exchange_domain, order_types, erc721_domain, mint_types } = require("./utils.js");
+const { projects, commits, tokenIds } = require('./tokenId.js');
+const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
+ROYALTY = '1000'; // 10%
 const life_span = 60 * 60 * 24 * 7 // one week
-const PATENT_FEE = 1000; // 10 %
-const PLATFORM_FEE = 2000; // 20%
+FEE = '1000' // 10%
+PRICE = ethers.utils.parseEther('100').toString();
+
+DEADLINE = 0;
+UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+UINT256_ZERO = '0x00'
 
 
-let seller, buyer, creator, recipient, newRecipient, operator, others;
-let tokenProxy, exchange, oxERC721Upgradeable, transferProxy, proxyController;
-let buy_order, buy_order_1, buy_order_2, buy_order_tmp, sell_order, sell_order_1, sell_order_2, sell_order_tmp;
-let buy_order_sig, buy_order_sig_1, buy_order_sig_2, buy_order_sig_tmp, sell_order_sig, sell_order_sig_1, sell_order_sig_2, sell_order_sig_tmp;
+
 describe('Exchange', function () {
-
-
-  context('with minted tokens, initialized orders and fees', function () {
+  context('with deployed contracts initialized orders and fees', function () {
     beforeEach(async function () {
-      // get signer
-      [seller, buyer, creator, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
 
-      // deploy contracts here
-      OxERC721Upgradeable = await ethers.getContractFactory("OxERC721Upgradeable");
-      oxERC721Upgradeable = await OxERC721Upgradeable.deploy();
-      await oxERC721Upgradeable.deployed();
+      /* get signers */
+      [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
+      /* deploy helper */
 
-      let ProxyController = await ethers.getContractFactory("ProxyController");
-      proxyController = await ProxyController.deploy();
-      await proxyController.deployed();
-
-      let TokenProxy = await ethers.getContractFactory("TokenProxy");
+      /* deploy controller contract */
+      let Controller = await ethers.getContractFactory("Controller");
+      controller = await Controller.deploy(seller.address); // seller address is token signer
+      await controller.deployed();
+      /* deploy token logic contract */
+      let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
+      erc721Committable = await ERC721Committable.deploy();
+      await erc721Committable.deployed();
+      /* deploy token proxy contract */
+      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
       let ABI = ["function initialize(string,string,address)"];
       let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, proxyController.address]);
-      tokenProxy = await TokenProxy.deploy(oxERC721Upgradeable.address, proxyController.address, calldata);
+      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
+      tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
       await tokenProxy.deployed();
-      tokenProxy = await OxERC721Upgradeable.attach(tokenProxy.address);
+      /* attach token proxy contract with logic contract abi */
+      tokenProxy = await ERC721Committable.attach(tokenProxy.address);
 
-      let TransferProxy = await ethers.getContractFactory("TransferProxy");
-      transferProxy = await TransferProxy.deploy(proxyController.address);
-      await transferProxy.deployed();
-
+      erc721_domain.verifyingContract = tokenProxy.address
+      /* deploy exchange contract */
       let Exchange = await ethers.getContractFactory("Exchange");
-      exchange = await Exchange.deploy(proxyController.address);
+      exchange = await Exchange.deploy(controller.address);
       await exchange.deployed();
 
-      let tx = await proxyController.grantAuthentication(exchange.address);
-      await tx.wait();
-      tx = await proxyController.setProxy(transferProxy.address);
-      await tx.wait();
+      exchange_domain.verifyingContract = exchange.address
+      /* deploy transferProxy contract */
+      let TransferProxy = await ethers.getContractFactory("TransferProxy");
+      transferProxy = await TransferProxy.deploy(controller.address);
+      await transferProxy.deployed();
 
-      // deploy erc20 and approve for test
-      let ERC20 = await ethers.getContractFactory("ERC20Test");
-      token = await ERC20.connect(buyer).deploy("Tether", "USDT");
+
+
+      /* deploy erc20 and approve for test */
+      let ERC20 = await ethers.getContractFactory("USDTMock");
+      token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
       await token.deployed();
-      tx = await token.approve(transferProxy.address, ethers.utils.parseEther('10000').toString());
+
+      // tx = await token.approve(exchange.address, ethers.utils.parseEther('10000').toString());
+      tx = await token.approve(exchange.address, UINT256_MAX);
+
       await tx.wait();
-      // mint nft to seller
-      tx = await tokenProxy['safeMint(address,uint256)'](seller.address, firstTokenId);
-      await tx.wait();
-      tx = await tokenProxy['safeMint(address,uint256)'](creator.address, secondTokenId);
-      await tx.wait();
-      // set platform fee and transfer recipient
-      tx = await exchange.changePlatformFee(PLATFORM_FEE);
+      /* set platform fee and change recipient */
+      tx = await exchange.changeFee(FEE);
       await tx.wait()
       tx = await exchange.changeRecipient(recipient.address);
       await tx.wait()
+      // approve exchange
+      tx = await controller.approveOrCancel(exchange.address, true);
+      await tx.wait();
+
+      // register transferProxy
+      tx = await controller.registerTransferProxy(transferProxy.address);
+      await tx.wait();
 
 
-      price = ethers.utils.parseEther('100').toString()
-      buy_order = new Order(
-        exchange.address,
-        true,
-        false,
-        buyer.address,
-        new BuyAsset(ETH_CLASS, ZERO_ADDRESS, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      sell_order = new Order(
-        exchange.address,
-        false,
-        false,
-        seller.address,
-        new BuyAsset(ETH_CLASS, ZERO_ADDRESS, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
+
+
+      /**
+       * Below we create multiple order_types of order pairs:
+       * order_0: standard order pairs using ETH without royalty
+       * order_1: standard order pairs using ETH with royalty
+       * order_2: standard order pairs using ERC20 without royalty
+       * order_3: standard order pairs using ERC20 with royalty
+       * order_4: lazy-mint order pairs using ETH without royalty
+       * order_5: lazy-mint order pairs using ERC20 without royalty
+       * order_6: standard order pairs using ERC20 with royalty (Auction)
+       * order_7: lazy-mint order pairs using ERC20 without royalty (Auction)
+       */
+
+      // generate order pairs: pay eth to transfer erc721, no royalty
+
+      buy_order_0 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_0,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_0 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_0,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-      sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-      // non auction type using erc20
-      buy_order_1 = new Order(
-        exchange.address,
-        true,
-        false,
-        buyer.address,
-        new BuyAsset(ERC20_CLASS, token.address, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      sell_order_1 = new Order(
-        exchange.address,
-        false,
-        false,
-        seller.address,
-        new BuyAsset(ERC20_CLASS, token.address, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-      sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
 
-      // auction type using erc20
-      buy_order_2 = new Order(
-        exchange.address,
-        true,
-        true,
-        buyer.address,
-        new BuyAsset(ERC20_CLASS, token.address, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      sell_order_2 = new Order(
-        exchange.address,
-        false,
-        true,
-        seller.address,
-        new BuyAsset(ERC20_CLASS, token.address, price),
-        new NftAsset(tokenProxy.address, firstTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-      sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
+      buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+      sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
 
-      // non-auction type using ether: seller purchases nft from creator 
-      buy_order_tmp = new Order(
-        exchange.address,
-        true,
-        false,
-        seller.address,
-        new BuyAsset(ETH_CLASS, ZERO_ADDRESS, price),
-        new NftAsset(tokenProxy.address, secondTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      sell_order_tmp = new Order(
-        exchange.address,
-        false,
-        false,
-        creator.address,
-        new BuyAsset(ETH_CLASS, ZERO_ADDRESS, price),
-        new NftAsset(tokenProxy.address, secondTokenId, PATENT_FEE),
-        Math.floor(Math.random() * 10000),
-        Math.floor(Date.now() / 1000),
-        Math.floor(Date.now() / 1000 + life_span)
-      )
-      buy_order_sig_tmp = await seller.signMessage(ethers.utils.arrayify(hashOrder(buy_order_tmp)));
-      sell_order_sig_tmp = await creator.signMessage(ethers.utils.arrayify(hashOrder(sell_order_tmp)));
+      buy_order_1 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_1,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_1 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_1,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+
+      buy_order_sig_1 = await buyer._signTypedData(exchange_domain, order_types, buy_order_1);
+      sell_order_sig_1 = await seller._signTypedData(exchange_domain, order_types, sell_order_1);
+      // generate order pairs: pay erc20 to transfer erc721, no royalty
+
+      buy_order_2 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_2,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_2 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_2,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+      sell_order_sig_2 = await seller._signTypedData(exchange_domain, order_types, sell_order_2);
+
+      // generate order pairs: pay erc20 to transfer erc721, have royalty
+
+      buy_order_3 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_3,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_3 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_3,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
+      sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+
+      // generate order pairs: pay eth to mint erc721, no royalty
+      // sign tokenId from server
+      let signature_4 = await seller._signTypedData(erc721_domain, mint_types, {
+        creator: seller.address,
+        tokenId: tokenId_4
+      });
+
+
+      buy_order_4 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_4,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_4 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_4,
+        tokenSig: signature_4,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+      sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+
+      // generate order pairs: pay erc20 to mint erc721, no royalty
+      // sign tokenId from server
+      let signature_5 = await seller._signTypedData(erc721_domain, mint_types, {
+        creator: seller.address,
+        tokenId: tokenId_5
+      });
+
+      buy_order_5 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_5,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_5 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_5,
+        tokenSig: signature_5,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+      sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+
+      // generate order pairs: pay erc20 to transfer erc721, have royalty (Auction type)
+
+      buy_order_6 = {
+        isBuySide: true,
+        isAuction: true,
+        maker: buyer.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_6,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_6 = {
+        isBuySide: false,
+        isAuction: true,
+        maker: seller.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: royaltyRecipient.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_6,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_6 = await buyer._signTypedData(exchange_domain, order_types, buy_order_6);
+      sell_order_sig_6 = await seller._signTypedData(exchange_domain, order_types, sell_order_6);
+
+      // generate order pairs: pay erc20 to mint erc721, no royalty (Auction type)
+      // sign tokenId from server
+      let signature_7 = await seller._signTypedData(erc721_domain, mint_types, {
+        creator: seller.address,
+        tokenId: tokenId_7
+      });
+
+      buy_order_7 = {
+        isBuySide: true,
+        isAuction: true,
+        maker: buyer.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_7,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+
+      sell_order_7 = {
+        isBuySide: false,
+        isAuction: true,
+        maker: seller.address,
+        paymentToken: token.address,
+        value: PRICE,
+        royaltyRecipient: ZERO_ADDRESS,
+        royalty: 0,
+        target: tokenProxy.address,
+        tokenId: tokenId_7,
+        tokenSig: signature_7,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
+      // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
+      buy_order_sig_7 = await buyer._signTypedData(exchange_domain, order_types, buy_order_7);
+      sell_order_sig_7 = await seller._signTypedData(exchange_domain, order_types, sell_order_7);
 
 
 
 
     })
+    context('with legitimate behaviors', function () {
+      context('with minted nft', function () {
+        beforeEach('with minted nft', async function () {
+          // sign some tokenId
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_1
+          });
+          let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_2
+          });
+          let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_3
+          });
+          let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_6
+          });
 
-    context("with legitimate order behaviors", function () {
-      context("check orders hash and signature", function () {
-        it('buy_order on-chain and off-chain hash match', async function () {
-          expect(await exchange.getOrderHash(buy_order)).to.equal(hashOrder(buy_order));
-        })
-        it('sell_order on-chain and off-chain hash match', async function () {
-          expect(await exchange.getOrderHash(sell_order)).to.equal(hashOrder(sell_order));
-        })
-        it('buy_order signature pass verification', async function () {
-          expect(await exchange.getRecover(buy_order, buy_order_sig)).to.equal(buyer.address);
-        })
-        it('sell_order signature pass verification', async function () {
-          expect(await exchange.getRecover(sell_order, sell_order_sig)).to.equal(seller.address);
-        })
-        it('both orders were flagged as valid', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(true);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(true);
-        })
-        it('both orders were flagged as valid via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order)])).
-          to.deep.equal([true, true]);
-        })
-      })
-
-      context("with non-aution ETH orders executed: seller is creator", function () {
-        beforeEach(async function () {
-          originalBuyerBalance = await buyer.getBalance();
-          originalSellerBalance = await seller.getBalance();
-          originalRecipientBalance = await recipient.getBalance();
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          patentFee = await exchange.getPatentFee(buy_order.nftAsset.contractAddress, buy_order.nftAsset.tokenId);
-          _patentFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-          gasPrice = tx.gasPrice;
-          gasUsed = (await tx.wait()).gasUsed;
-          gasFee = gasPrice.mul(gasUsed);
-     
-        })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
-        })
-        it('buyer spends money', async function () {
-          let currentBuyerBalance = await buyer.getBalance();
-
-          expect(originalBuyerBalance.sub(currentBuyerBalance).sub(gasFee)).to.equal(price)
-        })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await seller.getBalance();
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee).add(_patentFee)).to.equal(price)
-        })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await recipient.getBalance();
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
-        })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(false);
-        })
-        it('both orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order)])).
-          to.deep.equal([false, false]);
-        })
-      })
-
-      context("with non-aution ETH orders executed: seller is not creator", function () {
-        beforeEach(async function () {
-
-          // seller purchase nft(secondTokenId) from creator, patent fee was set
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, { value: price })
+          // // mint tokenId_0, 1, 2 to seller
+          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
           await tx.wait();
-
-          buy_order.nftAsset.tokenId = secondTokenId;
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-          sell_order.nftAsset.tokenId = secondTokenId;
-          sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-
-          originalBuyerBalance = await buyer.getBalance();
-          originalSellerBalance = await seller.getBalance();
-          originalRecipientBalance = await recipient.getBalance();
-          originalCreatorBalance = await creator.getBalance();
-
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          patentFee = await exchange.getPatentFee(buy_order.nftAsset.contractAddress, buy_order.nftAsset.tokenId);
-          _patentFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-
-          tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-          gasPrice = tx.gasPrice;
-          gasUsed = (await tx.wait()).gasUsed;
-          gasFee = gasPrice.mul(gasUsed);
-
-        })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(secondTokenId)).to.equal(buyer.address);
-        })
-        it('buyer spends money', async function () {
-          let currentBuyerBalance = await buyer.getBalance();
-          expect(originalBuyerBalance.sub(currentBuyerBalance).sub(gasFee)).to.equal(price)
-        })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await seller.getBalance();
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee).add(_patentFee)).to.equal(price)
-        })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await recipient.getBalance();
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
-        })
-        it('creator receive patentFee', async function () {
-          let currentCreatorBalance = await creator.getBalance();
-          expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_patentFee)
-        })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(false);
-        })
-        it('four orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order), hashOrder(sell_order),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
-          to.deep.equal([false, false, false, false]);
-        })
-      })
-
-
-      context("with non-aution ERC20 orders executed: seller is creator", function () {
-        beforeEach(async function () {
-          originalBuyerBalance = await token.balanceOf(buyer.address);
-          originalSellerBalance = await token.balanceOf(seller.address);
-          originalRecipientBalance = await token.balanceOf(recipient.address);
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
           await tx.wait();
-   
-  
-        })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
-        })
-        it('buyer spends moeny', async function () {
-          let currentBuyerBalance = await token.balanceOf(buyer.address);
-          expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(price);
-        })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await token.balanceOf(seller.address);
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee)).to.equal(price)
-        })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await token.balanceOf(recipient.address);
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
-        })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
-        })
-        it('both orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1)])).
-          to.deep.equal([false, false]);
-        })
-      })
-
-      context("with non-aution ERC20 orders executed: seller is not creator", function () {
-        beforeEach(async function () {
-          // seller purchase nft(secondTokenId) from creator, patent fee was set
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, { value: price })
+          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
           await tx.wait();
-
-          buy_order_1.nftAsset.tokenId = secondTokenId;
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          sell_order_1.nftAsset.tokenId = secondTokenId;
-          sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-
-          originalBuyerBalance = await token.balanceOf(buyer.address);
-          originalSellerBalance = await token.balanceOf(seller.address);
-          originalRecipientBalance = await token.balanceOf(recipient.address);
-          originalCreatorBalance = await token.balanceOf(creator.address);
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          patentFee = await exchange.getPatentFee(buy_order_1.nftAsset.contractAddress, buy_order_1.nftAsset.tokenId);
-          _patentFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-
-          tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          await tx.wait()
-
-        })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(secondTokenId)).to.equal(buyer.address);
-        })
-        it('buyer spends money', async function () {
-          let currentBuyerBalance = await token.balanceOf(buyer.address);
-          expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(price)
-        })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await token.balanceOf(seller.address);
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee).add(_patentFee)).to.equal(price)
-        })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await token.balanceOf(recipient.address);
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
-        })
-        it('creator receive patentFee', async function () {
-          let currentCreatorBalance = await token.balanceOf(creator.address);
-          expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_patentFee)
-        })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
-        })
-        it('four orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_1), hashOrder(sell_order_1),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
-          to.deep.equal([false, false, false, false]);
-        })
-      })
-
-      context("with aution ERC20 orders executed: seller is creator", function () {
-        beforeEach(async function () {
-          originalBuyerBalance = await token.balanceOf(buyer.address);
-          originalSellerBalance = await token.balanceOf(seller.address);
-          originalRecipientBalance = await token.balanceOf(recipient.address);
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          patentFee = await exchange.getPatentFee(buy_order_2.nftAsset.contractAddress, buy_order_2.nftAsset.tokenId);
-          _patentFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
           await tx.wait();
-
-        })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(firstTokenId)).to.equal(buyer.address);
-        })
-        it('buyer spends money', async function () {
-          let currentBuyerBalance = await token.balanceOf(buyer.address);
-          expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(price);
-        })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await token.balanceOf(seller.address);
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee)).to.equal(price)
-        })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await token.balanceOf(recipient.address);
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
-        })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
-        })
-        it('both orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_2), hashOrder(sell_order_2)])).
-          to.deep.equal([false, false]);
-        })
-      })
-
-      context("with aution ERC20 orders executed: seller is not creator", function () {
-        beforeEach(async function () {
-          // seller purchase nft(secondTokenId) from creator, patent fee was set
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, { value: price })
+          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
           await tx.wait();
+          // deploy Helper for test
 
-          buy_order_2.nftAsset.tokenId = secondTokenId;
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          sell_order_2.nftAsset.tokenId = secondTokenId;
-          sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-
-          originalBuyerBalance = await token.balanceOf(buyer.address);
-          originalSellerBalance = await token.balanceOf(seller.address);
-          originalRecipientBalance = await token.balanceOf(recipient.address);
-          originalCreatorBalance = await token.balanceOf(creator.address);
-
-          platformFee = await exchange.getPlatformFee();
-          _platformFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee);
-          patentFee = await exchange.getPatentFee(buy_order_2.nftAsset.contractAddress, buy_order_2.nftAsset.tokenId);
-          _patentFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-          tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          await tx.wait()
 
         })
-        it('owner of nft token changed', async function () {
-          expect(await tokenProxy.ownerOf(secondTokenId)).to.equal(buyer.address);
+
+        context("with ETH order: no royalty", function () {
+          beforeEach(async function () {
+            originalBuyerBalance = await buyer.getBalance();
+            originalSellerBalance = await seller.getBalance();
+            originalRecipientBalance = await recipient.getBalance();
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_0.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_0.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_0.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            gasPrice = tx.gasPrice;
+            gasUsed = (await tx.wait()).gasUsed;
+            gasFee = gasPrice.mul(gasUsed);
+
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await buyer.getBalance();
+            expect(originalBuyerBalance.sub(currentBuyerBalance).sub(gasFee)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await seller.getBalance();
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await recipient.getBalance();
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_0))).to.equal(false);
+          })
+
         })
-        it('buyer spends money', async function () {
-          let currentBuyerBalance = await token.balanceOf(buyer.address);
-          expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(price)
+
+        context("with ETH orders: have royalty", function () {
+          beforeEach(async function () {
+
+            originalBuyerBalance = await buyer.getBalance();
+            originalSellerBalance = await seller.getBalance();
+            originalRecipientBalance = await recipient.getBalance();
+            originalRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
+
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_1.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_1.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+
+            tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
+            gasPrice = tx.gasPrice;
+            gasUsed = (await tx.wait()).gasUsed;
+            gasFee = gasPrice.mul(gasUsed);
+
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_1)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await buyer.getBalance();
+            expect(originalBuyerBalance.sub(currentBuyerBalance).sub(gasFee)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await seller.getBalance();
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await recipient.getBalance();
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('royaltyRecipient receive royalty', async function () {
+            let currentRoyaltyRecipientBalance = await royaltyRecipient.getBalance();
+            expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
+          })
+
         })
-        it('seller receive money', async function () {
-          let currentSellerBalance = await token.balanceOf(seller.address);
-          expect(currentSellerBalance.sub(originalSellerBalance).add(_platformFee).add(_patentFee)).to.equal(price)
+
+        context("with ERC20 orders: no royalty", function () {
+          beforeEach(async function () {
+            originalBuyerBalance = await token.balanceOf(buyer.address);
+            originalSellerBalance = await token.balanceOf(seller.address);
+            originalRecipientBalance = await token.balanceOf(recipient.address);
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_2.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait();
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_2)).to.equal(buyer.address);
+          })
+          it('buyer spends moeny', async function () {
+            let currentBuyerBalance = await token.balanceOf(buyer.address);
+            expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(PRICE);
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await token.balanceOf(seller.address);
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await token.balanceOf(recipient.address);
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
+          })
+
         })
-        it('recipient receive platformFee', async function () {
-          let currentRecipientBalance = await token.balanceOf(recipient.address);
-          expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_platformFee)
+
+        context("with ERC20 orders: have royalty", function () {
+          beforeEach(async function () {
+            originalBuyerBalance = await token.balanceOf(buyer.address);
+            originalSellerBalance = await token.balanceOf(seller.address);
+            originalRecipientBalance = await token.balanceOf(recipient.address);
+            originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_3.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_3.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_3.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            await tx.wait();
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_3)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await token.balanceOf(buyer.address);
+            expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await token.balanceOf(seller.address);
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await token.balanceOf(recipient.address);
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('royaltyRecipient receive royalty', async function () {
+            let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+            expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_3))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_3))).to.equal(false);
+          })
+
         })
-        it('creator receive patentFee', async function () {
-          let currentCreatorBalance = await token.balanceOf(creator.address);
-          expect(currentCreatorBalance.sub(originalCreatorBalance)).to.equal(_patentFee)
+
+        context("with ERC20 orders: have royalty (auction)", function () {
+          beforeEach(async function () {
+            originalBuyerBalance = await token.balanceOf(buyer.address);
+            originalSellerBalance = await token.balanceOf(seller.address);
+            originalRecipientBalance = await token.balanceOf(recipient.address);
+            originalRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_6.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_6.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_6.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+
+            let tx = await exchange.connect(seller).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
+            await tx.wait();
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_6)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await token.balanceOf(buyer.address);
+            expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await token.balanceOf(seller.address);
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await token.balanceOf(recipient.address);
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('royaltyRecipient receive royalty', async function () {
+            let currentRoyaltyRecipientBalance = await token.balanceOf(royaltyRecipient.address);
+            expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_6))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_6))).to.equal(false);
+          })
+
         })
-        it('both orders were flagged as finished', async function () {
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
+
+        context('[event test] with ETH orders: no royalty', function () {
+          it('emit desired exchange event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, buy_order_0.paymentToken, buy_order_0.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_0);
+          })
         })
-        it('four orders were flagged as finished via batch request', async function () {
-          expect(await exchange.checkOrderStatusBatch([hashOrder(buy_order_2), hashOrder(sell_order_2),hashOrder(buy_order_tmp), hashOrder(sell_order_tmp)])).
-          to.deep.equal([false, false, false, false]);
+
+        context('[event test] with ETH orders: have royalty', function () {
+          it('emit desired exchange event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, buy_order_1.paymentToken, buy_order_1.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_1);
+          })
+
         })
+
+        context('[event test] with ERC20 orders: no royalty', function () {
+          it('emit desired exchange event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, buy_order_2.paymentToken, buy_order_2.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_2);
+          })
+          it('emit desired token transfer event', async function () {
+            let fee = await exchange.getFee();
+            let feeRecipient = await exchange.getRecipient();
+            // let royaltyRecipient = buy_order_2.royaltyRecipient;
+            // let royalty = buy_order_2.royalty;
+            let _fee = (ethers.BigNumber.from(buy_order_2.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            // let _royalty = (ethers.BigNumber.from(buy_order_2.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+            let _pay = (ethers.BigNumber.from(buy_order_2.value).sub(_fee));
+            // let _pay = (ethers.BigNumber.from(buy_order_2.value).sub(_fee).sub(_royalty));
+
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, seller.address, _pay.toString());
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, feeRecipient, _fee.toString());
+            // expect(tx).to.emit(token, 'Transfer')
+            //     .withArgs(buyer.address, royaltyRecipient.address, _royalty.toString());
+          })
+        })
+        context('[event test] with ERC20 orders: have royalty', function () {
+          it('emit desired exchange event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_3), hashOrder(sell_order_3), buyer.address, seller.address, buy_order_3.paymentToken, buy_order_2.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_3);
+          })
+          it('emit desired token transfer event', async function () {
+            let fee = await exchange.getFee();
+            let feeRecipient = await exchange.getRecipient();
+            let royaltyRecipient = buy_order_3.royaltyRecipient;
+            let royalty = buy_order_3.royalty;
+            let _fee = (ethers.BigNumber.from(buy_order_3.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            let _royalty = (ethers.BigNumber.from(buy_order_3.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+            let _pay = (ethers.BigNumber.from(buy_order_3.value).sub(_fee).sub(_royalty));
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, seller.address, _pay.toString());
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, feeRecipient, _fee.toString());
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, royaltyRecipient, _royalty.toString());
+          })
+        })
+
+      })
+      context('with lazy-minted nft', function () {
+        beforeEach('with lazy-minted nft', async function () {
+        })
+        context("with ETH orders", function () {
+          beforeEach(async function () {
+            originalBuyerBalance = await buyer.getBalance();
+            originalSellerBalance = await seller.getBalance();
+            originalRecipientBalance = await recipient.getBalance();
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_4.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            gasPrice = tx.gasPrice;
+            gasUsed = (await tx.wait()).gasUsed;
+            gasFee = gasPrice.mul(gasUsed);
+
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_4)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await buyer.getBalance();
+
+            expect(originalBuyerBalance.sub(currentBuyerBalance).sub(gasFee)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await seller.getBalance();
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await recipient.getBalance();
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_4))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_4))).to.equal(false);
+          })
+
+        })
+        context("with ERC20 orders", function () {
+          beforeEach(async function () {
+
+            originalBuyerBalance = await token.balanceOf(buyer.address);
+            originalSellerBalance = await token.balanceOf(seller.address);
+            originalRecipientBalance = await token.balanceOf(recipient.address);
+
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_5.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+
+            tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            gasPrice = tx.gasPrice;
+            gasUsed = (await tx.wait()).gasUsed;
+            gasFee = gasPrice.mul(gasUsed);
+
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_5)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await token.balanceOf(buyer.address);
+            expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await token.balanceOf(seller.address);
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await token.balanceOf(recipient.address);
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_5))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_5))).to.equal(false);
+          })
+
+        })
+
+        context("with ERC20 orders (Auction)", function () {
+          beforeEach(async function () {
+
+            originalBuyerBalance = await token.balanceOf(buyer.address);
+            originalSellerBalance = await token.balanceOf(seller.address);
+            originalRecipientBalance = await token.balanceOf(recipient.address);
+
+            fee = await exchange.getFee();
+            _fee = (ethers.BigNumber.from(buy_order_7.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            royalty = buy_order_7.royalty;
+            _royalty = (ethers.BigNumber.from(buy_order_7.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+
+            tx = await exchange.connect(seller).matchOrder(buy_order_7, buy_order_sig_7, sell_order_7, sell_order_sig_7);
+            gasPrice = tx.gasPrice;
+            gasUsed = (await tx.wait()).gasUsed;
+            gasFee = gasPrice.mul(gasUsed);
+
+          })
+          it('owner of nft token changed', async function () {
+            expect(await tokenProxy.ownerOf(tokenId_7)).to.equal(buyer.address);
+          })
+          it('buyer spends money', async function () {
+            let currentBuyerBalance = await token.balanceOf(buyer.address);
+            expect(originalBuyerBalance.sub(currentBuyerBalance)).to.equal(PRICE)
+          })
+          it('seller receive money', async function () {
+            let currentSellerBalance = await token.balanceOf(seller.address);
+            expect(currentSellerBalance.sub(originalSellerBalance).add(_fee).add(_royalty)).to.equal(PRICE)
+          })
+          it('recipient receive fee', async function () {
+            let currentRecipientBalance = await token.balanceOf(recipient.address);
+            expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
+          })
+          it('both orders were flagged as finished', async function () {
+            expect(await exchange.checkOrderStatus(hashOrder(buy_order_7))).to.equal(false);
+            expect(await exchange.checkOrderStatus(hashOrder(sell_order_7))).to.equal(false);
+          })
+
+        })
+
+        context('[event test] with ETH orders', function () {
+          it('emit desired exchange event', async function () {
+            let fee = await exchange.getFee();
+            let royalty = buy_order_4.royalty;
+            let _fee = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+            let _royalty = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_4), hashOrder(sell_order_4), buyer.address, seller.address, buy_order_4.paymentToken, buy_order_4.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(ZERO_ADDRESS, seller.address, tokenId_4);
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_4);
+          })
+        })
+
+        context('[event test] with ERC20 orders', function () {
+          it('emit desired exchange event', async function () {
+            let fee = await exchange.getFee();
+            let royalty = buy_order_5.royalty;
+            let _fee = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
+            let _royalty = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            expect(tx).to.emit(exchange, 'OrderMatched')
+              .withArgs(hashOrder(buy_order_5), hashOrder(sell_order_5), buyer.address, seller.address, buy_order_5.paymentToken, buy_order_5.value);
+          })
+          it('emit desired committable event', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(ZERO_ADDRESS, seller.address, tokenId_5);
+            expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_5);
+          })
+          it('emit desired token event', async function () {
+            let fee = await exchange.getFee();
+            let feeRecipient = await exchange.getRecipient();
+            // let royaltyRecipient = buy_order_2.royaltyRecipient;
+            // let royalty = buy_order_2.royalty;
+            let _fee = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(fee);
+            // let _royalty = (ethers.BigNumber.from(buy_order_2.value)).div(ethers.BigNumber.from('10000')).mul(royalty);
+            let _pay = (ethers.BigNumber.from(buy_order_5.value).sub(_fee));
+            // let _pay = (ethers.BigNumber.from(buy_order_2.value).sub(_fee).sub(_royalty));
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, seller.address, _pay.toString());
+            expect(tx).to.emit(token, 'Transfer')
+              .withArgs(buyer.address, recipient.address, _fee.toString());
+          })
+        })
+
+
+      })
+      context('other behaviors', function () {
+        it('should cancel order correctly', async function () {
+          let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+          await tx.wait();
+          expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
+        })
+        it('[EVENT] cancel order', async function () {
+          let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+          expect(tx).to.emit(exchange, 'OrderCancelled')
+            .withArgs(hashOrder(buy_order_0), buy_order_0.maker);
+        })
+
+
       })
 
-      context('[event test] with non-aution ETH orders executed', function () {
-        it('emit desired exchange event', async function () {
-          let platformFee = await exchange.getPlatformFee();
-          let patentFee = await exchange.getPatentFee(buy_order.nftAsset.contractAddress, buy_order.nftAsset.tokenId);
-          let _platformFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee).toString();
-          let _patentFee = (ethers.BigNumber.from(buy_order.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-          expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order), hashOrder(sell_order), buyer.address, seller.address, firstTokenId, sell_order.isAuction, buy_order.buyAsset.assetClass, buy_order.buyAsset.contractAddress, buy_order.buyAsset.value);
-        })
-        it('emit desired tokenProxy event', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-          expect(tx).to.emit(tokenProxy, 'Transfer')
-            .withArgs(seller.address, buyer.address, firstTokenId);
-        })
-        it('emit desired fee change event', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-          expect(tx).to.emit(exchange, 'PatentFeeChanged')
-            .withArgs(buy_order.nftAsset.contractAddress, firstTokenId, '0', PATENT_FEE);
-        })
-      })
-
-      context('[event test] with non-aution ERC20 orders executed', function () {
-        it('emit desired exchange event', async function () {
-          let platformFee = await exchange.getPlatformFee();
-          let patentFee = await exchange.getPatentFee(buy_order_1.nftAsset.contractAddress, buy_order_1.nftAsset.tokenId);
-          let _platformFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee).toString();
-          let _patentFee = (ethers.BigNumber.from(buy_order_1.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, firstTokenId, sell_order_1.isAuction, buy_order_1.buyAsset.assetClass, buy_order_1.buyAsset.contractAddress, buy_order_1.buyAsset.value);
-        })
-        it('emit desired tokenProxy event', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          expect(tx).to.emit(tokenProxy, 'Transfer')
-            .withArgs(seller.address, buyer.address, firstTokenId);
-        })
-        it('emit desired fee change event', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          expect(tx).to.emit(exchange, 'PatentFeeChanged')
-            .withArgs(buy_order_1.nftAsset.contractAddress, firstTokenId, '0', PATENT_FEE);
-        })
-      })
-
-      context('[event test] with auction ERC20 orders executed', function () {
-        it('emit desired exchange event', async function () {
-          let platformFee = await exchange.getPlatformFee();
-          let patentFee = await exchange.getPatentFee(buy_order_2.nftAsset.contractAddress, buy_order_2.nftAsset.tokenId);
-          let _platformFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(platformFee).toString();
-          let _patentFee = (ethers.BigNumber.from(buy_order_2.buyAsset.value)).div(ethers.BigNumber.from('10000')).mul(patentFee).toString();
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          expect(tx).to.emit(exchange, 'OrderMatched')
-            .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, firstTokenId, sell_order_2.isAuction, buy_order_2.buyAsset.assetClass, buy_order_2.buyAsset.contractAddress, buy_order_2.buyAsset.value);
-        })
-        it('emit desired tokenProxy event', async function () {
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          expect(tx).to.emit(tokenProxy, 'Transfer')
-            .withArgs(seller.address, buyer.address, firstTokenId);
-        })
-        it('emit desired fee change event', async function () {
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          expect(tx).to.emit(exchange, 'PatentFeeChanged')
-            .withArgs(buy_order_2.nftAsset.contractAddress, firstTokenId, '0', PATENT_FEE);
-        })
-      })
 
     })
-
     context('with malicious order behaviors', function () {
-      context('when buy order is modified', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            buy_order.buyAsset.value = '100000';
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder signature validation failed');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          try {
-            buy_order_1.buyAsset.value = '100000';
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder signature validation failed');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            buy_order_2.buyAsset.value = '100000';
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder signature validation failed');
-          }
-        })
-      })
-      context('when sell order is modified', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            sell_order.nftAsset.contractAddress = ZERO_ADDRESS;
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sellOrder signature validation failed');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          try {
-            sell_order_1.nftAsset.contractAddress = ZERO_ADDRESS;
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sellOrder signature validation failed');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            sell_order_2.nftAsset.contractAddress = ZERO_ADDRESS;
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sellOrder signature validation failed');
-          }
-        })
-      })
+      context('with standard orders and lazy-mint orders', function () {
+        beforeEach('with minted nft', async function () {
+          // sign some tokenId
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_1
+          });
+          let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_2
+          });
+          let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_3
+          });
+          let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_6
+          });
 
 
-      context('when buy order exchange address does not match', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            buy_order.exchange = ZERO_ADDRESS;
-            buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+          // mint tokenId_0, 1, 2 to seller
+          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
+          await tx.wait();
         })
-        it('revert with non-auction orders using ERC20', async function () {
-          try {
-            buy_order_1.exchange = ZERO_ADDRESS;
-            buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+        context('when buy order value is modified', function () {
+          it('revert with ETH order', async function () {
+            try {
+              buy_order_0.value = '100000';
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_1, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 order', async function () {
+            try {
+              buy_order_2.value = '100000';
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            try {
+              buy_order_4.value = '100000';
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            try {
+              buy_order_5.value = '100000';
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
         })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            buy_order_2.exchange = ZERO_ADDRESS;
-            buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+        context('when sell order paymentToken is modified', function () {
+          it('revert with ETH standard orders', async function () {
+            try {
+              let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+              sell_order_0.paymentToken = anotherPaymentToken;
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 standard orders ', async function () {
+            try {
+              let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+              sell_order_2.paymentToken = anotherPaymentToken;
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ETH lazy-mint orders ', async function () {
+            try {
+              let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+              sell_order_4.paymentToken = anotherPaymentToken;
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 lazy-mint orders ', async function () {
+            try {
+              let anotherPaymentToken = '0x92E0a5c7d7D806cD48Db15e220DC4440185b0787'
+              sell_order_5.paymentToken = anotherPaymentToken;
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
         })
-      })
-      context('when sell order exchange address does not match', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            sell_order.exchange = ZERO_ADDRESS;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+        context('when called by unexpected user', function () {
+          it('revert with buyer call erc20 standard order', async function () {
+            try {
+              await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include("must be called by legit user")
+            }
+          })
+          it('revert with buyer call erc20 lazy-mint order', async function () {
+            try {
+              await exchange.connect(buyer).matchOrder(buy_order_7, buy_order_sig_7, sell_order_7, sell_order_sig_7);
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include("must be called by legit user")
+            }
+          })
         })
-        it('revert with non-auction orders using ERC20', async function () {
-          try {
-            sell_order_1.exchange = ZERO_ADDRESS;
-            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+        context('when buy order exchange address does not match', function () {
+          it('revert with ETH standard orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 standard orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ETH lazy-mint orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 lazy-mint orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+
         })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            sell_order_2.exchange = ZERO_ADDRESS;
-            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order does does not match exchange address');
-          }
+        context('when sell order exchange address does not match', function () {
+          it('revert with ETH standard orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 standard orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ETH lazy-mint orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
+          it('revert with ERC20 lazy-mint orders', async function () {
+            try {
+              exchange_domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order signature');
+            }
+          })
         })
-      })
-      context('when pair two buy orders', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, buy_order, buy_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+        context('when pair two buy orders', function () {
+          it('revert with ETH standard orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, buy_order_0, buy_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, buy_order_2, buy_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, buy_order_4, buy_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, buy_order_5, buy_order_sig_5, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-        it('revert with non-auction orders using ERC20', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, buy_order_1, buy_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+        context('when pair two sell orders', function () {
+          it('revert with ETH standard orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(sell_order_0, sell_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(sell_order_2, sell_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(sell_order_4, sell_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint orders', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(sell_order_5, sell_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, buy_order_2, buy_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+
+        context('when order payment token does not match', function () {
+          it('revert with buy_order_0 pairs sell_order_2', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_2, sell_order_sig_2, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with buy_order_4 pairs sell_order_5', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_5, sell_order_sig_5, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-      })
-      context('when pair two sell orders', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(sell_order, sell_order_sig, buy_order, buy_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+        context('when buy order bid price is less than sell order ask price ', function () {
+          it('revert with ETH standard order', async function () {
+            buy_order_0.value = ethers.utils.parseEther('0.9').toString();
+            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            buy_order_2.value = ethers.utils.parseEther('0.9').toString();
+            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            buy_order_4.value = ethers.utils.parseEther('0.9').toString();
+            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            buy_order_5.value = ethers.utils.parseEther('0.9').toString();
+            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-        it('revert with non-auction orders using ERc20', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(sell_order_1, sell_order_sig_1, buy_order_1, buy_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+        context('when nft contract address does not match', function () {
+          it('revert with ETH standard order', async function () {
+            buy_order_0.target = ZERO_ADDRESS;
+            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include("invalid order parameters");
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            buy_order_2.target = ZERO_ADDRESS;
+            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            buy_order_4.target = ZERO_ADDRESS;
+            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            buy_order_5.target = ZERO_ADDRESS;
+            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-        it('revert with auction orders using ERC20', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(sell_order_2, sell_order_sig_2, buy_order_2, buy_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buy/sell side does not match');
-          }
+        context('when tokenID does not match', function () {
+          it('revert with ETH standard order', async function () {
+            buy_order_0.tokenId = tokenId_1;
+            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            buy_order_2.tokenId = tokenId_0;
+            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            buy_order_4.tokenId = tokenId_1;
+            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            buy_order_5.tokenId = tokenId_1;
+            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-      })
-    context('when order transaction type does not match', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          try {
-            sell_order.isAuction = true;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order transaction type does not match');
-          }
+        context('when buy order start time has not reached yet', function () {
+          it('revert with ETH standard order', async function () {
+            buy_order_0.start = Date.now() * 10;
+            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            buy_order_2.start = Date.now() * 10;
+            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            buy_order_4.start = Date.now() * 10;
+            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            buy_order_5.start = Date.now() * 10;
+            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-        it('revert with non-auction buy order pairs auction sell order using ERC20', async function () {
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order transaction type does not match');
-          }
+        context('when buy order has expired', function () {
+          it('revert with ETH standard order', async function () {
+            buy_order_0.end = 1;
+            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            buy_order_2.end = 1;
+            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            buy_order_4.end = 1;
+            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            buy_order_5.end = 1;
+            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
         })
-      })
+        context('when sell order has expired', function () {
+          it('revert with ETH standard order', async function () {
+            sell_order_0.end = 1;
+            sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              console.log(err.message)
+
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            sell_order_2.end = 1;
+            sell_order_sig_2 = await seller._signTypedData(exchange_domain, order_types, sell_order_2);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            sell_order_4.end = 1;
+            sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            sell_order_5.end = 1;
+            sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+        })
+        context('when execute finished order', function () {
+          it('revert with ETH standard order', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 standard order', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+        })
+        context('when execute cancelled buy order', function () {
+          it('revert with ETH order', async function () {
+            let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+
+          it('revert with ERC20 standard order', async function () {
+            let tx = await exchange.connect(buyer).cancelOrder(buy_order_2);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            let tx = await exchange.connect(buyer).cancelOrder(buy_order_4);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            let tx = await exchange.connect(buyer).cancelOrder(buy_order_5);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+        })
+        context('when execute cancelled sell order', function () {
+          it('revert with ETH order', async function () {
+            let tx = await exchange.connect(seller).cancelOrder(sell_order_0);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+
+          it('revert with ERC20 standard order', async function () {
+            let tx = await exchange.connect(seller).cancelOrder(sell_order_2);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(seller).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ETH lazy-mint order', async function () {
+            let tx = await exchange.connect(seller).cancelOrder(sell_order_4);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with ERC20 lazy-mint order', async function () {
+            let tx = await exchange.connect(seller).cancelOrder(sell_order_5);
+            await tx.wait();
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+        })
+
+        context('with other malicious order behaviors', function () {
+          it('revert with ERC20 orders using ETH', async function () {
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid payment');
+            }
+          })
+          it('revert with not paying enough ether in eth non-auction order', async function () {
+            try {
+              price = ethers.utils.parseEther('0.9').toString()
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid payment');
+            }
+          })
+          it('revert with paying too much ether in eth order', async function () {
+            try {
+              price = ethers.utils.parseEther('1.1').toString()
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: price });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid payment');
+            }
+          })
+          it('revert with not approving tokens in ERC20 order', async function () {
+            try {
+              let tx = await token.connect(buyer).approve(exchange.address, '0');
+              await tx;
+              tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              console.log(err.message)
+              expect(err.message).to.include('ERC20: insufficient allowance');
+            }
+          })
+          it('revert with not enough tokens in ERC20 order', async function () {
+            try {
+              let tokenBalance = (await token.balanceOf(buyer.address)).toString();
+              let tx = await token.connect(buyer).transfer(exchange.address, tokenBalance);
+              await tx.wait();
+              tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('ERC20: transfer amount exceeds balance');
+            }
+          })
+          it('revert with sending ethers in erc20 order', async function () {
+            try {
+              tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid payment');
+            }
+          })
+
+          it('revert with sending ethers from seller in ERC20 order', async function () {
+            try {
+              tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid payment');
+            }
+          })
+          it('revert with invalid royalty set in ETH order: royalty larger than 100%', async function () {
+            try {
+              buy_order_1.royalty = 10001;
+              sell_order_1.royalty = 10001;
+              buy_order_sig_1 = await buyer._signTypedData(exchange_domain, order_types, buy_order_1);
+              sell_order_sig_1 = await seller._signTypedData(exchange_domain, order_types, sell_order_1);
 
 
-      context('when order buyAsset class does not match', function () {
-        it('revert with non-auction buy order using ETH pairs non-acution sell order using ERC20', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order buyAsset assetClass does not match');
-          }
-        })
-      })
-      context('when buy order bid price is less than sell order ask price ', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          buy_order.buyAsset.value = ethers.utils.parseEther('0.9').toString();
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder bid price must be no less than the seller ask price');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          buy_order_1.buyAsset.value = ethers.utils.parseEther('0.9').toString();
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder bid price must be no less than the seller ask price');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.buyAsset.value = ethers.utils.parseEther('0.9').toString();
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('buyOrder bid price must be no less than the seller ask price');
-          }
-        })
+              tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with invalid royalty set in ERC20 order: royalty larger than 100%', async function () {
+            try {
+              buy_order_3.royalty = 10001;
+              sell_order_3.royalty = 10001;
+              buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
+              sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+              tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
 
+          it('revert with invalid royalty in ETH order: sum of royalty and platform fee is larger than 100%', async function () {
+            try {
+              let newFee = 9500;
+              tx = await exchange.changeFee(newFee);
+              await tx.wait()
 
-      })
-      context('when nft contract address does not match', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          buy_order.nftAsset.contractAddress = ZERO_ADDRESS;
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order NFT contractAddress does not match');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          buy_order_1.nftAsset.contractAddress = ZERO_ADDRESS;
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order NFT contractAddress does not match');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.nftAsset.contractAddress = ZERO_ADDRESS;
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order NFT contractAddress does not match');
-          }
-        })
-      })
-      context('when tokenID does not match', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          buy_order.nftAsset.tokenId = secondTokenId;
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order tokenId does not match');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          buy_order_1.nftAsset.tokenId = secondTokenId;
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order tokenId does not match');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.nftAsset.tokenId = secondTokenId;
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('order tokenId does not match');
-          }
-        })
-      })
-      context('when sell order start time has not reached yet', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          sell_order.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          sell_order_1.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          sell_order_2.start = (await ethers.provider.getBlock('latest')).timestamp.toString() + 10;
-          sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
+              tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+          it('revert with invalid royalty set in ERC20 order: sum of royalty and platform fee is larger than 100%', async function () {
+            try {
+              let newFee = 9500;
+              tx = await exchange.changeFee(newFee);
+              await tx.wait()
 
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+              tx = await exchange.connect(seller).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid order parameters');
+            }
+          })
+        })
+        context('when seller does not own the token', function () {
+          it('revert when the seller does not own the token', async function () {
+            let tx = await tokenProxy.transferFrom(seller.address, buyer.address, tokenId_0);
             await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has not started');
-          }
+
+            try {
+              tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait()
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('ERC721: transfer from incorrect owner');
+            }
+          })
+        })
+        context('when mint sig is invalid', function () {
+          it('revert when mint sig is invalid', async function () {
+            let invalid_tokenSig = await seller._signTypedData(erc721_domain, mint_types, {
+              creator: seller.address,
+              tokenId: 123
+            });
+            sell_order_4.tokenSig = invalid_tokenSig;
+
+            sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+
+            try {
+              tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
+              await tx.wait()
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('invalid token signature');
+            }
+          })
         })
       })
-      context('when buy order has expired', function () {
-        it('revert with non-auction orders using ETH', async function () {
-
-          buy_order.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
+      context('other behaviors', function () {
+        it('should revert with invalid user', async function () {
           try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
+            let tx = await exchange.connect(seller).cancelOrder(buy_order_0);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('either order has expired');
+            expect(err.message).to.include('invalid request');
           }
         })
-        it('revert with non-auction orders using ERC20', async function () {
-
-
-          buy_order_1.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has expired');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          buy_order_2.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has expired');
-          }
-        })
-      })
-      context('when sell order has expired', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          sell_order.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has expired');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          sell_order_1.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has expired');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          sell_order_2.end = (await ethers.provider.getBlock('latest')).timestamp.toString();
-          sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has expired');
-          }
-        })
-      })
-      context('when execute finished order', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
+        it('should revert with cancelled order', async function () {
+          let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
           await tx.wait();
           try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
+            let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
+            expect(err.message).to.include('invalid request');
           }
         })
-        it('revert with non-auction orders using ERC20', async function () {
-          let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-          await tx.wait();
+        it('should revert when buyer trys to execute auction orders', async function () {
           try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
-        it('revert with auction orders using ERC20', async function () {
-          let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-          await tx.wait();
+        it('should revert when seller trys to execute standard orders', async function () {
           try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
+            let tx = await exchange.connect(seller).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
             throw null;
           } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-      })
-      context('when execute cancelled buy order', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          let tx = await exchange.connect(buyer).cancelOrder(buy_order);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          let tx = await exchange.connect(buyer).cancelOrder(buy_order_1);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          let tx = await exchange.connect(buyer).cancelOrder(buy_order_2);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-      })
-      context('when execute cancelled sell order', function () {
-        it('revert with non-auction orders using ETH', async function () {
-          let tx = await exchange.connect(seller).cancelOrder(sell_order);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-        it('revert with non-auction orders using ERC20', async function () {
-          let tx = await exchange.connect(seller).cancelOrder(sell_order_1);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-        it('revert with auction orders using ERC20', async function () {
-          let tx = await exchange.connect(seller).cancelOrder(sell_order_2);
-          await tx.wait();
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('either order has been cancelled or finishd');
-          }
-        })
-      })
-
-      context('when match order is triggered by invalid user', function () {
-        it('revert with non-auction orders using ETH: triggered by seller', async function () {
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('non-auction transaction must be executed by the buyer');
-          }
-        })
-        it('revert with non-auction orders using ERC20: triggered by seller', async function () {
-          try {
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('non-auction transaction must be executed by the buyer');
-          }
-        })
-        it('revert with auction orders using ERC20: triggered by buyer', async function () {
-          try {
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('auction transaction must be executed by the seller');
-          }
-        })
-      })
-
-      context('with other malicious order behaviors', function () {
-        it('revert with auction orders using ETH', async function () {
-          try {
-            buy_order.isAuction = true;
-            buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-            sell_order.isAuction = true;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            let tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid orders: ETH not allowed in auction');
-          }
-        })
-        it('revert with not paying enough ether in eth non-auction order', async function () {
-          try {
-            price = ethers.utils.parseEther('0.9').toString()
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ether amount does not match buy order value');
-          }
-        })
-        it('revert with paying too much ether in eth non-auction order', async function () {
-          try {
-            price = ethers.utils.parseEther('1.1').toString()
-            let tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ether amount does not match buy order value');
-          }
-        })
-        it('revert with not approving tokens in erc20 non-auction order', async function () {
-          try {
-            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
-            await tx;
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ERC20: transfer amount exceeds allowance');
-          }
-        })
-        it('revert with not enough tokens in erc20 non-auction order', async function () {
-          try {
-            let tokenBalance = (await token.balanceOf(buyer.address)).toString();
-            let tx = await token.connect(buyer).transfer(exchange.address, tokenBalance);
-            await tx.wait();
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ERC20: transfer amount exceeds balance');
-          }
-        })
-        it('revert with not approving tokens in erc20 auction order', async function () {
-          try {
-            let tx = await token.connect(buyer).approve(transferProxy.address, '0');
-            await tx;
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ERC20: transfer amount exceeds allowance');
-          }
-        })
-        it('revert with insufficient tokens in erc20 auction order', async function () {
-          try {
-            let tokenBalance = (await token.balanceOf(buyer.address)).toString();
-            let tx = await token.connect(buyer).transfer(exchange.address, tokenBalance);
-            await tx.wait();
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('ERC20: transfer amount exceeds balance');
-          }
-        })
-        it('revert with invalid assetClass in eth non-auction order', async function () {
-          try {
-            buy_order.buyAsset.assetClass = '0x12345678';
-            buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-            sell_order.buyAsset.assetClass = '0x12345678';
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('unauthenticated asset type not allowed');
-          }
-        })
-        it('revert with invalid assetClass in erc20 non-auction order', async function () {
-          try {
-            buy_order_1.buyAsset.assetClass = '0x12345678';
-            buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-            sell_order_1.buyAsset.assetClass = '0x12345678';
-            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('unauthenticated asset type not allowed');
-          }
-        })
-        it('revert with invalid assetClass in erc20 auction order', async function () {
-          try {
-            buy_order_2.buyAsset.assetClass = '0x12345678';
-            buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-            sell_order_2.buyAsset.assetClass = '0x12345678';
-            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('unauthenticated asset type not allowed');
-          }
-        })
-        it('revert with sending ethers in erc20 non-auction order', async function () {
-          try {
-
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sending ether not allowed in ERC20 order');
-          }
-        })
-        it('revert with sending ethers in erc20 auction order', async function () {
-          try {
-
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('sending ether not allowed in ERC20 order');
-          }
-        })
-        it('revert with invalid patentFee set in ETH non-auction order: patentFee larger than 100%', async function () {
-          try {
-            let invalid_patentFee = '10001';
-            sell_order.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, { value: price });
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with invalid patentFee set in ERC20 non-auction order: patentFee larger than 100%', async function () {
-          try {
-            let invalid_patentFee = '10001';
-            sell_order_1.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with invalid patentFee set in ERC20 auction order: patentFee larger than 100%', async function () {
-          try {
-            let invalid_patentFee = '10001';
-            sell_order_2.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with invalid patenFee set in ETH non-auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
-          try {
-            let invalid_patentFee = '9000';
-            sell_order.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, {value: price});
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with invalid patenFee set in ERC20 non-auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
-          try {
-            let invalid_patentFee = '9000';
-            sell_order_1.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with invalid patenFee set in ERC20 auction order: sum of patentFee and platform fee is larger than 100% set in ERC20 non-auction order', async function () {
-          try {
-            let invalid_patentFee = '9000';
-            sell_order_2.nftAsset.patentFee = invalid_patentFee;
-            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('invalid patent fee: total fee must no larger than 100%');
-          }
-        })
-        it('revert with ETH non-auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
-          try {
-            // execute a transaction and set patentFee to 10%
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
-            await tx.wait();
-            // change platform fee to 95%
-            tx = await exchange.connect(seller).changePlatformFee('9500');
-            await tx.wait();
-            buy_order.nftAsset.tokenId = secondTokenId;
-            buy_order_sig = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order)));
-            sell_order.nftAsset.tokenId = secondTokenId;
-            sell_order_sig = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order)));
-            // in this transaction, throw on failure as sum of fees are larger than 1005
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order, buy_order_sig, sell_order, sell_order_sig, {value: price});
-            await tx.wait()
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('Transaction reverted:');
-          }
-        })
-        it('revert with ERC20 non-auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
-          try {
-            // execute a transaction and set patentFee to 10%
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
-            await tx.wait();
-            // change platform fee to 95%
-            tx = await exchange.connect(seller).changePlatformFee('9500');
-            await tx.wait();
-            buy_order_1.nftAsset.tokenId = secondTokenId;
-            buy_order_sig_1 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_1)));
-            sell_order_1.nftAsset.tokenId = secondTokenId;
-            sell_order_sig_1 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_1)));
-            // in this transaction, throw on failure as sum of fees are larger than 1005
-            tx = await exchange.connect(buyer).matchAndExecuteOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1);
-            await tx.wait()
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('Arithmetic operation underflowed or overflowed outside of an unchecked block');
-          }
-        })
-        it('revert with ERC20 auction order: platform fee set after patent fee, and sum of them is larger than 100%', async function () {
-          try {
-            // execute a transaction and set patentFee to 10%
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_tmp, buy_order_sig_tmp, sell_order_tmp, sell_order_sig_tmp, {value: price});
-            await tx.wait();
-            // change platform fee to 95%
-            tx = await exchange.connect(seller).changePlatformFee('9500');
-            await tx.wait();
-            buy_order_2.nftAsset.tokenId = secondTokenId;
-            buy_order_sig_2 = await buyer.signMessage(ethers.utils.arrayify(hashOrder(buy_order_2)));
-            sell_order_2.nftAsset.tokenId = secondTokenId;
-            sell_order_sig_2 = await seller.signMessage(ethers.utils.arrayify(hashOrder(sell_order_2)));
-            // in this transaction, throw on failure as sum of fees are larger than 1005
-            tx = await exchange.connect(seller).matchAndExecuteOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            await tx.wait()
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('Arithmetic operation underflowed or overflowed outside of an unchecked block');
-          }
-        })
-      })
-
-    })
-
-    context('with legitimate user behaviors', function () {
-      context('when user cancel owned orders', function () {
-        it('buyer should cancel owned orders successfully', async function () {
-          await exchange.connect(buyer).cancelOrder(buy_order);
-          await exchange.connect(buyer).cancelOrder(buy_order_1);
-          await exchange.connect(buyer).cancelOrder(buy_order_2);
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
-        })
-        it('seller should cancel owned orders successfully', async function () {
-          await exchange.connect(seller).cancelOrder(sell_order);
-          await exchange.connect(seller).cancelOrder(sell_order_1);
-          await exchange.connect(seller).cancelOrder(sell_order_2);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
-          expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
-        })
-        it('[event test] emit desired cancel events when buyer cancel owned orders', async function () {
-          let tx = await exchange.connect(buyer).cancelOrder(buy_order);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(buy_order), buyer.address);
-          tx = await exchange.connect(buyer).cancelOrder(buy_order_1);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(buy_order_1), buyer.address);
-          tx = await exchange.connect(buyer).cancelOrder(buy_order_2);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(buy_order_2), buyer.address);
-        })
-        it('[event test] emit desired cancel events when seller cancel owned orders', async function () {
-          let tx = await exchange.connect(seller).cancelOrder(sell_order);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(sell_order), seller.address);
-          tx = await exchange.connect(seller).cancelOrder(sell_order_1);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(sell_order_1), seller.address);
-          tx = await exchange.connect(seller).cancelOrder(sell_order_2);
-          expect(tx).to.emit(exchange, 'OrderCancelled').withArgs(hashOrder(sell_order_2), seller.address);
-        })
-      })
-
-    })
-
-    context('with malicious user behaviors', function () {
-      context('when user try to cancels other orders', function () {
-        it('revert when others try to cancel seller orders', async function () {
-          try {
-            let tx = await exchange.connect(buyer).cancelOrder(sell_order);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-          try {
-            let tx = await exchange.connect(creator).cancelOrder(sell_order_1);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-          try {
-            let tx = await exchange.connect(buyer).cancelOrder(sell_order_2);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-        })
-        it('revert when others try to cancel buyer orders', async function () {
-          try {
-            let tx = await exchange.connect(seller).cancelOrder(buy_order);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-          try {
-            let tx = await exchange.connect(creator).cancelOrder(buy_order_1);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-          try {
-            let tx = await exchange.connect(seller).cancelOrder(buy_order_2);
-            throw null
-          } catch (err) {
-            expect(err.message).to.include('order must be cancelled by its maker');
-          }
-        })
-
-      })
-    })
-
-    context('with legitimate admin behaviors', function () {
-      context('when admin change platForm fee', function () {
-        it('admin should change platForm fee successfully', async function () {
-          let platformFee = '3000'
-          let tx = await exchange.changePlatformFee(platformFee);
-          await tx.wait();
-          expect(await exchange.getPlatformFee()).to.equal(platformFee);
-        })
-        it('[event test] emit desired change platformFee event', async function () {
-          let platformFee = '3000'
-          let tx = await exchange.changePlatformFee(platformFee);
-          expect(tx).to.emit(exchange, 'PlatformFeeChanged').withArgs(PLATFORM_FEE, platformFee);
-        })
-      })
-      context('when admin change recipient', function () {
-        it('admin should change recipient fee successfully', async function () {
-          let tx = await exchange.changeRecipient(newRecipient.address);
-          await tx.wait();
-          expect(await exchange.getRecipient()).to.equal(newRecipient.address);
-        })
-        it('[event test] emit desired change recipient event', async function () {
-          let tx = await exchange.changeRecipient(newRecipient.address);
-          expect(tx).to.emit(exchange, 'RecipientChanged').withArgs(recipient.address, newRecipient.address);
-        })
-      })
-    })
-
-    context('with malicious admin behaviors', function () {
-      context('when admin change invalid platForm fee', function () {
-        it('revert when platformFee larger than 100%', async function () {
-          let platformFee = '10001';
-          try {
-            let tx = await exchange.changePlatformFee(platformFee);
-            await tx.wait();
-            throw null
-          } catch (err) {
-            expect(err.message).to.include("invalid platform fee: must no larger than 100%");
-          }
-        })
-      })
-      context('when admin change invalid recipient', function () {
-        it('revert when set new recipient as zero address', async function () {
-          try {
-            let tx = await exchange.changeRecipient(ZERO_ADDRESS);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('zero address not allowed');
-          }
-        })
-        it('revert when set new recipient as same address', async function () {
-          try {
-            let tx = await exchange.changeRecipient(recipient.address);
-            await tx.wait();
-            throw null;
-          } catch (err) {
-            expect(err.message).to.include('same address not allowed');
+            expect(err.message).to.include('must be called by legit user');
           }
         })
       })
     })
-
-
   })
-
-
 })
-

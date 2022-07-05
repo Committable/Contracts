@@ -1,101 +1,117 @@
 
+const { keccak256 } = require('@ethersproject/keccak256');
 const { ethers } = require('hardhat');
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000'
+const NON_REPLACEMENT = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const REPLACEMENT = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+const SIG = '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+const tokenId = '0xaaaaaa'
 
-const timeTravel = function (time) {
-  return new Promise((resolve, reject) => {
-    web3.currentProvider.send({
-      jsonrpc: "2.0",
-      method: "evm_increaseTime",
-      params: [time], // 86400 is num seconds in day
-      id: new Date().getTime()
-    }, (err, result) => {
-      if (err) { return reject(err) }
-      return resolve(result)
-    });
-  })
+const interface = new ethers.utils.Interface([
+  "function mint(address creator, uint256 tokenId, bytes signature)",
+  "function transferFrom(address from, address to, uint256 tokenId)",
+  "function mintAndTransfer(address creator, address to, uint256 tokenId, bytes signature)"
+])
+
+// All properties on a domain are optional
+let exchange_domain = {
+  name: 'Exchange',
+  version: '1',
+  chainId: 1337, // hardhat chainId
+  verifyingContract: ZERO_ADDRESS // assign this value accordingly
+};
+
+// The named list of all type definitions
+// keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)")
+
+let order_types = {
+  Order: [
+    { name: 'isBuySide', type: 'bool' },
+    { name: 'isAuction', type: 'bool' },
+    { name: 'maker', type: 'address' },
+    { name: 'paymentToken', type: 'address' },
+    { name: 'value', type: 'uint256' },
+    { name: 'royaltyRecipient', type: 'address' },
+    { name: 'royalty', type: 'uint256' },
+    { name: 'target', type: 'address' },
+    { name: 'tokenId', type: 'uint256' },
+    { name: 'tokenSig', type: 'bytes' },
+    { name: 'start', type: 'uint256' },
+    { name: 'end', type: 'uint256' },
+    { name: 'salt', type: 'uint256' },
+  ]
+};
+
+// All properties on a domain are optional
+let erc721_domain = {
+  name: 'ERC721Committable',
+  version: '1',
+  chainId: 1337, // hardhat chainId
+  verifyingContract: ZERO_ADDRESS // assign this value accordingly
+};
+
+let mint_types = {
+  Mint: [
+    { name: 'creator', type: 'address' },
+    { name: 'tokenId', type: 'uint256' },
+  ]
 }
 
-
-const getFunctionAbi = function (abi, functionName) {
-  for (let i = 0; i < abi.length; i++) {
-    if (abi[i].name == functionName) {
-      return abi[i];
-    }
+class Order {
+  constructor(isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, tokenId, tokenSig, start, end, salt) {
+    this.isBuySide = isBuySide;
+    this.isAuction = isAuction;
+    this.maker = maker;
+    this.paymentToken = paymentToken;
+    this.value = value;
+    this.royaltyRecipient = royaltyRecipient;
+    this.royalty = royalty;
+    this.target = target;
+    this.tokenId = tokenId;
+    this.tokenSig = tokenSig;
+    this.start = start;
+    this.end = end;
+    this.salt = salt;
   }
-  return null;
 }
 
-const hashAsset = (asset) => {
+const hashMint = (creator, tokenId) => {
   let abiCoder = new ethers.utils.AbiCoder();
-  let asset_encode =
-    abiCoder.encode(['bytes4', 'address', 'uint256'], [asset.assetClass, asset.contractAddress, asset.value])
-  return asset_hash = ethers.utils.keccak256(asset_encode);
-}
-
-const hashNft = (nft) => {
-  let abiCoder = new ethers.utils.AbiCoder();
-
-  let nft_encode =
-    abiCoder.encode(['address', 'uint256', 'uint256'], [nft.contractAddress, nft.tokenId, nft.patentFee]);
-  return nft_hash = ethers.utils.keccak256(nft_encode);
+  let mint_encode =
+    abiCoder.encode(['address', 'uint256'], [creator, tokenId])
+  return mint_hash = ethers.utils.keccak256(mint_encode);
 }
 
 const hashOrder = (order) => {
   let abiCoder = new ethers.utils.AbiCoder();
-
   let order_encode =
-    abiCoder.encode(['address', 'bool', 'bool', 'address', 'bytes32', 'bytes32', 'uint256', 'uint256', 'uint256'],
-      [order.exchange, order.isBuyer, order.isAuction, order.maker,
-      hashAsset(order.buyAsset), hashNft(order.nftAsset),
-      order.salt, order.start, order.end]
+    abiCoder.encode(['bytes32', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'uint256', 'bytes32', 'uint256', 'uint256', 'uint256'],
+      ['0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252',
+        order.isBuySide,
+        order.isAuction,
+        order.maker,
+        order.paymentToken,
+        order.value,
+        order.royaltyRecipient,
+        order.royalty,
+        order.target,
+        order.tokenId,
+        ethers.utils.keccak256(order.tokenSig),
+        order.start,
+        order.end,
+        order.salt]
     );
-  // web3.eth.abi.encodeParameters(
-  //   ['address', 'bool', 'bool', 'address', 'bytes32', 'bytes32', 'uint256', 'uint256', 'uint256'],
-  //   [order.exchange, order.isBuyer, order.isAuction, order.maker,
-  //   hashAsset(order.buyAsset), hashNft(order.nftAsset),
-  //   order.salt, order.start, order.end]
-  // );
   return order_hash = ethers.utils.keccak256(order_encode);
 }
 
-const BuyAsset = class {
-  constructor(assetClass, contractAddress, value) {
-    this.assetClass = assetClass;
-    this.contractAddress = contractAddress;
-    this.value = value;
-  }
-}
-const NftAsset = class {
-  constructor(contractAddress, tokenId, patentFee) {
-    this.contractAddress = contractAddress;
-    this.tokenId = tokenId;
-    this.patentFee = patentFee;
-  }
-}
-const Order = class {
-  constructor(exchange, isBuyer, isAuction, maker, buyAsset, nftAsset, salt, start, end) {
-    this.exchange = exchange;
-    this.isBuyer = isBuyer;
-    this.isAuction = isAuction;
-    this.maker = maker;
-    this.buyAsset = buyAsset;
-    this.nftAsset = nftAsset;
-    this.salt = salt;
-    this.start = start;
-    this.end = end;
-  }
-}
-
-
 const Utils = {
-  timeTravel: timeTravel,
-  getFunctionAbi: getFunctionAbi,
-  hashAsset: hashAsset,
-  hashNft: hashNft,
+  Order: Order,
   hashOrder: hashOrder,
-  BuyAsset: BuyAsset,
-  NftAsset: NftAsset,
-  Order: Order
+  hashMint: hashMint,
+  exchange_domain,
+  order_types,
+  erc721_domain,
+  mint_types
 }
 
 module.exports = Utils;
