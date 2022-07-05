@@ -159,5 +159,5 @@ contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
         }
     }
 
-    uint256[48] private __gap;
+    uint256[46] private __gap;
 }

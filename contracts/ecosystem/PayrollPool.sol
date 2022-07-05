@@ -280,4 +280,7 @@ contract PayrollPool is ReentrancyGuard, Initializable {
             "invalid signature"
         );
     }
+
+    uint256[45] private __gap;
+
 }
