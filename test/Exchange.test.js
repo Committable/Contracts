@@ -1917,7 +1917,7 @@ describe('Exchange', function () {
         })
       })
     })
-    context.only('transferERC721()', function () {
+    context('transferERC721()', function () {
       context("transfer unminted token", function () {
         it('ownership transferred', async function () {
           let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
