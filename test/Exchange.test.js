@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers } = require("hardhat");
+const { ethers, waffle} = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -888,9 +888,9 @@ describe('Exchange', function () {
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
             expect(tx).to.emit(tokenProxy, 'Transfer')
-              .withArgs(ZERO_ADDRESS, seller.address, tokenId_5);
+              .withArgs(ZERO_ADDRESS, seller.address, tokenId_0);
             expect(tx).to.emit(tokenProxy, 'Transfer')
-              .withArgs(seller.address, buyer.address, tokenId_5);
+              .withArgs(seller.address, buyer.address, tokenId_0);
           })
           it('emit desired token event', async function () {
             let fee = await exchange.getFee();
@@ -1915,6 +1915,31 @@ describe('Exchange', function () {
             expect(err.message).to.include('must be called by legit user');
           }
         })
+      })
+    })
+    context.only('transferERC721', function () {
+      it('transfer unminted token', async function () {
+        let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_0
+        });
+        let tx = await exchange.transferERC721(seller.address, buyer.address, tokenProxy.address, tokenId_0, signature_0)
+        await tx.wait()
+    
+        expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address)
+      })
+      it('emit desired event', async function () {
+        let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          creator: seller.address,
+          tokenId: tokenId_0
+        });
+        let tx = await exchange.transferERC721(seller.address, buyer.address, tokenProxy.address, tokenId_0, signature_0)
+        // console.log(tx)
+        expect(tx).to.emit(tokenProxy, 'Transfer')
+        .withArgs(ZERO_ADDRESS, seller.address, tokenId_1);
+        expect(tx).to.emit(tokenProxy, 'Transfer')
+          .withArgs(seller.address, buyer.address, tokenId_0);
+
       })
     })
   })

@@ -9,6 +9,7 @@ import "./TransferProxy.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Exchange is ReentrancyGuard, FeePanel {
@@ -75,6 +76,20 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
+     * @dev support transfer unminted tokens with token signature
+     */
+    function transferERC721(
+        address from,
+        address to,
+        address contractAddress,
+        uint256 tokenId,
+        bytes memory tokenSig
+    ) external {
+        require(msg.sender == from, "Exchange: from address is not msg.sender");
+        _transferERC721(from, to, contractAddress, tokenId, tokenSig);
+    }
+
+    /**
      * @dev match orders, transfer tokens and trigger state transition
      * @param buyOrder - buy order struct
      * @param buyOrderSig - buy order signature (must be signed by buy order maker)
@@ -104,8 +119,14 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "must be called by legit user"
         );
         _beforeTransfer(buyOrder, sellOrder);
-        _transferToken(buyOrder, sellOrder);
-        _transitState(buyOrder, sellOrder);
+        _transferPaymentToken(buyOrder, sellOrder);
+        _transferERC721(
+            sellOrder.maker,
+            buyOrder.maker,
+            sellOrder.target,
+            sellOrder.tokenId,
+            sellOrder.tokenSig
+        );
     }
 
     /**
@@ -210,7 +231,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
     /**
      * @dev transfer payment token from buyer to seller
      */
-    function _transferToken(
+    function _transferPaymentToken(
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal {
@@ -281,11 +302,14 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev trigger state transition (message call to router) 
+     * @dev trigger state transition (message call to router)
      */
-    function _transitState(
-        OrderUtils.Order memory buyOrder,
-        OrderUtils.Order memory sellOrder
+    function _transferERC721(
+        address from,
+        address to,
+        address contractAddress,
+        uint256 tokenId,
+        bytes memory tokenSig
     ) internal {
         address transferProxy = _controller.getTransferProxy();
         bytes memory data;
@@ -293,30 +317,27 @@ contract Exchange is ReentrancyGuard, FeePanel {
         // mint first if tokenSig provided
         // keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
         if (
-            keccak256(sellOrder.tokenSig) !=
+            keccak256(tokenSig) !=
             0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
         ) {
             // mint token to the seller
             data = abi.encodeWithSignature(
                 "mint(address,uint256,bytes)",
-                sellOrder.maker,
-                sellOrder.tokenId,
-                sellOrder.tokenSig
+                from,
+                tokenId,
+                tokenSig
             );
-            success = TransferProxy(transferProxy).proxy(
-                sellOrder.target,
-                data
-            );
+            success = TransferProxy(transferProxy).proxy(contractAddress, data);
             require(success, "Exchange: transferProxy call failed");
         }
         // standard ERC721 transfer from seller to buyer
         data = abi.encodeWithSignature(
             "transferFrom(address,address,uint256)",
-            sellOrder.maker,
-            buyOrder.maker,
-            sellOrder.tokenId
+            from,
+            to,
+            tokenId
         );
-        success = TransferProxy(transferProxy).proxy(sellOrder.target, data);
+        success = TransferProxy(transferProxy).proxy(contractAddress, data);
         require(success, "Exchange: transferProxy call failed");
     }
 }

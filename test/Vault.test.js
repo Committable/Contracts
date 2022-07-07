@@ -15,7 +15,7 @@ describe('Vault', function () {
             provider =  waffle.provider;
             /* deploy controller contract */
             Controller = await ethers.getContractFactory("Controller");
-            controller = await Controller.deploy(signer.address);
+            controller = await Controller.deploy(owner.address);
             await controller.deployed();
             /* deploy logic contract */
             Vault = await ethers.getContractFactory("Vault");
@@ -31,7 +31,8 @@ describe('Vault', function () {
 
 
             /* attach token proxy contract with logic contract abi */
-            vaultProxy = await vaultProxy.attach(vault.address);
+            vaultProxy = await vault.attach(vaultProxy.address);
+
             value = ethers.utils.parseEther("1")
             sendValue = ethers.utils.parseEther("0.2")
             let tx = {
