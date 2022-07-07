@@ -25,5 +25,9 @@ contract Vault is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         SafeERC20.safeTransfer(IERC20(token), to, amount);
     }
 
+    receive() external payable{
+
+    }
+
     uint256[50] private __gap;
 }
