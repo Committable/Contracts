@@ -1,5 +1,5 @@
 const { expect } = require("chai");
-const { ethers, waffle} = require("hardhat");
+const { ethers, waffle } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -649,12 +649,12 @@ describe('Exchange', function () {
         context('[event test] with ETH orders: no royalty', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_0), hashOrder(sell_order_0), buyer.address, seller.address, buy_order_0.paymentToken, buy_order_0.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(seller.address, buyer.address, tokenId_0);
           })
         })
@@ -662,12 +662,12 @@ describe('Exchange', function () {
         context('[event test] with ETH orders: have royalty', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_1), hashOrder(sell_order_1), buyer.address, seller.address, buy_order_1.paymentToken, buy_order_1.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(seller.address, buyer.address, tokenId_1);
           })
 
@@ -676,12 +676,12 @@ describe('Exchange', function () {
         context('[event test] with ERC20 orders: no royalty', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_2), hashOrder(sell_order_2), buyer.address, seller.address, buy_order_2.paymentToken, buy_order_2.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(seller.address, buyer.address, tokenId_2);
           })
           it('emit desired token transfer event', async function () {
@@ -696,9 +696,9 @@ describe('Exchange', function () {
 
 
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, seller.address, _pay.toString());
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, feeRecipient, _fee.toString());
             // expect(tx).to.emit(token, 'Transfer')
             //     .withArgs(buyer.address, royaltyRecipient.address, _royalty.toString());
@@ -707,12 +707,12 @@ describe('Exchange', function () {
         context('[event test] with ERC20 orders: have royalty', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_3), hashOrder(sell_order_3), buyer.address, seller.address, buy_order_3.paymentToken, buy_order_2.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(seller.address, buyer.address, tokenId_3);
           })
           it('emit desired token transfer event', async function () {
@@ -725,11 +725,11 @@ describe('Exchange', function () {
             let _pay = (ethers.BigNumber.from(buy_order_3.value).sub(_fee).sub(_royalty));
 
             let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, seller.address, _pay.toString());
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, feeRecipient, _fee.toString());
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, royaltyRecipient, _royalty.toString());
           })
         })
@@ -863,14 +863,14 @@ describe('Exchange', function () {
             let _fee = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
             let _royalty = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_4), hashOrder(sell_order_4), buyer.address, seller.address, buy_order_4.paymentToken, buy_order_4.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(ZERO_ADDRESS, seller.address, tokenId_4);
-            expect(tx).to.emit(tokenProxy, 'Transfer')
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
               .withArgs(seller.address, buyer.address, tokenId_4);
           })
         })
@@ -882,15 +882,15 @@ describe('Exchange', function () {
             let _fee = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(fee).toString();
             let _royalty = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
-            expect(tx).to.emit(exchange, 'OrderMatched')
+            await expect(tx).to.emit(exchange, 'OrderMatched')
               .withArgs(hashOrder(buy_order_5), hashOrder(sell_order_5), buyer.address, seller.address, buy_order_5.paymentToken, buy_order_5.value);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
-            expect(tx).to.emit(tokenProxy, 'Transfer')
-              .withArgs(ZERO_ADDRESS, seller.address, tokenId_0);
-            expect(tx).to.emit(tokenProxy, 'Transfer')
-              .withArgs(seller.address, buyer.address, tokenId_0);
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(ZERO_ADDRESS, seller.address, tokenId_5);
+            await expect(tx).to.emit(tokenProxy, 'Transfer')
+              .withArgs(seller.address, buyer.address, tokenId_5);
           })
           it('emit desired token event', async function () {
             let fee = await exchange.getFee();
@@ -902,9 +902,9 @@ describe('Exchange', function () {
             let _pay = (ethers.BigNumber.from(buy_order_5.value).sub(_fee));
             // let _pay = (ethers.BigNumber.from(buy_order_2.value).sub(_fee).sub(_royalty));
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, seller.address, _pay.toString());
-            expect(tx).to.emit(token, 'Transfer')
+            await expect(tx).to.emit(token, 'Transfer')
               .withArgs(buyer.address, recipient.address, _fee.toString());
           })
         })
@@ -1917,29 +1917,77 @@ describe('Exchange', function () {
         })
       })
     })
-    context.only('transferERC721', function () {
-      it('transfer unminted token', async function () {
-        let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
-          creator: seller.address,
-          tokenId: tokenId_0
-        });
-        let tx = await exchange.transferERC721(seller.address, buyer.address, tokenProxy.address, tokenId_0, signature_0)
-        await tx.wait()
-    
-        expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address)
-      })
-      it('emit desired event', async function () {
-        let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
-          creator: seller.address,
-          tokenId: tokenId_0
-        });
-        let tx = await exchange.transferERC721(seller.address, buyer.address, tokenProxy.address, tokenId_0, signature_0)
-        // console.log(tx)
-        expect(tx).to.emit(tokenProxy, 'Transfer')
-        .withArgs(ZERO_ADDRESS, seller.address, tokenId_1);
-        expect(tx).to.emit(tokenProxy, 'Transfer')
-          .withArgs(seller.address, buyer.address, tokenId_0);
+    context.only('transferERC721()', function () {
+      context("transfer unminted token", function () {
+        it('ownership transferred', async function () {
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let tx = await exchange.transferERC721(buyer.address, tokenProxy.address, tokenId_0, signature_0)
+          await tx.wait()
 
+          expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address)
+        })
+        it('emit desired event', async function () {
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let tx = await exchange.transferERC721(buyer.address, tokenProxy.address, tokenId_0, signature_0)
+          // console.log(tx)
+          await expect(tx).to.emit(tokenProxy, 'Transfer')
+            .withArgs(ZERO_ADDRESS, seller.address, tokenId_0);
+          await expect(tx).to.emit(tokenProxy, 'Transfer')
+            .withArgs(seller.address, buyer.address, tokenId_0);
+
+        })
+        it("revert on wrong owner", async function () {
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          try {
+            // try to transfer a token that doee not belong to caller
+            let tx = await exchange.connect(buyer).transferERC721(buyer.address, tokenProxy.address, tokenId_0, signature_0)
+            await tx.wait()
+            throw null
+          } catch (err) {
+            expect(err.message).to.include("invalid token signature")
+          }
+        })
+      })
+      context("transfer existing token", function () {
+        beforeEach("minted token to seller", async function () {
+          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0)
+          await expect(tx).to.emit(tokenProxy, 'Transfer')
+            .withArgs(ZERO_ADDRESS, seller.address, tokenId_0);
+          await tx.wait()
+        })
+        it("ownership transferred", async function () {
+          let tx = await exchange.transferERC721(buyer.address, tokenProxy.address, tokenId_0, "0x00")
+          await tx.wait()
+          expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address)
+        })
+        it('emit desired event', async function () {
+          let tx = await exchange.transferERC721(buyer.address, tokenProxy.address, tokenId_0, "0x00")
+          await expect(tx).to.emit(tokenProxy, 'Transfer')
+            .withArgs(seller.address, buyer.address, tokenId_0);
+
+        })
+        it("revert on wrong caller", async function () {
+          try {
+            let tx = await exchange.connect(buyer).transferERC721(buyer.address, tokenProxy.address, tokenId_0, "0x00")
+            await tx.wait()
+            throw null
+          } catch (err) {
+            expect(err.message).to.include("ERC721: transfer from incorrect owner")
+          }
+        })
       })
     })
   })

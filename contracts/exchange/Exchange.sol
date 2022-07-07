@@ -79,14 +79,12 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @dev support transfer unminted tokens with token signature
      */
     function transferERC721(
-        address from,
         address to,
         address contractAddress,
         uint256 tokenId,
         bytes memory tokenSig
     ) external {
-        require(msg.sender == from, "Exchange: from address is not msg.sender");
-        _transferERC721(from, to, contractAddress, tokenId, tokenSig);
+        _transferERC721(msg.sender, to, contractAddress, tokenId, tokenSig);
     }
 
     /**
