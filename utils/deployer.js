@@ -144,12 +144,12 @@ function Vault() {
         calldata = iface.encodeFunctionData("initialize");
         vaultProxy = await CommittableProxy.deploy(vault.address, controller.address, calldata);
         /* attach token proxy contract with logic contract abi */
-        vaultProxy = await Vault.attach(vaultProxy.address);
+        vault = await Vault.attach(vaultProxy.address);
         /* set vault address in exchange */
-        let tx = await exchange.changeRecipient(vaultProxy.address);
+        let tx = await exchange.changeRecipient(vault.address);
         await tx.wait()
-        await vaultProxy.deployed();
 
+        return vault
     }
 }
 

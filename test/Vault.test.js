@@ -23,7 +23,7 @@ describe('Vault', function () {
             value = ethers.utils.parseEther("1")
             sendValue = ethers.utils.parseEther("0.2")
             let tx = {
-                to: vaultProxy.address,
+                to: vault.address,
                 // Convert currency unit from ether to wei
                 // value: ethers.utils.parseEther("1")
                 value: value
@@ -35,11 +35,11 @@ describe('Vault', function () {
 
         context("owner should be able to use", function () {
             it('should have correct ether balance', async function () {
-                expect(await provider.getBalance(vaultProxy.address)).to.equal(value)
+                expect(await provider.getBalance(vault.address)).to.equal(value)
             })
             it('should send ether correctly', async function () {
                 let originalBalance = await receiver.getBalance()
-                let tx = await vaultProxy.sendEther(receiver.address, sendValue)
+                let tx = await vault.sendEther(receiver.address, sendValue)
                 await tx.wait()
                 let afterBalance = await receiver.getBalance()
 

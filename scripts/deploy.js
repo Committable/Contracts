@@ -16,25 +16,26 @@ async function main() {
   let erc721Committable = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
 
   console.log("deploying exchange...")
-  let exchange = new Exchange().deploy(controller);
+  let exchange = await new Exchange().deploy(controller);
 
   console.log("deploying transferProxy...")
-  let transferProxy = new TransferProxy().deploy(controller)
+  let transferProxy = await new TransferProxy().deploy(controller)
 
   console.log("deploying payrollPool...")
-  let payrollPool = new PayrollPool().deploy(controller)
+  let payrollPool = await new PayrollPool().deploy(controller)
 
   console.log("deploying vault...")
-  let vault = new Vault().deploy(controller, exchange)
+  let vault = await new Vault().deploy(controller, exchange)
 
   let content =
-    "\n******Deploying at: " + Date().toLocaleString()
+    "\n******Deploying at: " + Date().toLocaleString() +"************************************"
     + "\nController: " + controller.address
     + "\nERC721Committable: " + erc721Committable.address
     + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address
     + "\nPayrollPool: " + payrollPool.address
     + "\nVault: " + vault.address
+    
   fs.appendFileSync("docs/addressList.txt", content)
 }
 
