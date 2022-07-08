@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const { Controller, PayrollPool } = require("../utils/deployer.js")
 
 describe('PayrollPool', function () {
   context('with erc20 payroll pool', function () {
@@ -10,28 +11,9 @@ describe('PayrollPool', function () {
       /* get signers */
       [creator, signer, user, ...others] = await ethers.getSigners();
 
-      /* deploy controller contract */
-      let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy(creator.address);
-      await controller.deployed();
-      tx = await controller.setSigner(signer.address);
-      await tx.wait()
-      /* deploy payrollProxy */
-      let PayrollPool = await ethers.getContractFactory("PayrollPool");
-      payrollPool = await PayrollPool.deploy();
-      await payrollPool.deployed();
 
-      /* deploy proxy contract */
-      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-      let ABI = ["function initialize(address)"];
-      let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [controller.address]);
-      payrollProxy = await CommittableProxy.deploy(payrollPool.address, controller.address, calldata);
-      await payrollProxy.deployed();
-      /* attach proxy contract with logic contract abi */
-      payrollProxy = await PayrollPool.attach(payrollProxy.address);
-
-
+      controller = await new Controller().deploy(signer.address)
+      payrollProxy = await new PayrollPool().deploy(controller)
 
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
@@ -55,21 +37,7 @@ describe('PayrollPool', function () {
       claimAmount = '100'
 
 
-      /* caculate domain seperator and type */
-      domain = {
-        name: 'PayrollPool',
-        version: '1',
-        chainId: 1337, // hardhat chainid
-        verifyingContract: payrollProxy.address // assign this value accordingly
-      };
-
-      types = {
-        Claim: [
-          { name: 'index', type: 'uint256' },
-          { name: 'amount', type: 'uint256' },
-          { name: 'user', type: 'address' },
-        ]
-      };
+  
 
       claim = {
         index: index,
@@ -81,14 +49,13 @@ describe('PayrollPool', function () {
       // hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
       // sig = await signer.signMessage(ethers.utils.arrayify(hash));
 
-      sig = await signer._signTypedData(domain, types, claim)
+      sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
 
 
       // console.log(payrollProxy.DOMAIN_SEPARATOR())
     })
     it('cannot initialize twice', async function () {
       try {
-
         await payrollProxy.initialize(controller.address)
         throw null
       } catch (err) {
@@ -107,7 +74,7 @@ describe('PayrollPool', function () {
     })
     it('should create payroll successfully', async function () {
       let tx = await payrollProxy.create(1, token.address, rewardAmount, start, end);
-      expect(tx).to.emit(payrollProxy, 'PoolCreated').withArgs(1, token.address, rewardAmount, creator.address, start, end);
+      await expect(tx).to.emit(payrollProxy, 'PoolCreated').withArgs(1, token.address, rewardAmount, creator.address, start, end);
     })
     it('cannot create erc20 payroll while sending ethers', async function () {
       try {
@@ -122,8 +89,8 @@ describe('PayrollPool', function () {
       let preBalance = await token.balanceOf(user.address)
 
       let tx = await payrollProxy.connect(user).claim(index, claimAmount, sig);
-      expect(tx).to.emit(payrollProxy, 'RewardClaimed').withArgs(index, token.address, claimAmount, user.address);
-      expect(tx).to.emit(token, 'Transfer').withArgs(payrollProxy.address, user.address, claimAmount);
+      await expect(tx).to.emit(payrollProxy, 'RewardClaimed').withArgs(index, token.address, claimAmount, user.address);
+      await expect(tx).to.emit(token, 'Transfer').withArgs(payrollProxy.address, user.address, claimAmount);
       await tx.wait()
       let poolInfo = await payrollProxy.getPoolInfo(index);
       expect(poolInfo.unclaimedAmount).to.equal(poolInfo.rewardAmount.sub(claimAmount));
@@ -145,7 +112,7 @@ describe('PayrollPool', function () {
     })
     it('cannot claim with invalid sig', async function () {
 
-      let invalidSig = await user._signTypedData(domain, types, claim)
+      let invalidSig = await user._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
       try {
         let tx = await payrollProxy.connect(user).claim(index, claimAmount, invalidSig);
         await tx.wait();
@@ -162,13 +129,13 @@ describe('PayrollPool', function () {
         user: user.address
       }
 
-      let sig = await signer._signTypedData(domain, types, claim)
+      let sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
       try {
         let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)
         await tx.wait()
         throw null;
       } catch (err) {
-        expect(err.message).to.include('underflowed');
+         expect(err.message).to.include('underflowed');
       }
     })
     it("should revert when query of non-existence pool", async function () {
@@ -178,7 +145,7 @@ describe('PayrollPool', function () {
         amount: '10000',
         user: user.address
       }
-      let sig = await signer._signTypedData(domain, types, claim)
+      let sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
 
       try {
         let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)
@@ -231,26 +198,8 @@ describe('PayrollPool', function () {
       /* get signers */
       [creator, signer, user, ...others] = await ethers.getSigners();
 
-      /* deploy controller contract */
-      let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy(creator.address);
-      await controller.deployed();
-      tx = await controller.setSigner(signer.address);
-      await tx.wait()
-      /* deploy payrollProxy */
-      let PayrollPool = await ethers.getContractFactory("PayrollPool");
-      payrollPool = await PayrollPool.deploy();
-      await payrollPool.deployed();
-
-      /* deploy proxy contract */
-      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-      let ABI = ["function initialize(address)"];
-      let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [controller.address]);
-      payrollProxy = await CommittableProxy.deploy(payrollPool.address, controller.address, calldata);
-      await payrollProxy.deployed();
-      /* attach proxy contract with logic contract abi */
-      payrollProxy = await PayrollPool.attach(payrollProxy.address);
+      controller = await new Controller().deploy(signer.address)
+      payrollProxy = await new PayrollPool().deploy(controller)
 
 
 
@@ -269,15 +218,15 @@ describe('PayrollPool', function () {
       claimAmount = '100'
 
 
-      /* caculate domain seperator and type */
-      domain = {
+      /* caculate payrollProxy.domain seperator and type */
+      payrollProxy.domain = {
         name: 'PayrollPool',
         version: '1',
         chainId: 1337, // hardhat chainid
         verifyingContract: payrollProxy.address // assign this value accordingly
       };
 
-      types = {
+      payrollProxy.types = {
         Claim: [
           { name: 'index', type: 'uint256' },
           { name: 'amount', type: 'uint256' },
@@ -295,7 +244,7 @@ describe('PayrollPool', function () {
       // hash = ethers.utils.keccak256(abiCoder.encode(['uint256', 'uint256', 'address'], [index, claimAmount, user.address]));
       // sig = await signer.signMessage(ethers.utils.arrayify(hash));
 
-      sig = await signer._signTypedData(domain, types, claim)
+      sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
 
 
       // console.log(payrollProxy.DOMAIN_SEPARATOR())
@@ -365,7 +314,7 @@ describe('PayrollPool', function () {
     })
     it('cannot claim with invalid sig', async function () {
 
-      let invalidSig = await user._signTypedData(domain, types, claim)
+      let invalidSig = await user._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
       try {
         let tx = await payrollProxy.connect(user).claim(index, claimAmount, invalidSig);
         await tx.wait();
@@ -382,7 +331,7 @@ describe('PayrollPool', function () {
         user: user.address
       }
 
-      let sig = await signer._signTypedData(domain, types, claim)
+      let sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
       try {
         let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)
         await tx.wait()
@@ -398,7 +347,7 @@ describe('PayrollPool', function () {
         amount: '10000',
         user: user.address
       }
-      let sig = await signer._signTypedData(domain, types, claim)
+      let sig = await signer._signTypedData(payrollProxy.domain, payrollProxy.types, claim)
 
       try {
         let tx = await payrollProxy.connect(user).claim(claim.index, claim.amount, sig)

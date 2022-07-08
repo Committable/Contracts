@@ -1,16 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { NAME, SYMBOL } = require('../.config.js');
+const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const { projects, commits, tokenIds } = require('./tokenId.js');
+const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
-const { project_0, project_1 } = projects;
-const { commit_0, commit_1, commit_2, commit_3 } = commits;
 const { erc721_domain, mint_types } = require('./utils.js');
 
-
-
+const { Controller, ERC721Committable } = require("../utils/deployer.js")
 
 
 describe('Committable', function () {
@@ -18,28 +15,13 @@ describe('Committable', function () {
         beforeEach('deploy contracs', async function () {
             /* get signers */
             [signer, user, ...others] = await ethers.getSigners();
-            /* deploy controller contract */
-            Controller = await ethers.getContractFactory("Controller");
-            controller = await Controller.deploy(signer.address);
-            await controller.deployed();
-            /* deploy token logic contract */
-            ERC721Committable = await ethers.getContractFactory("ERC721Committable");
-            erc721Committable = await ERC721Committable.deploy();
-            await erc721Committable.deployed();
-            await controller.deployed();
-            /* deploy token proxy contract */
-            let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-            let ABI = ["function initialize(string,string,address)"];
-            let iface = new ethers.utils.Interface(ABI);
-            let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-            tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
-            await tokenProxy.deployed();
+            /* deploy contracts */
+            controller = await new Controller().deploy(signer.address)
+            tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
 
 
-            /* attach token proxy contract with logic contract abi */
-            tokenProxy = await ERC721Committable.attach(tokenProxy.address);
-            /* caculate erc721_domain seperator and type */
-            erc721_domain.verifyingContract = tokenProxy.address
+            /* caculate tokenProxy.domain seperator and type */
+            // tokenProxy.domain.verifyingContract = tokenProxy.address
             mint_0 = {
                 creator: signer.address,
                 tokenId: tokenId_0,
@@ -59,10 +41,10 @@ describe('Committable', function () {
 
             /* sign some tokenId */
 
-            signature_0 = await signer._signTypedData(erc721_domain, mint_types, mint_0);
-            signature_1 = await signer._signTypedData(erc721_domain, mint_types, mint_1);
-            signature_2 = await signer._signTypedData(erc721_domain, mint_types, mint_2);
-            signature_3 = await signer._signTypedData(erc721_domain, mint_types, mint_3);
+            signature_0 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_0);
+            signature_1 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_1);
+            signature_2 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_2);
+            signature_3 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_3);
         })
 
         context("[mint] function test", function () {
@@ -88,7 +70,7 @@ describe('Committable', function () {
                 it('should revert if tokenId and signature do not match', async function () {
                     try {
                         let abiCoder = new ethers.utils.AbiCoder;
-                        signature_0 = await signer._signTypedData(erc721_domain, mint_types, mint_0);
+                        signature_0 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_0);
 
                         await tokenProxy.mint(signer.address, tokenId_1, signature_0);
                         throw null;

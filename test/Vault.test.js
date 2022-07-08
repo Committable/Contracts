@@ -2,6 +2,7 @@ const { expect } = require("chai");
 const { ethers, waffle } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const { Controller,Exchange, Vault } = require("../utils/deployer.js")
 
 
 
@@ -13,25 +14,11 @@ describe('Vault', function () {
             /* get signers */
             [owner, receiver, ...others] = await ethers.getSigners();
             provider =  waffle.provider;
-            /* deploy controller contract */
-            Controller = await ethers.getContractFactory("Controller");
-            controller = await Controller.deploy(owner.address);
-            await controller.deployed();
-            /* deploy logic contract */
-            Vault = await ethers.getContractFactory("Vault");
-            vault = await Vault.deploy();
-            await vault.deployed();
-            /* deploy proxy contract */
-            let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-            let ABI = ["function initialize()"];
-            let iface = new ethers.utils.Interface(ABI);
-            let calldata = iface.encodeFunctionData("initialize");
-            vaultProxy = await CommittableProxy.deploy(vault.address, controller.address, calldata);
-            await vaultProxy.deployed();
 
 
-            /* attach token proxy contract with logic contract abi */
-            vaultProxy = await vault.attach(vaultProxy.address);
+            controller = await new Controller().deploy(owner.address)
+            exchange = await new Exchange().deploy(controller)
+            vault = await new Vault().deploy(controller, exchange)
 
             value = ethers.utils.parseEther("1")
             sendValue = ethers.utils.parseEther("0.2")

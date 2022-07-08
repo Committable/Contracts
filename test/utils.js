@@ -13,67 +13,10 @@ const interface = new ethers.utils.Interface([
   "function mintAndTransfer(address creator, address to, uint256 tokenId, bytes signature)"
 ])
 
-// All properties on a domain are optional
-let exchange_domain = {
-  name: 'Exchange',
-  version: '1',
-  chainId: 1337, // hardhat chainId
-  verifyingContract: ZERO_ADDRESS // assign this value accordingly
-};
 
-// The named list of all type definitions
-// keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)")
 
-let order_types = {
-  Order: [
-    { name: 'isBuySide', type: 'bool' },
-    { name: 'isAuction', type: 'bool' },
-    { name: 'maker', type: 'address' },
-    { name: 'paymentToken', type: 'address' },
-    { name: 'value', type: 'uint256' },
-    { name: 'royaltyRecipient', type: 'address' },
-    { name: 'royalty', type: 'uint256' },
-    { name: 'target', type: 'address' },
-    { name: 'tokenId', type: 'uint256' },
-    { name: 'tokenSig', type: 'bytes' },
-    { name: 'start', type: 'uint256' },
-    { name: 'end', type: 'uint256' },
-    { name: 'salt', type: 'uint256' },
-  ]
-};
 
-// All properties on a domain are optional
-let erc721_domain = {
-  name: 'ERC721Committable',
-  version: '1',
-  chainId: 1337, // hardhat chainId
-  verifyingContract: ZERO_ADDRESS // assign this value accordingly
-};
 
-let mint_types = {
-  Mint: [
-    { name: 'creator', type: 'address' },
-    { name: 'tokenId', type: 'uint256' },
-  ]
-}
-
-class Order {
-  constructor(isBuySide, isAuction, maker, paymentToken, value, royaltyRecipient, royalty, target, tokenId, tokenSig, start, end, salt) {
-    this.isBuySide = isBuySide;
-    this.isAuction = isAuction;
-    this.maker = maker;
-    this.paymentToken = paymentToken;
-    this.value = value;
-    this.royaltyRecipient = royaltyRecipient;
-    this.royalty = royalty;
-    this.target = target;
-    this.tokenId = tokenId;
-    this.tokenSig = tokenSig;
-    this.start = start;
-    this.end = end;
-    this.salt = salt;
-  }
-}
 
 const hashMint = (creator, tokenId) => {
   let abiCoder = new ethers.utils.AbiCoder();
@@ -105,13 +48,8 @@ const hashOrder = (order) => {
 }
 
 const Utils = {
-  Order: Order,
   hashOrder: hashOrder,
   hashMint: hashMint,
-  exchange_domain,
-  order_types,
-  erc721_domain,
-  mint_types
 }
 
 module.exports = Utils;

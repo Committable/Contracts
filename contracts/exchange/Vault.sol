@@ -13,7 +13,7 @@ contract Vault is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         __ReentrancyGuard_init();
     }
 
-    function sendEther(address to, uint256 amount) external onlyOwner {
+    function sendEther(address to, uint256 amount) external onlyOwner  {
         payable(to).transfer(amount);
     }
 
@@ -21,7 +21,7 @@ contract Vault is OwnableUpgradeable, ReentrancyGuardUpgradeable {
         address token,
         address to,
         uint256 amount
-    ) external onlyOwner {
+    ) external onlyOwner nonReentrant {
         SafeERC20.safeTransfer(IERC20(token), to, amount);
     }
 

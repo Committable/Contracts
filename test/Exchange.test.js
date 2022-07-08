@@ -2,14 +2,14 @@ const { expect } = require("chai");
 const { ethers, waffle } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-
-let { hashOrder, exchange_domain, order_types, erc721_domain, mint_types } = require("./utils.js");
+const { hashOrder } = require("./utils")
 const { projects, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
 ROYALTY = '1000'; // 10%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
+const { Controller, ERC721Committable, Exchange, TransferProxy, Vault } = require("../utils/deployer.js")
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -23,40 +23,13 @@ describe('Exchange', function () {
 
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
-      /* deploy helper */
-
-      /* deploy controller contract */
-      let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy(seller.address); // seller address is token signer
-      await controller.deployed();
-      /* deploy token logic contract */
-      let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
-      erc721Committable = await ERC721Committable.deploy();
-      await erc721Committable.deployed();
-      /* deploy token proxy contract */
-      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-      let ABI = ["function initialize(string,string,address)"];
-      let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
-      await tokenProxy.deployed();
-      /* attach token proxy contract with logic contract abi */
-      tokenProxy = await ERC721Committable.attach(tokenProxy.address);
-
-      erc721_domain.verifyingContract = tokenProxy.address
-      /* deploy exchange contract */
-      let Exchange = await ethers.getContractFactory("Exchange");
-      exchange = await Exchange.deploy(controller.address);
-      await exchange.deployed();
-
-      exchange_domain.verifyingContract = exchange.address
-      /* deploy transferProxy contract */
-      let TransferProxy = await ethers.getContractFactory("TransferProxy");
-      transferProxy = await TransferProxy.deploy(controller.address);
-      await transferProxy.deployed();
 
 
 
+      controller = await new Controller().deploy(seller.address)
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
+      exchange = await new Exchange().deploy(controller)
+      transferProxy = await new TransferProxy().deploy(controller)
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
       token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
@@ -71,19 +44,10 @@ describe('Exchange', function () {
       await tx.wait()
       tx = await exchange.changeRecipient(recipient.address);
       await tx.wait()
-      // approve exchange
-      tx = await controller.approveOrCancel(exchange.address, true);
-      await tx.wait();
-
-      // register transferProxy
-      tx = await controller.registerTransferProxy(transferProxy.address);
-      await tx.wait();
-
-
 
 
       /**
-       * Below we create multiple order_types of order pairs:
+       * Below we create multiple exchange.types of order pairs:
        * order_0: standard order pairs using ETH without royalty
        * order_1: standard order pairs using ETH with royalty
        * order_2: standard order pairs using ERC20 without royalty
@@ -129,8 +93,8 @@ describe('Exchange', function () {
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
 
-      buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
-      sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
+      buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
+      sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
 
       buy_order_1 = {
         isBuySide: true,
@@ -165,8 +129,8 @@ describe('Exchange', function () {
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
 
-      buy_order_sig_1 = await buyer._signTypedData(exchange_domain, order_types, buy_order_1);
-      sell_order_sig_1 = await seller._signTypedData(exchange_domain, order_types, sell_order_1);
+      buy_order_sig_1 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_1);
+      sell_order_sig_1 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_1);
       // generate order pairs: pay erc20 to transfer erc721, no royalty
 
       buy_order_2 = {
@@ -201,8 +165,8 @@ describe('Exchange', function () {
         salt: Math.floor(Math.random() * 10000)
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
-      sell_order_sig_2 = await seller._signTypedData(exchange_domain, order_types, sell_order_2);
+      buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
+      sell_order_sig_2 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_2);
 
       // generate order pairs: pay erc20 to transfer erc721, have royalty
 
@@ -237,12 +201,12 @@ describe('Exchange', function () {
         end: 0,
         salt: Math.floor(Math.random() * 10000)
       }
-      buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
-      sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+      buy_order_sig_3 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_3);
+      sell_order_sig_3 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_3);
 
       // generate order pairs: pay eth to mint erc721, no royalty
       // sign tokenId from server
-      let signature_4 = await seller._signTypedData(erc721_domain, mint_types, {
+      let signature_4 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
         creator: seller.address,
         tokenId: tokenId_4
       });
@@ -281,12 +245,12 @@ describe('Exchange', function () {
       }
 
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
-      sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+      buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
+      sell_order_sig_4 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_4);
 
       // generate order pairs: pay erc20 to mint erc721, no royalty
       // sign tokenId from server
-      let signature_5 = await seller._signTypedData(erc721_domain, mint_types, {
+      let signature_5 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
         creator: seller.address,
         tokenId: tokenId_5
       });
@@ -323,8 +287,8 @@ describe('Exchange', function () {
         salt: Math.floor(Math.random() * 10000)
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
-      sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+      buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
+      sell_order_sig_5 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_5);
 
       // generate order pairs: pay erc20 to transfer erc721, have royalty (Auction type)
 
@@ -360,12 +324,12 @@ describe('Exchange', function () {
         salt: Math.floor(Math.random() * 10000)
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_6 = await buyer._signTypedData(exchange_domain, order_types, buy_order_6);
-      sell_order_sig_6 = await seller._signTypedData(exchange_domain, order_types, sell_order_6);
+      buy_order_sig_6 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_6);
+      sell_order_sig_6 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_6);
 
       // generate order pairs: pay erc20 to mint erc721, no royalty (Auction type)
       // sign tokenId from server
-      let signature_7 = await seller._signTypedData(erc721_domain, mint_types, {
+      let signature_7 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
         creator: seller.address,
         tokenId: tokenId_7
       });
@@ -402,8 +366,8 @@ describe('Exchange', function () {
         salt: Math.floor(Math.random() * 10000)
       }
       // hex string are treated as binary data anywhere except for signMessage, here must convert string to uint8Arrary(bytes array) first
-      buy_order_sig_7 = await buyer._signTypedData(exchange_domain, order_types, buy_order_7);
-      sell_order_sig_7 = await seller._signTypedData(exchange_domain, order_types, sell_order_7);
+      buy_order_sig_7 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_7);
+      sell_order_sig_7 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_7);
 
 
 
@@ -413,23 +377,23 @@ describe('Exchange', function () {
       context('with minted nft', function () {
         beforeEach('with minted nft', async function () {
           // sign some tokenId
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });
-          let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_1
           });
-          let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_2
           });
-          let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_3
           });
-          let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_6
           });
@@ -482,8 +446,8 @@ describe('Exchange', function () {
             expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_0))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_0))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_0))).to.equal(false);
           })
 
         })
@@ -527,8 +491,8 @@ describe('Exchange', function () {
             expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_1))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_1))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_1))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_1))).to.equal(false);
           })
 
         })
@@ -560,8 +524,8 @@ describe('Exchange', function () {
             expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_2))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_2))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_2))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_2))).to.equal(false);
           })
 
         })
@@ -600,8 +564,8 @@ describe('Exchange', function () {
             expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_3))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_3))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_3))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_3))).to.equal(false);
           })
 
         })
@@ -640,8 +604,8 @@ describe('Exchange', function () {
             expect(currentRoyaltyRecipientBalance.sub(originalRoyaltyRecipientBalance)).to.equal(_royalty)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_6))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_6))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_6))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_6))).to.equal(false);
           })
 
         })
@@ -771,8 +735,8 @@ describe('Exchange', function () {
             expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_4))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_4))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_4))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_4))).to.equal(false);
           })
 
         })
@@ -810,8 +774,8 @@ describe('Exchange', function () {
             expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_5))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_5))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_5))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_5))).to.equal(false);
           })
 
         })
@@ -850,8 +814,8 @@ describe('Exchange', function () {
             expect(currentRecipientBalance.sub(originalRecipientBalance)).to.equal(_fee)
           })
           it('both orders were flagged as finished', async function () {
-            expect(await exchange.checkOrderStatus(hashOrder(buy_order_7))).to.equal(false);
-            expect(await exchange.checkOrderStatus(hashOrder(sell_order_7))).to.equal(false);
+            expect(await exchange.checkOrderStatus((buy_order_7))).to.equal(false);
+            expect(await exchange.checkOrderStatus((sell_order_7))).to.equal(false);
           })
 
         })
@@ -915,12 +879,12 @@ describe('Exchange', function () {
         it('should cancel order correctly', async function () {
           let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
           await tx.wait();
-          expect(await exchange.checkOrderStatus(hashOrder(buy_order_0))).to.equal(false);
+          expect(await exchange.checkOrderStatus((buy_order_0))).to.equal(false);
         })
         it('[EVENT] cancel order', async function () {
           let tx = await exchange.connect(buyer).cancelOrder(buy_order_0);
           expect(tx).to.emit(exchange, 'OrderCancelled')
-            .withArgs(hashOrder(buy_order_0), buy_order_0.maker);
+            .withArgs((buy_order_0), buy_order_0.maker);
         })
 
 
@@ -932,23 +896,23 @@ describe('Exchange', function () {
       context('with standard orders and lazy-mint orders', function () {
         beforeEach('with minted nft', async function () {
           // sign some tokenId
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });
-          let signature_1 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_1
           });
-          let signature_2 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_2
           });
-          let signature_3 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_3
           });
-          let signature_6 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_6
           });
@@ -1075,8 +1039,8 @@ describe('Exchange', function () {
         context('when buy order exchange address does not match', function () {
           it('revert with ETH standard orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
               await tx.wait();
@@ -1087,8 +1051,8 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_3 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_3);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
               await tx.wait();
@@ -1099,8 +1063,8 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
               await tx.wait();
@@ -1111,8 +1075,8 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
               await tx.wait();
@@ -1126,8 +1090,8 @@ describe('Exchange', function () {
         context('when sell order exchange address does not match', function () {
           it('revert with ETH standard orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
               await tx.wait();
@@ -1138,8 +1102,8 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_3 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_3);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
               await tx.wait();
@@ -1150,8 +1114,8 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_4 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_4);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
               await tx.wait();
@@ -1162,8 +1126,8 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint orders', async function () {
             try {
-              exchange_domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+              exchange.domain.verifyingContract = ZERO_ADDRESS;
+              sell_order_sig_5 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_5);
 
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: PRICE });
               await tx.wait();
@@ -1273,7 +1237,7 @@ describe('Exchange', function () {
         context('when buy order bid price is less than sell order ask price ', function () {
           it('revert with ETH standard order', async function () {
             buy_order_0.value = ethers.utils.parseEther('0.9').toString();
-            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+            buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
@@ -1285,7 +1249,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             buy_order_2.value = ethers.utils.parseEther('0.9').toString();
-            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+            buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1297,7 +1261,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             buy_order_4.value = ethers.utils.parseEther('0.9').toString();
-            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+            buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
@@ -1309,7 +1273,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             buy_order_5.value = ethers.utils.parseEther('0.9').toString();
-            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+            buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
@@ -1323,7 +1287,7 @@ describe('Exchange', function () {
         context('when nft contract address does not match', function () {
           it('revert with ETH standard order', async function () {
             buy_order_0.target = ZERO_ADDRESS;
-            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+            buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
@@ -1335,7 +1299,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             buy_order_2.target = ZERO_ADDRESS;
-            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+            buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1347,7 +1311,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             buy_order_4.target = ZERO_ADDRESS;
-            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+            buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
@@ -1359,7 +1323,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             buy_order_5.target = ZERO_ADDRESS;
-            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+            buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
@@ -1373,7 +1337,7 @@ describe('Exchange', function () {
         context('when tokenID does not match', function () {
           it('revert with ETH standard order', async function () {
             buy_order_0.tokenId = tokenId_1;
-            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+            buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
@@ -1385,7 +1349,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             buy_order_2.tokenId = tokenId_0;
-            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+            buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1397,7 +1361,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             buy_order_4.tokenId = tokenId_1;
-            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+            buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
@@ -1409,7 +1373,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             buy_order_5.tokenId = tokenId_1;
-            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+            buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
@@ -1423,7 +1387,7 @@ describe('Exchange', function () {
         context('when buy order start time has not reached yet', function () {
           it('revert with ETH standard order', async function () {
             buy_order_0.start = Date.now() * 10;
-            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+            buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
@@ -1435,7 +1399,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             buy_order_2.start = Date.now() * 10;
-            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+            buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1447,7 +1411,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             buy_order_4.start = Date.now() * 10;
-            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+            buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
@@ -1459,7 +1423,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             buy_order_5.start = Date.now() * 10;
-            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+            buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
@@ -1473,7 +1437,7 @@ describe('Exchange', function () {
         context('when buy order has expired', function () {
           it('revert with ETH standard order', async function () {
             buy_order_0.end = 1;
-            buy_order_sig_0 = await buyer._signTypedData(exchange_domain, order_types, buy_order_0);
+            buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
@@ -1485,7 +1449,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             buy_order_2.end = 1;
-            buy_order_sig_2 = await buyer._signTypedData(exchange_domain, order_types, buy_order_2);
+            buy_order_sig_2 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1497,7 +1461,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             buy_order_4.end = 1;
-            buy_order_sig_4 = await buyer._signTypedData(exchange_domain, order_types, buy_order_4);
+            buy_order_sig_4 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
@@ -1509,7 +1473,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             buy_order_5.end = 1;
-            buy_order_sig_5 = await buyer._signTypedData(exchange_domain, order_types, buy_order_5);
+            buy_order_sig_5 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
@@ -1523,7 +1487,7 @@ describe('Exchange', function () {
         context('when sell order has expired', function () {
           it('revert with ETH standard order', async function () {
             sell_order_0.end = 1;
-            sell_order_sig_0 = await seller._signTypedData(exchange_domain, order_types, sell_order_0);
+            sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: buy_order_0.value });
@@ -1537,7 +1501,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 standard order', async function () {
             sell_order_2.end = 1;
-            sell_order_sig_2 = await seller._signTypedData(exchange_domain, order_types, sell_order_2);
+            sell_order_sig_2 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_2);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -1549,7 +1513,7 @@ describe('Exchange', function () {
           })
           it('revert with ETH lazy-mint order', async function () {
             sell_order_4.end = 1;
-            sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+            sell_order_sig_4 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_4);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: buy_order_4.value });
@@ -1561,7 +1525,7 @@ describe('Exchange', function () {
           })
           it('revert with ERC20 lazy-mint order', async function () {
             sell_order_5.end = 1;
-            sell_order_sig_5 = await seller._signTypedData(exchange_domain, order_types, sell_order_5);
+            sell_order_sig_5 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_5);
 
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5, { value: buy_order_5.value });
@@ -1790,8 +1754,8 @@ describe('Exchange', function () {
             try {
               buy_order_1.royalty = 10001;
               sell_order_1.royalty = 10001;
-              buy_order_sig_1 = await buyer._signTypedData(exchange_domain, order_types, buy_order_1);
-              sell_order_sig_1 = await seller._signTypedData(exchange_domain, order_types, sell_order_1);
+              buy_order_sig_1 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_1);
+              sell_order_sig_1 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_1);
 
 
               tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
@@ -1805,8 +1769,8 @@ describe('Exchange', function () {
             try {
               buy_order_3.royalty = 10001;
               sell_order_3.royalty = 10001;
-              buy_order_sig_3 = await buyer._signTypedData(exchange_domain, order_types, buy_order_3);
-              sell_order_sig_3 = await seller._signTypedData(exchange_domain, order_types, sell_order_3);
+              buy_order_sig_3 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_3);
+              sell_order_sig_3 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_3);
               tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
               await tx.wait();
               throw null;
@@ -1858,13 +1822,13 @@ describe('Exchange', function () {
         })
         context('when mint sig is invalid', function () {
           it('revert when mint sig is invalid', async function () {
-            let invalid_tokenSig = await seller._signTypedData(erc721_domain, mint_types, {
+            let invalid_tokenSig = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
               creator: seller.address,
               tokenId: 123
             });
             sell_order_4.tokenSig = invalid_tokenSig;
 
-            sell_order_sig_4 = await seller._signTypedData(exchange_domain, order_types, sell_order_4);
+            sell_order_sig_4 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_4);
 
             try {
               tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
@@ -1920,7 +1884,7 @@ describe('Exchange', function () {
     context('transferERC721()', function () {
       context("transfer unminted token", function () {
         it('ownership transferred', async function () {
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });
@@ -1930,7 +1894,7 @@ describe('Exchange', function () {
           expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(buyer.address)
         })
         it('emit desired event', async function () {
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });
@@ -1943,7 +1907,7 @@ describe('Exchange', function () {
 
         })
         it("revert on wrong owner", async function () {
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });
@@ -1959,7 +1923,7 @@ describe('Exchange', function () {
       })
       context("transfer existing token", function () {
         beforeEach("minted token to seller", async function () {
-          let signature_0 = await seller._signTypedData(erc721_domain, mint_types, {
+          let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
             tokenId: tokenId_0
           });

@@ -69,10 +69,10 @@ contract Exchange is ReentrancyGuard, FeePanel {
 
     /**
      * @dev check whether given order is cancelled/finished or not
-     * @param orderHash - the hash value of order to check
+     * @param order - order to check
      */
-    function checkOrderStatus(bytes32 orderHash) external view returns (bool) {
-        return (!_isCancelledOrFinished[orderHash]);
+    function checkOrderStatus(OrderUtils.Order memory order) external view returns (bool) {
+        return (!_isCancelledOrFinished[OrderUtils.hash(order)]);
     }
 
     /**

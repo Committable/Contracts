@@ -4,33 +4,19 @@ const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { tokenIds, projects, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
-const { erc721_domain, mint_types } = require('./utils.js');
+const { Controller, ERC721Committable } = require("../utils/deployer.js")
 
 describe('ERC721', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
       /* get signers */
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
-      /* deploy controller contract */
-      let Controller = await ethers.getContractFactory("Controller");
-      controller = await Controller.deploy(owner.address);
-      await controller.deployed();
-      /* deploy token logic contract */
-      ERC721Committable = await ethers.getContractFactory("ERC721Committable");
-      erc721Committable = await ERC721Committable.deploy();
-      await erc721Committable.deployed();
-      /* deploy token proxy contract */
-      let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-      let ABI = ["function initialize(string,string,address)"];
-      let iface = new ethers.utils.Interface(ABI);
-      let calldata = iface.encodeFunctionData("initialize", [NAME, SYMBOL, controller.address]);
-      tokenProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
-      await tokenProxy.deployed();
-      /* attach token proxy contract with logic contract abi */
-      tokenProxy = await ERC721Committable.attach(tokenProxy.address)
+
+      controller = await new Controller().deploy(owner.address)
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller )
+      
       /* sign some tokenId */
-      /* caculate erc721_domain seperator and type */
-      erc721_domain.verifyingContract = tokenProxy.address
+      /* caculate tokenProxy.domain seperator and type */
 
       mint_0 = {
         creator: owner.address,
@@ -44,8 +30,8 @@ describe('ERC721', function () {
 
       /* sign some tokenId */
 
-      signature_0 = await owner._signTypedData(erc721_domain, mint_types, mint_0);
-      signature_1 = await owner._signTypedData(erc721_domain, mint_types, mint_1);
+      signature_0 = await owner._signTypedData(tokenProxy.domain, tokenProxy.types, mint_0);
+      signature_1 = await owner._signTypedData(tokenProxy.domain, tokenProxy.types, mint_1);
 
       /* mint tokenId_0, tokenId_1 to owner */
       let tx = await tokenProxy.mint(owner.address, tokenId_0, signature_0);
