@@ -1,5 +1,26 @@
 # Committable Contract Logs
 
+## 20220708 - Implement ERC721 transfer method for Exchange
+
+```solidity
+contract Exchange {
+	   /**
+     * @dev support transfer unminted tokens with token signature
+     */
+    function transferERC721(
+        address to, // 收款人地址
+        address contractAddress, // erc721合约地址
+        uint256 tokenId, // tokenId
+        bytes memory tokenSig // 铸币签名：输入”0x00“表示转账链上代币，输入token签名会前铸造到创造者地址，再转账到收款人
+    ) external {
+        _transferERC721(msg.sender, to, contractAddress, tokenId, tokenSig);
+    }
+
+}
+```
+
+
+
 ## 20220708 - Support EIP712 for ERC721 and Payroll signature
 
 **签名编码原理如下**
@@ -54,7 +75,7 @@
             ( 
                 keccak256
                 (
-            Ï        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
                 ),
                 keccak256(bytes(_name)), //这里名字固定使用”PayrollPool“
                 keccak256(bytes("1")),
