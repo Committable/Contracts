@@ -86,11 +86,34 @@ function Exchange() {
                 { name: 'salt', type: 'uint256' },
             ]
         }
+        exchange.hashOrder = function (order) {
+            let abiCoder = new ethers.utils.AbiCoder();
+            let order_encode =
+                abiCoder.encode(['bytes32', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'uint256', 'bytes32', 'uint256', 'uint256', 'uint256'],
+                    ['0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252',
+                        order.isBuySide,
+                        order.isAuction,
+                        order.maker,
+                        order.paymentToken,
+                        order.value,
+                        order.royaltyRecipient,
+                        order.royalty,
+                        order.target,
+                        order.tokenId,
+                        ethers.utils.keccak256(order.tokenSig),
+                        order.start,
+                        order.end,
+                        order.salt
+                    ]
+                );
+            return order_hash = ethers.utils.keccak256(order_encode);
 
-
+        }
         /* approve exchange */
         tx = await controller.approveOrCancel(exchange.address, true);
         await tx.wait();
+
+
         return exchange
     }
 }

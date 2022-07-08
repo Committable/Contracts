@@ -5,7 +5,6 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
-const { erc721_domain, mint_types } = require('./utils.js');
 
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
 
