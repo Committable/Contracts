@@ -6,5 +6,5 @@ coverage
 coverage.json
 #Hardhat files
 cache
-artifacts
+
 .interface
