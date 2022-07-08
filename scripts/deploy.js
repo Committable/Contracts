@@ -9,11 +9,22 @@ const { Controller, ERC721Committable, Exchange, TransferProxy, PayrollPool, Vau
 
 async function main() {
 
-  let controller = await new Controller(SIGNER_ADDRESS).deploy()
-  let erc721Committable = await new ERC721Committable(NAME, SYMBOL, controller).deploy()
+  console.log("deploying controller...")
+  let controller = await new Controller().deploy(SIGNER_ADDRESS)
+
+  console.log("deploying erc721Committable...")
+  let erc721Committable = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
+
+  console.log("deploying exchange...")
   let exchange = new Exchange().deploy(controller);
+
+  console.log("deploying transferProxy...")
   let transferProxy = new TransferProxy().deploy(controller)
+
+  console.log("deploying payrollPool...")
   let payrollPool = new PayrollPool().deploy(controller)
+
+  console.log("deploying vault...")
   let vault = new Vault().deploy(controller, exchange)
 
   let content =
