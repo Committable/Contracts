@@ -1,5 +1,154 @@
 # Committable Contract Logs
 
+## 20220708 - Support EIP712 for ERC721 and Payroll signature
+
+**签名编码原理如下**
+
+```solidity
+ // Solidity file
+ contract ERC721Committable {
+ // 计算域名分隔符哈希
+ bytes32 DOMAIN_SEPARATOR = keccak256
+ 				(
+            abi.encode // 常规编码：1. 地址与整型：将每个不足32个字节的元素添加前置”0“到32个字节 2. 将元素按顺序拼接
+            ( 
+                keccak256
+                (
+                "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes(_name)), //这里名字固定使用”ERC721Committable“
+                keccak256(bytes("1")),
+                chainId, // rinkeby链Id为4
+                address(this) // 该合约的合约地址
+            )
+        );
+  // 计算结构体类型哈希       
+  bytes32 types = keccak256("Mint(address creator,uint256 tokenId)")
+  // 这个值是静态的：0xe6c296e11cbaaec3fa9033cd6f86ffb254e2601a752ff969259c9aa361b35d89
+
+
+	// 构建摘要
+  bytes32 digest = keccak256(
+            abi.encodePacked( // Packed编码：不需要将每个元素添置32个字节，直接按顺序拼接
+                "\x19\x01",
+                DOMAIN_SEPARATOR, 
+                keccak256(
+                    abi.encode( // 常规编码
+                        //keccak256("Mint(address creator,uint256 tokenId)")
+                        0xe6c296e11cbaaec3fa9033cd6f86ffb254e2601a752ff969259c9aa361b35d89,
+                        creator, // 创建者地址
+                        tokenId // 代币编号
+                    )
+                )
+            )
+        );
+ }
+ 
+ 
+  // Solidity file
+ contract PayrollPool {
+ // 计算域名分隔符哈希
+ bytes32 DOMAIN_SEPARATOR = keccak256
+ 				(
+            abi.encode // 常规编码：1. 地址与整型：将每个不足32个字节的元素添加前置”0“到32个字节 2. 将元素按顺序拼接
+            ( 
+                keccak256
+                (
+            Ï        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
+                keccak256(bytes(_name)), //这里名字固定使用”PayrollPool“
+                keccak256(bytes("1")),
+                chainId, // rinkeby链Id为4
+                address(this) // 该合约的合约地址
+            )
+        );
+  // 计算结构体类型哈希       
+  bytes32 types = keccak256("Claim(uint256 index,uint256 amount,address user)")
+  // 这个值是静态的：0x2c400e34dccd136c63692253b13cbe502fc45768c04c0584e74b7cc15fda3487
+
+
+	// 构建摘要
+  bytes32 digest = keccak256
+  			(
+            abi.encodePacked( // Packed编码：不需要将每个元素添置32个字节，直接按顺序拼接
+                "\x19\x01",
+                DOMAIN_SEPARATOR, 
+                keccak256(
+                    abi.encode(
+                        //keccak256("Claim(uint256 index,uint256 amount,address user)")
+                        0x2c400e34dccd136c63692253b13cbe502fc45768c04c0584e74b7cc15fda3487,
+                        index, // Pool Id
+                        amount, // 领取金额
+                        msg.sender // 领取地址
+                    )
+                )
+            )
+        );
+ }
+ 
+ 
+
+```
+
+**JavaScript签名示例**
+
+```javascript
+const { ethers } = require("hardhat");
+// 计算域名分隔符
+let erc721Committable.domain =
+        {
+            name: 'ERC721Committable',
+            version: '1',
+            chainId: 1337, // hardhat chainId for test only
+            verifyingContract: erc721Committable.address // assign this value accordingly
+        }
+// 计算结构体哈希
+let erc721Committable.types =
+        {
+            Mint: [
+                { name: 'creator', type: 'address' },
+                { name: 'tokenId', type: 'uint256' },
+            ]
+        }
+
+// 构造签名数据
+let mint_0 = 		{
+            creator: signer.address, 
+            tokenId: tokenId_0,
+            }
+
+// 利用ethers.js提供的结构签名函数进行签名
+let signature_0 = await signer._signTypedData(erc721Committable.domain, erc721Committable.types, mint_0);
+
+// 计算域名分隔符
+let payroll.domain =
+        {
+            name: 'PayrollPool',
+            version: '1',
+            chainId: 1337, // hardhat chainid for test only
+            verifyingContract: payrollProxy.address // assign this value accordingly
+        }
+// 计算结构体哈希
+let payroll.types =
+        {
+            Claim: [
+                { name: 'index', type: 'uint256' },
+                { name: 'amount', type: 'uint256' },
+                { name: 'user', type: 'address' },
+            ]
+        }
+// 构造签名数据
+let claim = {
+        index: index,
+        amount: claimAmount,
+        user: user.address
+      	}
+// 利用ethers.js提供的结构签名函数进行签名
+let sig = await signer._signTypedData(payroll.domain, payroll.types, claim)		
+```
+
+
+
 ## 20220512 - Support EIP712 & Shared Proxy
 
 Controller: 0xA5a6f260F5CF1f30a41e849B5a96Ba5916dB9064
