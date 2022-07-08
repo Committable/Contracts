@@ -36,7 +36,9 @@ async function main() {
     + "\nPayrollPool: " + payrollPool.address
     + "\nVault: " + vault.address
     
-  fs.appendFileSync("docs/addressList.txt", content)
+  fs.writeFileSync("docs/addressList.txt", content)
+  fs.appendFileSync("docs/details/deploymentRecord.txt", content)
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere
