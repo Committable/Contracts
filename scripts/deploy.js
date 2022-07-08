@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
 const { Controller, ERC721Committable, Exchange, TransferProxy, PayrollPool, Vault } = require("../utils/deployer.js")
 
-
+const fs = require("fs")
 
 
 
