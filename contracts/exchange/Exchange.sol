@@ -25,7 +25,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
         address indexed buyer,
         address indexed seller,
         address paymentToken,
-        uint256 value
+        uint256 value,
+        uint256 royalty,
+        address royaltyRecipient
     );
 
     event OrderCancelled(bytes32 orderHash, address indexed maker);
@@ -295,7 +297,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
             buyOrder.maker,
             sellOrder.maker,
             buyOrder.paymentToken,
-            buyOrder.value
+            buyOrder.value,
+            sellOrder.royalty,
+            sellOrder.royaltyRecipient
         );
     }
 

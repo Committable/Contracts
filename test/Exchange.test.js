@@ -613,7 +613,7 @@ describe('Exchange', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_0), exchange.hashOrder(sell_order_0), buyer.address, seller.address, buy_order_0.paymentToken, buy_order_0.value);
+              .withArgs(exchange.hashOrder(buy_order_0), exchange.hashOrder(sell_order_0), buyer.address, seller.address, buy_order_0.paymentToken, buy_order_0.value, sell_order_0.royalty, sell_order_0.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
@@ -626,7 +626,7 @@ describe('Exchange', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_1), exchange.hashOrder(sell_order_1), buyer.address, seller.address, buy_order_1.paymentToken, buy_order_1.value);
+              .withArgs(exchange.hashOrder(buy_order_1), exchange.hashOrder(sell_order_1), buyer.address, seller.address, buy_order_1.paymentToken, buy_order_1.value, sell_order_1.royalty, sell_order_1.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
@@ -640,7 +640,7 @@ describe('Exchange', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_2), exchange.hashOrder(sell_order_2), buyer.address, seller.address, buy_order_2.paymentToken, buy_order_2.value);
+              .withArgs(exchange.hashOrder(buy_order_2), exchange.hashOrder(sell_order_2), buyer.address, seller.address, buy_order_2.paymentToken, buy_order_2.value, sell_order_2.royalty, sell_order_2.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2);
@@ -671,7 +671,7 @@ describe('Exchange', function () {
           it('emit desired exchange event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_3), exchange.hashOrder(sell_order_3), buyer.address, seller.address, buy_order_3.paymentToken, buy_order_2.value);
+              .withArgs(exchange.hashOrder(buy_order_3), exchange.hashOrder(sell_order_3), buyer.address, seller.address, buy_order_3.paymentToken, buy_order_3.value, sell_order_3.royalty, sell_order_3.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
@@ -827,7 +827,7 @@ describe('Exchange', function () {
             let _royalty = (ethers.BigNumber.from(buy_order_4.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_4), exchange.hashOrder(sell_order_4), buyer.address, seller.address, buy_order_4.paymentToken, buy_order_4.value);
+              .withArgs(exchange.hashOrder(buy_order_4), exchange.hashOrder(sell_order_4), buyer.address, seller.address, buy_order_4.paymentToken, buy_order_4.value, sell_order_4.royalty, sell_order_4.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_4, buy_order_sig_4, sell_order_4, sell_order_sig_4, { value: PRICE });
@@ -846,7 +846,7 @@ describe('Exchange', function () {
             let _royalty = (ethers.BigNumber.from(buy_order_5.value)).div(ethers.BigNumber.from('10000')).mul(royalty).toString();
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
             await expect(tx).to.emit(exchange, 'OrderMatched')
-              .withArgs(exchange.hashOrder(buy_order_5), exchange.hashOrder(sell_order_5), buyer.address, seller.address, buy_order_5.paymentToken, buy_order_5.value);
+              .withArgs(exchange.hashOrder(buy_order_5), exchange.hashOrder(sell_order_5), buyer.address, seller.address, buy_order_5.paymentToken, buy_order_5.value, sell_order_5.royalty, sell_order_5.royaltyRecipient);
           })
           it('emit desired committable event', async function () {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_5, buy_order_sig_5, sell_order_5, sell_order_sig_5);
