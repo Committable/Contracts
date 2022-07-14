@@ -30,7 +30,7 @@ contract FeePanel is Ownable {
     }
 
     function changeFee(uint256 fee) external onlyOwner {
-        require(fee <= 10000, "invalid platform fee: must no larger than 100%");
+        require(fee <= 1000, "Exchange: fee must no larger than 10%");
         uint256 originalPlatformFee = _fee;
         _fee = fee;
         emit FeeChanged(originalPlatformFee, fee);

@@ -1778,26 +1778,25 @@ describe('Exchange', function () {
             }
           })
 
-          it('revert with invalid royalty in ETH order: sum of royalty and platform fee is larger than 100%', async function () {
+          it('revert with invalid fee', async function () {
             try {
               let newFee = 9500;
               tx = await exchange.changeFee(newFee);
               await tx.wait()
 
-              tx = await exchange.connect(buyer).matchOrder(buy_order_1, buy_order_sig_1, sell_order_1, sell_order_sig_1, { value: PRICE });
-              await tx.wait();
+
               throw null;
             } catch (err) {
-              expect(err.message).to.include('invalid order parameters');
+              expect(err.message).to.include('Exchange: fee must no larger than 10%');
             }
           })
-          it('revert with invalid royalty set in ERC20 order: sum of royalty and platform fee is larger than 100%', async function () {
+          it('revert with invalid royalty', async function () {
             try {
-              let newFee = 9500;
-              tx = await exchange.changeFee(newFee);
-              await tx.wait()
+              let newRoyalty = 2000;
+              sell_order_0.royalty = newRoyalty
+              sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
 
-              tx = await exchange.connect(seller).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3);
+              tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0,  { value: PRICE });
               await tx.wait();
               throw null;
             } catch (err) {
