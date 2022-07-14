@@ -1,5 +1,24 @@
 # Committable Contract Logs
 
+## 20220714 - Update OrderMatched event 
+
+```solidity
+contract Exchange {
+//新增royalty与royaltyRecipient字段
+		event OrderMatched(
+        bytes32 buyOrderHash,
+        bytes32 sellOrderHash,
+        address indexed buyer,
+        address indexed seller,
+        address paymentToken,
+        uint256 value,
+        uint256 royalty,
+        address royaltyRecipient
+    );
+	
+」
+```
+
 ## 20220708 - Implement ERC721 transfer method for Exchange
 
 ```solidity

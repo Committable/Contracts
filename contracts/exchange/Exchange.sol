@@ -25,7 +25,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
         address indexed buyer,
         address indexed seller,
         address paymentToken,
-        uint256 value
+        uint256 value,
+        uint256 royalty,
+        address royaltyRecipient
     );
 
     event OrderCancelled(bytes32 orderHash, address indexed maker);
@@ -61,7 +63,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         require(
             order.maker == msg.sender &&
                 _isCancelledOrFinished[OrderUtils.hash(order)] == false,
-            "invalid request"
+            "Exchange: invalid request"
         );
         _isCancelledOrFinished[OrderUtils.hash(order)] = true;
         emit OrderCancelled(OrderUtils.hash(order), msg.sender);
@@ -71,7 +73,11 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @dev check whether given order is cancelled/finished or not
      * @param order - order to check
      */
-    function checkOrderStatus(OrderUtils.Order memory order) external view returns (bool) {
+    function checkOrderStatus(OrderUtils.Order memory order)
+        external
+        view
+        returns (bool)
+    {
         return (!_isCancelledOrFinished[OrderUtils.hash(order)]);
     }
 
@@ -106,15 +112,15 @@ contract Exchange is ReentrancyGuard, FeePanel {
         require(
             _orderSigValidation(buyOrder, buyOrderSig) &&
                 _orderSigValidation(sellOrder, sellOrderSig),
-            "invalid order signature"
+            "Exchange: invalid order signature"
         );
         require(
             _orderParamsValidation(buyOrder, sellOrder),
-            "invalid order parameters"
+            "Exchange: invalid order parameters"
         );
         require(
             _canSettle(buyOrder, sellOrder),
-            "must be called by legit user"
+            "Exchange: must be called by legit user"
         );
         _beforeTransfer(buyOrder, sellOrder);
         _transferPaymentToken(buyOrder, sellOrder);
@@ -135,7 +141,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         bytes memory signature
     ) internal view returns (bool) {
         if (signature.length != 65) {
-            revert("ECDSA: invalid signature length");
+            revert("Exchange: invalid signature length");
         }
 
         // Divide the signature in r, s and v variables
@@ -177,12 +183,12 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
             // buy order value must large or equal to sell order value
             (buyOrder.value >= sellOrder.value) &&
-            // royaltyRecipient must match
-            (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
-            // royalty must match
-            (buyOrder.royalty == sellOrder.royalty) &&
+            // // royaltyRecipient must match
+            // (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
+            // // royalty must match
+            // (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
-            ((buyOrder.royalty + _fee) < 10000) &&
+            (sellOrder.royalty <= 1000) &&
             // must match target
             (buyOrder.target == sellOrder.target) &&
             // must match tokenId
@@ -233,16 +239,16 @@ contract Exchange is ReentrancyGuard, FeePanel {
         OrderUtils.Order memory buyOrder,
         OrderUtils.Order memory sellOrder
     ) internal {
-        address royaltyRecipient = buyOrder.royaltyRecipient;
-        address paymentToken = buyOrder.paymentToken;
+        address royaltyRecipient = sellOrder.royaltyRecipient;
+        address paymentToken = sellOrder.paymentToken;
         uint256 fee = (buyOrder.value * _fee) / 10000;
-        uint256 royalty = (buyOrder.value * buyOrder.royalty) / 10000;
+        uint256 royalty = (buyOrder.value * sellOrder.royalty) / 10000;
         uint256 remainValue = buyOrder.value - fee - royalty;
         // pay by ether
         if (paymentToken == address(0)) {
             require(
                 !buyOrder.isAuction && msg.value == buyOrder.value,
-                "invalid payment"
+                "Exchange: invalid payment"
             );
             // transfer fee
             if (fee != 0) {
@@ -259,7 +265,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         }
         // pay by erc20
         else {
-            require(msg.value == 0, "invalid payment");
+            require(msg.value == 0, "Exchange: invalid payment");
             // transfer fee
             if (fee != 0) {
                 SafeERC20.safeTransferFrom(
@@ -295,7 +301,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
             buyOrder.maker,
             sellOrder.maker,
             buyOrder.paymentToken,
-            buyOrder.value
+            buyOrder.value,
+            sellOrder.royalty,
+            sellOrder.royaltyRecipient
         );
     }
 
