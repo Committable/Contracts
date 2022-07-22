@@ -18,13 +18,13 @@ library OrderUtils {
         address royaltyRecipient;
         // royalty to pay, zero as non-royalty
         uint256 royalty;
-        // tokenId to transfer
-        address target;
         // contract address to call
+        address target;
+        // tokenId to transfer
         uint256 tokenId;
-        // attached calldata to target
-        bytes tokenSig;
         // tokenSig required for minting a new token, sentinel value for transfer
+        bytes tokenSig;
+        // timestamp for the beginning for executing this order
         uint256 start;
         // timestamp for the deadline for executing this order
         uint256 end;
