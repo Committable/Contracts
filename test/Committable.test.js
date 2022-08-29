@@ -7,7 +7,7 @@ const { tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
 
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
-
+const funding = ethers.utils.parseEther("1")
 
 describe('Committable', function () {
     context('with deployed contracts', function () {
@@ -17,7 +17,8 @@ describe('Committable', function () {
             /* deploy contracts */
             controller = await new Controller().deploy(signer.address)
             tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
-
+            // provider =  waffle.provider;
+            
 
             /* caculate tokenProxy.domain seperator and type */
             // tokenProxy.domain.verifyingContract = tokenProxy.address
@@ -108,7 +109,68 @@ describe('Committable', function () {
                 }
             })
         })
+        context("fund()", function () {
+            it("should fund minted token successfully and show funds amount", async function () {
+                await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                await tokenProxy.fund(tokenId_0, { value: funding })
+                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(funding)
+            })
+            it("should fund unminted token successfully and show funds amount", async function () {
+                await tokenProxy.fund(tokenId_1, { value: funding })
+                expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(funding)
 
+            })
+            it("should fund minted token successfully and emit event", async function () {
+                await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                await expect(tx).to.emit(tokenProxy, 'Fund')
+                    .withArgs(signer.address, tokenId_0, funding);
+            })
+            it("should reflect correct amount after several funds", async function () {
+                await tokenProxy.fund(tokenId_1, { value: funding })
+                await tokenProxy.fund(tokenId_1, { value: funding })
+                expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(funding.add(funding))
+            })
+
+        })
+
+        context.only("claim()", function () {
+            beforeEach('mint tokens with legitimate signature', async function () {
+                /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
+                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                await tx.wait()
+            })
+            it("fund and claim", async function () {
+                // fund
+                let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                await tx.wait()
+                expect(await tokenProxy.fundsOf(tokenId_0)).equal(funding)
+                await expect(tx).to.emit(tokenProxy, 'Fund')
+                    .withArgs(signer.address, tokenId_0, funding);
+                // claim
+                tx = await tokenProxy.claim(tokenId_0)
+                await tx.wait()
+
+                await expect(tx).to.emit(tokenProxy, 'Claim')
+                    .withArgs(signer.address, tokenId_0, funding);
+                expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+            })
+            it("fund several times and claim", async function () {
+                await tokenProxy.fund(tokenId_0, { value: funding })
+                await tokenProxy.fund(tokenId_0, { value: funding })
+                // claim
+                let tx = await tokenProxy.claim(tokenId_0)
+                await tx.wait()
+
+                changeValue = funding.add(funding)
+                await expect(tx).to.emit(tokenProxy, 'Claim')
+                    .withArgs(signer.address, tokenId_0, changeValue);
+                await expect(tx).to.changeEtherBalance(signer, changeValue)
+                expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+
+            })
+
+        })
     })
 
 

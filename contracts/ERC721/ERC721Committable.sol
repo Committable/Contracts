@@ -3,11 +3,12 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+// import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "./ERC721Fundable.sol";
 import "../exchange/TransferProxy.sol";
 import "../Controller.sol";
 
-contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
+contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     Controller internal _controller;
     uint256 internal _totalSupply;
     string public baseURI;
@@ -130,7 +131,7 @@ contract ERC721Committable is ERC721Upgradeable, OwnableUpgradeable {
     function isApprovedForAll(address tokenOwner, address operator)
         public
         view
-        override(ERC721Upgradeable)
+        override(ERC721Fundable)
         returns (bool)
     {
         // Whitelist transferProxy for easy trading.
