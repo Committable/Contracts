@@ -18,7 +18,7 @@ describe('Committable', function () {
             controller = await new Controller().deploy(signer.address)
             tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
             // provider =  waffle.provider;
-            
+
 
             /* caculate tokenProxy.domain seperator and type */
             // tokenProxy.domain.verifyingContract = tokenProxy.address
@@ -109,22 +109,23 @@ describe('Committable', function () {
                 }
             })
         })
-        context("fund()", function () {
+        context.only("fund()", function () {
             it("should fund minted token successfully and show funds amount", async function () {
                 await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-                await tokenProxy.fund(tokenId_0, { value: funding })
+                let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                // state change
                 expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(funding)
+                // value change
+                await expect(tx).to.changeEtherBalance(signer, funding.mul("-1"))
+                await expect(tx).to.changeEtherBalance(tokenProxy, funding)
+                // emit event
+                await expect(tx).to.emit(tokenProxy, 'Fund')
+                    .withArgs(signer.address, tokenId_0, funding);
+
             })
             it("should fund unminted token successfully and show funds amount", async function () {
                 await tokenProxy.fund(tokenId_1, { value: funding })
                 expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(funding)
-
-            })
-            it("should fund minted token successfully and emit event", async function () {
-                await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-                let tx = await tokenProxy.fund(tokenId_0, { value: funding })
-                await expect(tx).to.emit(tokenProxy, 'Fund')
-                    .withArgs(signer.address, tokenId_0, funding);
             })
             it("should reflect correct amount after several funds", async function () {
                 await tokenProxy.fund(tokenId_1, { value: funding })
@@ -135,40 +136,159 @@ describe('Committable', function () {
         })
 
         context.only("claim()", function () {
-            beforeEach('mint tokens with legitimate signature', async function () {
-                /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-                await tx.wait()
-            })
-            it("fund and claim", async function () {
-                // fund
-                let tx = await tokenProxy.fund(tokenId_0, { value: funding })
-                await tx.wait()
-                expect(await tokenProxy.fundsOf(tokenId_0)).equal(funding)
-                await expect(tx).to.emit(tokenProxy, 'Fund')
-                    .withArgs(signer.address, tokenId_0, funding);
-                // claim
-                tx = await tokenProxy.claim(tokenId_0)
-                await tx.wait()
+            context("with minted token", function () {
+                beforeEach('mint tokens with legitimate signature', async function () {
+                    /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
+                    let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                    await tx.wait()
+                })
+                it("fund and claim", async function () {
+                    // fund
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    await expect(tx).to.changeEtherBalance(signer, funding)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, funding.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(signer.address, tokenId_0, funding);
+                })
+                it("fund several times and claim", async function () {
+                    // fund
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    changeValue = funding.add(funding)
+                    await expect(tx).to.changeEtherBalance(signer, changeValue)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, changeValue.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(signer.address, tokenId_0, changeValue);
+                })
+                it("fund, transfer and claim", async function () {
+                    // fund
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    // transfer
+                    tx = await tokenProxy.transferFrom(signer.address, user.address, tokenId_0)
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.connect(user).claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    changeValue = funding
+                    await expect(tx).to.changeEtherBalance(user, changeValue)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, changeValue.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(user.address, tokenId_0, changeValue);
+                })
+                it("fund, claimed by invalid user, transfer and claim", async function () {
+                    // fund
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    // claim by wrong user
+                    try {
+                        tx = await tokenProxy.connect(user).claim(tokenId_0)
+                        await tx.wait()
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721Fundable: only token owner can claim")
+                        expect(await tokenProxy.fundsOf(tokenId_0)).equal(funding)
 
-                await expect(tx).to.emit(tokenProxy, 'Claim')
-                    .withArgs(signer.address, tokenId_0, funding);
-                expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    }
+                    // transfer
+                    tx = await tokenProxy.transferFrom(signer.address, user.address, tokenId_0)
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.connect(user).claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    changeValue = funding
+                    await expect(tx).to.changeEtherBalance(user, changeValue)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, changeValue.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(user.address, tokenId_0, changeValue);
+                })
+                it("fund, claim and claim", async function () {
+                    // fund
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    await expect(tx).to.changeEtherBalance(signer, funding)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, funding.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(signer.address, tokenId_0, funding);
+                    // claim again
+                    try {
+                        tx = await tokenProxy.claim(tokenId_0)
+                        await tx.wait()
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721Fundable: zero balance")
+                    }
+                })
             })
-            it("fund several times and claim", async function () {
-                await tokenProxy.fund(tokenId_0, { value: funding })
-                await tokenProxy.fund(tokenId_0, { value: funding })
-                // claim
-                let tx = await tokenProxy.claim(tokenId_0)
-                await tx.wait()
+            context("with un-minted token", function () {
+                beforeEach("fund", async function () {
+                    let tx = await tokenProxy.fund(tokenId_0, { value: funding })
+                    await tx.wait()
+                })
+                it("should fund successfully", async function () {
+                    expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(funding)
+                })
+                it("clain without minting", async function () {
+                    try {
+                        let tx = await tokenProxy.claim(tokenId_0)
+                        await tx.wait()
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721Fundable: only token owner can claim")
+                    }
+                })
+                it("mint and claim", async function () {
+                    // mint
+                    let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                    await tx.wait()
+                    // claim
+                    tx = await tokenProxy.claim(tokenId_0)
+                    await tx.wait()
+                    // state change
+                    expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
+                    // value change
+                    await expect(tx).to.changeEtherBalance(signer, funding)
+                    await expect(tx).to.changeEtherBalance(tokenProxy, funding.mul("-1"))
+                    // emit event
+                    await expect(tx).to.emit(tokenProxy, 'Claim')
+                        .withArgs(signer.address, tokenId_0, funding);
 
-                changeValue = funding.add(funding)
-                await expect(tx).to.emit(tokenProxy, 'Claim')
-                    .withArgs(signer.address, tokenId_0, changeValue);
-                await expect(tx).to.changeEtherBalance(signer, changeValue)
-                expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
-
+                })
             })
+
+
 
         })
     })

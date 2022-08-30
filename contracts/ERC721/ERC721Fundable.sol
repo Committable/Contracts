@@ -285,6 +285,7 @@ contract ERC721Fundable is
             _ownership[tokenId].owner == msg.sender,
             "ERC721Fundable: only token owner can claim"
         );
+        require(_ownership[tokenId].funds>0,"ERC721Fundable: zero balance");
         uint96 amount = _ownership[tokenId].funds;
         _ownership[tokenId].funds = 0;
         payable(msg.sender).transfer(amount);
