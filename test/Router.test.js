@@ -68,26 +68,54 @@ describe('Committable', function () {
         })
         context.only("with minted token", function () {
             beforeEach("mint tokens", async function () {
-                let tx = await tokenProxy.mint(tokenId_0, signer, signature_0)
+                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0)
                 await tx.wait()
-                tx = await tokenProxy.mint(tokenId_1, signer, signature_1)
+                tx = await tokenProxy.mint(signer.address, tokenId_1, signature_1)
                 await tx.wait()
-                tx = await tokenProxy.mint(tokenId_2, signer, signature_2)
+                tx = await tokenProxy.mint(signer.address, tokenId_2, signature_2)
                 await tx.wait()
-                tx = await tokenProxy.mint(tokenId_3, user, signature_3)
+                tx = await tokenProxy.mint(user.address, tokenId_3, signature_3)
                 await tx.wait()
             })
             it("batch fund", async function () {
-                let tx = await router.batchFund(payroll, {value: ethers.utils.parseEther("10")})
+                let tx = await router.batchFund(payroll, { value: ethers.utils.parseEther("10") })
                 await tx.wait()
-                expext(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
-                expext(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
-                expext(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
-                expext(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
+                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
+                expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
+                expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
+                expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
 
             })
         })
+        context.only("with 1minted token", function () {
+            beforeEach("mint tokens", async function () {
+                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0)
+                await tx.wait()
+                // tx = await tokenProxy.mint(signer.address, tokenId_1, signature_1)
+                // await tx.wait()
+                // tx = await tokenProxy.mint(signer.address, tokenId_2, signature_2)
+                // await tx.wait()
+                // tx = await tokenProxy.mint(user.address, tokenId_3, signature_3)
+                // await tx.wait()
+            })
+            it("batch fund", async function () {
+                let  /* create payroll */
+                payroll = [
+                    {
+                        tokenId: tokenId_0,
+                        reward: ethers.utils.parseEther("1")
+                    },
+                ]
+                
+                let tx = await router.batchFund(payroll, { value: ethers.utils.parseEther("10") })
+                await tx.wait()
+                // expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
+                // expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
+                // expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
+                // expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
 
+            })
+        })
 
     })
 

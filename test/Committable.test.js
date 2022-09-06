@@ -135,7 +135,7 @@ describe('Committable', function () {
 
         })
 
-        context.only("claim()", function () {
+        context("claim()", function () {
             context("with minted token", function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
                     /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
