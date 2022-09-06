@@ -27,6 +27,11 @@ contract ERC721Fundable is
         address owner;
         uint96 funds;
     }
+
+    struct Payroll {
+        uint256 tokenId;
+        uint96 reward;
+    }
     // Token name
     string private _name;
 
@@ -274,6 +279,18 @@ contract ERC721Fundable is
         // overflow when msg.value > 7.9*10e10 ethers, which is impossible considering its totalsupply
         _ownership[tokenId].funds += uint96(msg.value);
         emit Fund(msg.sender, tokenId, uint96(msg.value));
+    }
+    /**
+     * @dev batch fund token
+     */
+    function batchFund(Payroll[] memory payroll) external payable {
+        uint96 sum;
+        for (uint256 i=0;i<payroll.length;i++) {
+            _ownership[payroll[i].tokenId].funds += payroll[i].reward;
+            sum += payroll[i].reward;
+        }
+        require(sum==uint96(msg.value), "ERC721Fundable: insufficient ether");
+
     }
 
     /**

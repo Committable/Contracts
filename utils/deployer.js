@@ -177,14 +177,5 @@ function Vault() {
     }
 }
 
-function Router() {
-    this.deploy = async function(ERC721Committable) {
-        let Router = await ethers.getContractFactory("Router")
-        let router = await Router.deploy(ERC721Committable.address)
-        await router.deployed()
-        return router
-    }
 
-}
-
-module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, PayrollPool, Vault, Router }
+module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, PayrollPool, Vault }
