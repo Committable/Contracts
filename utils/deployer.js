@@ -119,41 +119,7 @@ function Exchange() {
     }
 }
 
-function PayrollPool() {
-    this.deploy = async function (controller) {
-        /* deploy payroll contract */
-        let PayrollPool = await ethers.getContractFactory("PayrollPool");
-        let payrollPool = await PayrollPool.deploy();
-        await payrollPool.deployed();
-        /* deploy payroll proxy contract */
-        let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-        let ABI = ["function initialize(address)"];
-        let iface = new ethers.utils.Interface(ABI);
-        let calldata = iface.encodeFunctionData("initialize", [controller.address]);
-        let payrollProxy = await CommittableProxy.deploy(payrollPool.address, controller.address, calldata);
-        await payrollProxy.deployed();
-        /* attach proxy contract with logic contract abi */
-        payrollProxy = await PayrollPool.attach(payrollProxy.address);
-        payrollProxy.domain =
-        {
-            name: 'PayrollPool',
-            version: '1',
-            chainId: 1337, // hardhat chainid
-            verifyingContract: payrollProxy.address // assign this value accordingly
-        }
-        payrollProxy.types =
-        {
-            Claim: [
-                { name: 'index', type: 'uint256' },
-                { name: 'amount', type: 'uint256' },
-                { name: 'user', type: 'address' },
-            ]
-        }
 
-
-        return payrollProxy
-    }
-}
 
 function Vault() {
     this.deploy = async function (controller, exchange) {
@@ -178,4 +144,4 @@ function Vault() {
 }
 
 
-module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, PayrollPool, Vault }
+module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, Vault }
