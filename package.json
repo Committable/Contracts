@@ -40,7 +40,6 @@
   "dependencies": {
     "ethers-eip712": "^0.2.0",
     "hardhat-tracer": "^1.0.0-alpha.6",
-    "solhint": "^3.3.6",
-    "solidity-coverage": "^0.7.21"
+    "solhint": "^3.3.6"
   }
 }
