@@ -3,7 +3,7 @@ require("hardhat-gas-reporter");
 require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
 //require solidity-coverage
-require('solidity-coverage');
+// require('solidity-coverage');
 const { ethers } = require("ethers");
 const { INFURA_API_KEY, MNEMONIC, COINMARKETCAP_KEY, ETHERSCAN_API, ALCHEMY_RINKEBY_API } = require('./.config.js');
 
