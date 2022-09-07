@@ -2,7 +2,7 @@
 
  ![](https://img.shields.io/badge/npm-8.0.0-blue)  ![](https://img.shields.io/badge/node-16.11.4-green)
 
-**Committable smart contracts enable software developers to tokenize their contributions (the ’commit‘) to open source projects in the form of ERC721 and provide flexible and secure exchange protocols for trading them.**
+**Committable smart contracts enable developers to tokenize their contributions (the ’commit‘) to open source projects and provide flexible and secure protocols for trading and supporting them.**
 
 - Implementation of ERC721Upgradeable with [Transparent proxy pattern](https://blog.openzeppelin.com/the-transparent-proxy-pattern/).
 - Flexible and secure proxy scheme that allows smooth transfer and role-based permissions.
@@ -28,7 +28,7 @@ $ npm run compile
 
 ### Usage
 
-Create following file in the root folder before deployment or running any tests:
+Create following file in the root folder before deployment or running tests:
 
 **.config.js**
 
@@ -61,7 +61,5 @@ Run following commands to deploy on ropsten network, additional interactions wil
 $ npm run ropsten ./scripts/deploy.js
 ```
 
-## Learn more
 
-The guides in [Documents](./docs) will illustrate core rationale of committable contracts and provide examples about how to interact with them.
 

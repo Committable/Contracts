@@ -1,7 +1,7 @@
 
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
-const { Controller, ERC721Committable, Exchange, TransferProxy, PayrollPool, Vault } = require("../utils/deployer.js")
+const { Controller, ERC721Committable, Exchange, TransferProxy, Vault } = require("../utils/deployer.js")
 
 const fs = require("fs")
 
@@ -21,8 +21,6 @@ async function main() {
   console.log("deploying transferProxy...")
   let transferProxy = await new TransferProxy().deploy(controller)
 
-  console.log("deploying payrollPool...")
-  let payrollPool = await new PayrollPool().deploy(controller)
 
   console.log("deploying vault...")
   let vault = await new Vault().deploy(controller, exchange)
@@ -33,7 +31,6 @@ async function main() {
     + "\nERC721Committable: " + erc721Committable.address
     + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address
-    + "\nPayrollPool: " + payrollPool.address
     + "\nVault: " + vault.address
     
   fs.writeFileSync("docs/addressList.txt", content)
