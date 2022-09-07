@@ -5,7 +5,7 @@ require("@nomiclabs/hardhat-etherscan");
 //require solidity-coverage
 // require('solidity-coverage');
 const { ethers } = require("ethers");
-const { INFURA_API_KEY, MNEMONIC, COINMARKETCAP_KEY, ETHERSCAN_API, ALCHEMY_RINKEBY_API } = require('./.config.js');
+// const { INFURA_API_KEY, MNEMONIC, COINMARKETCAP_KEY, ETHERSCAN_API, ALCHEMY_RINKEBY_API } = require('./.secret.js');
 
 
 
@@ -49,36 +49,34 @@ module.exports = {
     ]
   },
   networks: {
-    ropsten: {
-      url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
-      gas: 3000000,
-      gasPrice: 10000000000, // 10gwei
-      accounts: {
-        mnemonic: MNEMONIC
-      }
-      // accounts: ['46a5cc42a64bf582482d92eb1b910919e34ba605d3dd8da6e746843a6180000b']
-    },
-    rinkeby: {
-      url: ALCHEMY_RINKEBY_API,
-      gas: 3000000,
-      gasPrice: 20000000000, // 20gwei
-      accounts: {
-        mnemonic: MNEMONIC
-      }
-      // accounts: ['46a5cc42a64bf582482d92eb1b910919e34ba605d3dd8da6e746843a6180000b']
-    },
+    // ropsten: {
+    //   url: `https://ropsten.infura.io/v3/${INFURA_API_KEY}`,
+    //   gas: 3000000,
+    //   gasPrice: 10000000000, // 10gwei
+    //   accounts: {
+    //     mnemonic: MNEMONIC
+    //   }
+    // },
+    // rinkeby: {
+    //   url: ALCHEMY_RINKEBY_API,
+    //   gas: 3000000,
+    //   gasPrice: 20000000000, // 20gwei
+    //   accounts: {
+    //     mnemonic: MNEMONIC
+    //   }
+    // },
     hardhat: {
       chainId: 1337
     },
   },
-  etherscan: {
-    // Your API key for Etherscan
-    // Obtain one at https://etherscan.io/
-    apiKey: ETHERSCAN_API
-  },
+  // etherscan: {
+  //   // Your API key for Etherscan
+  //   // Obtain one at https://etherscan.io/
+  //   apiKey: ETHERSCAN_API
+  // },
   gasReporter: {
     currency: 'USD',
-    coinmarketcap: COINMARKETCAP_KEY,
+    // coinmarketcap: COINMARKETCAP_KEY,
   },
 
 };

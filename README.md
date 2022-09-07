@@ -30,17 +30,13 @@ $ npm run compile
 
 Create following file in the root folder before deployment or running tests:
 
-**.config.js**
+**.secret.js**
 
 ```javascript
-const NAME = "<your_token_name>";
-const SYMBOL = "<your_token_symbol>";
-const INFURA_API_KEY = '<your_infura_api_key>'; 
-const COINMARKETCAP_KEY = '<your coinmarketcap api>' // use for gas reporter
+const ALCHEMY_RINKEBY_API = '<your alchemy api url>'
 const ROPSTEN_MNEMONIC = '<your mnemonic>'; // use wallet for test-net only
 
-module.exports = {NAME, SYMBOL, INFURA_API_KEY, ROPSTEN_MNEMONIC, COINMARKETCAP_KEY};
-
+module.exports = {ALCHEMY_RINKEBY_API, ROPSTEN_MNEMONIC};
 ```
 
 You can customize network configurations in **hardhat.config.js**, by default we use infura as the provider to communicate with Ethereum blockchain.
@@ -55,10 +51,10 @@ $ npm run test
 
 ### Deployment
 
-Run following commands to deploy on ropsten network, additional interactions will complete initial settings
+Run following commands to deploy on rinkeby network, additional interactions will complete initial settings
 
 ```bash
-$ npm run ropsten ./scripts/deploy.js
+$ npm run rinkeby ./scripts/deploy.js
 ```
 
 
