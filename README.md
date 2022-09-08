@@ -28,18 +28,16 @@ $ npm run compile
 
 ### Usage
 
-Create following file in the root folder before deployment or running tests:
+Create following file in the root folder before deployment:
 
-**.secret.js**
+**.**env
 
 ```javascript
-const ALCHEMY_RINKEBY_API = '<your alchemy api url>'
-const ROPSTEN_MNEMONIC = '<your mnemonic>'; // use wallet for test-net only
-
-module.exports = {ALCHEMY_RINKEBY_API, ROPSTEN_MNEMONIC};
+ALCHEMY_RINKEBY_URL = '<your alchemy api url>'
+MNEMONIC = '<your mnemonic>'
 ```
 
-You can customize network configurations in **hardhat.config.js**, by default we use infura as the provider to communicate with Ethereum blockchain.
+You can customize network configurations in **hardhat.config.js**, by default we use alchemy as the provider to communicate with Ethereum blockchain.
 
 ### Test
 
