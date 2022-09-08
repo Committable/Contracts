@@ -30,7 +30,7 @@ $ npm run compile
 
 Create following file in the root folder before deployment:
 
-**.**env
+**.env**
 
 ```javascript
 ALCHEMY_RINKEBY_URL = '<your alchemy api url>'
