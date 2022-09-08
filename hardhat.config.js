@@ -2,25 +2,8 @@ require("@nomiclabs/hardhat-waffle");
 require("hardhat-gas-reporter");
 require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
-//require solidity-coverage
-// require('solidity-coverage');
 const { ethers } = require("ethers");
-const arguments = require("./arguments");
-// const { INFURA_API_KEY, MNEMONIC, COINMARKETCAP_KEY, ETHERSCAN_API, ALCHEMY_RINKEBY_API } = require('./.secret.js');
-
 require('dotenv').config()
-// const argv = require('yargs/yargs')()
-//   .env('')
-//   .options({
-//     alchemy_rinkeby_url: {
-//       alias: "alchemy_url",
-//       type: "string"
-//     },
-//     mnemonic: {
-//       alias: "mnemonic",
-//       type: "string"
-//     }
-//   })
 
 
 
