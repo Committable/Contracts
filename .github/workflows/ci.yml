@@ -27,4 +27,10 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm install
+    - name: 'Create env file'
+        run: |
+          touch .env
+          echo ALCHEMY_RINKEBY_URL=${{ secrets.ALCHEMY_RINKEBY_URL }} >> .env
+          echo MNEMONIC=${{ secrets.MNEMONIC }} >> .env
+          cat .env
     - run: npm run test
