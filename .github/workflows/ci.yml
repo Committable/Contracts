@@ -30,7 +30,8 @@ jobs:
       run: |
           touch .env
           echo ALCHEMY_RINKEBY_URL=${{ secrets.ALCHEMY_RINKEBY_URL }} >> .env
-          echo MNEMONIC=${{ secrets.MNEMONIC }} >> .env
+          echo PRIVATE_KEY=${{ secrets.PRIVATE_KEY }} >> .env
+          echo COINMARKETCAP_KEY=${{ secrets.COINMARKETCAP_KEY }} >> .env
           cat .env
     - run: npm install
     - run: npm run test

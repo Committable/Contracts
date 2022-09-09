@@ -34,7 +34,7 @@ Create following file in the root folder before deployment:
 
 ```javascript
 ALCHEMY_RINKEBY_URL = '<your alchemy api url>'
-MNEMONIC = '<your mnemonic>'
+PRIVATE_KEY = '<your privatekey>'
 ```
 
 You can customize network configurations in **hardhat.config.js**, by default we use alchemy as the provider to communicate with Ethereum blockchain.

@@ -61,9 +61,8 @@ module.exports = {
       url: process.env.ALCHEMY_RINKEBY_URL,
       gas: 3000000,
       gasPrice: 20000000000, // 20gwei
-      accounts: {
-        mnemonic: process.env.MNEMONIC
-      }
+      accounts: [process.env.PRIVATE_KEY]
+      
     },
     hardhat: {
       chainId: 1337
@@ -76,7 +75,7 @@ module.exports = {
   // },
   gasReporter: {
     currency: 'USD',
-    // coinmarketcap: COINMARKETCAP_KEY,
+    coinmarketcap: process.env.COINMARKETCAP_KEY,
   },
 
 };
