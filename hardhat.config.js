@@ -75,7 +75,7 @@ module.exports = {
   // },
   gasReporter: {
     currency: 'USD',
-    // coinmarketcap: COINMARKETCAP_KEY,
+    coinmarketcap: process.env.COINMARKETCAP_KEY,
   },
 
 };
