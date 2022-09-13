@@ -80,7 +80,7 @@ contract ERC721Fundable is
     /**
      * @dev Emitted when token is funded
      */
-    event Fund(address indexed sponsor, uint256 indexed tokenId, uint96 amount);
+    event Fund(address indexed sponsor, uint96 amount);
     /**
      * @dev Emitted when fund is claimed
      */
@@ -273,24 +273,17 @@ contract ERC721Fundable is
     }
 
     /**
-     * @dev Fund token
-     */
-    function fund(uint256 tokenId) external payable {
-        // overflow when msg.value > 7.9*10e10 ethers, which is impossible considering its totalsupply
-        _ownership[tokenId].funds += uint96(msg.value);
-        emit Fund(msg.sender, tokenId, uint96(msg.value));
-    }
-    /**
      * @dev batch fund token
      */
-    function batchFund(Payroll[] memory payroll) external payable {
+    function fund(Payroll[] memory payroll) external payable {
         uint96 sum;
         for (uint256 i=0;i<payroll.length;i++) {
+        // overflow when msg.value > 7.9*10e10 ethers, which is impossible considering its totalsupply
             _ownership[payroll[i].tokenId].funds += payroll[i].reward;
             sum += payroll[i].reward;
         }
         require(sum==uint96(msg.value), "ERC721Fundable: insufficient ether");
-
+        emit Fund(msg.sender, uint96(msg.value));
     }
 
     /**
