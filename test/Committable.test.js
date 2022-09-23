@@ -9,7 +9,7 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
 const funding = ethers.utils.parseEther("1")
 
-describe('Committable', function () {
+describe.only('Committable', function () {
     context('with deployed contracts', function () {
         beforeEach('deploy contracs', async function () {
             /* get signers */
@@ -364,9 +364,9 @@ describe('Committable', function () {
                     // mint
                     let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
                     await tx.wait()
-                    // claim
-                    tx = await tokenProxy.claim(tokenId_0)
-                    await tx.wait()
+                    // // claim
+                    // tx = await tokenProxy.claim(tokenId_0)
+                    // await tx.wait()
                     // state change
                     expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
                     // value change

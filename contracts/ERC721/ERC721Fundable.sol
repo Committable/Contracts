@@ -289,7 +289,7 @@ contract ERC721Fundable is
     /**
      * @dev claim fund
      */
-    function claim(uint256 tokenId) external {
+    function claim(uint256 tokenId) public {
         require(
             _ownership[tokenId].owner == msg.sender,
             "ERC721Fundable: only token owner can claim"
@@ -304,7 +304,7 @@ contract ERC721Fundable is
     /**
      * @dev return token fund
      */
-    function fundsOf(uint256 tokenId) external view returns(uint96){
+    function fundsOf(uint256 tokenId) public view returns(uint96){
         return _ownership[tokenId].funds;
     }
 

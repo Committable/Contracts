@@ -60,7 +60,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Mint a token to address with signature check
+     * @dev Mint a token to address with signature check, claim rewards if appliable when creator call this function
      */
     function mint(
         address creator,
@@ -69,6 +69,10 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     ) public virtual {
         _verify(creator, tokenId, signature);
         _mint(creator, tokenId);
+        // claim reward if 1) msg.sender is token owner 2) have funds
+        if (msg.sender == creator && fundsOf(tokenId)>0) {
+            claim(tokenId);
+        }
     }
 
     /**
@@ -158,6 +162,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
             }
         }
     }
+
 
     uint256[46] private __gap;
 }
