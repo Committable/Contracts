@@ -28,10 +28,6 @@ contract ERC721Fundable is
         uint96 funds;
     }
 
-    struct Payroll {
-        uint256 tokenId;
-        uint96 reward;
-    }
     // Token name
     string private _name;
 
@@ -78,9 +74,13 @@ contract ERC721Fundable is
     );
 
     /**
-     * @dev Emitted when token is funded
+     * @dev Emitted when payroll is executed
      */
-    event Fund(address indexed sponsor, uint96 amount);
+    event Payroll(
+        address indexed sponsor,
+        uint96 amount,
+        bytes32 indexed payrollHash
+    );
     /**
      * @dev Emitted when fund is claimed
      */
@@ -273,17 +273,41 @@ contract ERC721Fundable is
     }
 
     /**
-     * @dev batch fund token
+     * @dev distribute ethers to tokens proportionally
      */
-    function fund(Payroll[] memory payroll) external payable {
-        uint96 sum;
-        for (uint256 i=0;i<payroll.length;i++) {
-        // overflow when msg.value > 7.9*10e10 ethers, which is impossible considering its totalsupply
-            _ownership[payroll[i].tokenId].funds += payroll[i].reward;
-            sum += payroll[i].reward;
+    function pay(uint256[] memory tokenIds, uint256[] memory scores)
+        external
+        payable
+    {
+        require(msg.value > 0, "ERC721Fundable: zero value not allowed");
+        // check and hash payroll structure
+        bytes32 payrollHash = hashPayroll(tokenIds, scores);
+        uint256 totalScore;
+        for (uint256 i = 0; i < scores.length; i++) {
+            totalScore = totalScore + scores[i];
         }
-        require(sum==uint96(msg.value), "ERC721Fundable: insufficient ether");
-        emit Fund(msg.sender, uint96(msg.value));
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            // overflow when msg.value > 7.9*10e10 ethers, which is impossible considering its totalsupply
+            uint96 payroll = uint96((msg.value * scores[i]) / totalScore);
+            _ownership[tokenIds[i]].funds += payroll;
+        }
+        // require(sum == uint96(msg.value), "ERC721Fundable: insufficient ether");
+        emit Payroll(msg.sender, uint96(msg.value), payrollHash);
+    }
+
+    /**
+     * @dev generate hash value for different payroll 
+     */
+    function hashPayroll(uint256[] memory tokenIds, uint256[] memory scores)
+        public
+        pure
+        returns (bytes32)
+    {
+        require(
+            tokenIds.length == scores.length,
+            "ERC721Fundable: invalid payroll pattern"
+        );
+        return keccak256(abi.encode(tokenIds, scores));
     }
 
     /**
@@ -294,7 +318,7 @@ contract ERC721Fundable is
             _ownership[tokenId].owner == msg.sender,
             "ERC721Fundable: only token owner can claim"
         );
-        require(_ownership[tokenId].funds>0,"ERC721Fundable: zero balance");
+        require(_ownership[tokenId].funds > 0, "ERC721Fundable: zero balance");
         uint96 amount = _ownership[tokenId].funds;
         _ownership[tokenId].funds = 0;
         payable(msg.sender).transfer(amount);
@@ -304,7 +328,7 @@ contract ERC721Fundable is
     /**
      * @dev return token fund
      */
-    function fundsOf(uint256 tokenId) public view returns(uint96){
+    function fundsOf(uint256 tokenId) public view returns (uint96) {
         return _ownership[tokenId].funds;
     }
 
