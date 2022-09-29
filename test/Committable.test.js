@@ -130,7 +130,7 @@ describe.only('Committable', function () {
                 }
             })
         })
-        context("fund()", function () {
+        context("pay()", function () {
             beforeEach("mint some tokens", async function () {
                 let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0)
                 await tx.wait()
@@ -142,38 +142,21 @@ describe.only('Committable', function () {
                 await tx.wait()
             })
             it("batch fund 4 minted", async function () {
-                let tx = await tokenProxy.fund(payroll, { value: ethers.utils.parseEther("10") })
+                let tx = await tokenProxy.pay([tokenId_0, tokenId_1, tokenId_2, tokenId_3], [1,2,3,4], { value: ethers.utils.parseEther("10") })
                 await tx.wait()
                 expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
                 expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
                 expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
                 expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
-                 // emit event
-                 await expect(tx).to.emit(tokenProxy, 'Fund')
-                 .withArgs(signer.address, ethers.utils.parseEther("10"));
+                // emit event
+                let hashValue = await tokenProxy.hashPayroll([tokenId_0, tokenId_1, tokenId_2, tokenId_3], [1,2,3,4])
+                await expect(tx).to.emit(tokenProxy, 'Payroll')
+                    .withArgs(signer.address, ethers.utils.parseEther("10"), hashValue);
 
             })
             it("batch fund 4 un-minted", async function () {
-                /* create payroll */
-                payroll = [
-                    {
-                        tokenId: 1,
-                        reward: ethers.utils.parseEther("1")
-                    },
-                    {
-                        tokenId: 2,
-                        reward: ethers.utils.parseEther("2")
-                    },
-                    {
-                        tokenId: 3,
-                        reward: ethers.utils.parseEther("3")
-                    },
-                    {
-                        tokenId: 4,
-                        reward: ethers.utils.parseEther("4")
-                    },
-                ]
-                let tx = await tokenProxy.fund(payroll, { value: ethers.utils.parseEther("10") })
+             
+                let tx = await tokenProxy.pay([1, 2, 3, 4], [1,2,3,4], { value: ethers.utils.parseEther("10") })
                 await tx.wait()
                 expect(await tokenProxy.fundsOf(1)).to.equal(ethers.utils.parseEther("1"))
                 expect(await tokenProxy.fundsOf(2)).to.equal(ethers.utils.parseEther("2"))
@@ -191,15 +174,9 @@ describe.only('Committable', function () {
                     await tx.wait()
                 })
                 it("fund and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+                  
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -222,9 +199,9 @@ describe.only('Committable', function () {
                         }
                     ]
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
-                    tx = await tokenProxy.fund(payroll, { value: funding })
+                    tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -240,15 +217,9 @@ describe.only('Committable', function () {
                         .withArgs(signer.address, tokenId_0, changeValue);
                 })
                 it("fund, transfer and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+                   
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                     // transfer
                     tx = await tokenProxy.transferFrom(signer.address, user.address, tokenId_0)
@@ -267,15 +238,9 @@ describe.only('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claimed by invalid user, transfer and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+                   
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                     // claim by wrong user
                     try {
@@ -304,15 +269,9 @@ describe.only('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claim and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+                   
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -337,15 +296,9 @@ describe.only('Committable', function () {
             })
             context("with un-minted token", function () {
                 beforeEach("fund", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+                    
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
                     await tx.wait()
                 })
                 it("should fund successfully", async function () {

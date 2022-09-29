@@ -273,7 +273,7 @@ contract ERC721Fundable is
     }
 
     /**
-     * @dev distribute ethers to tokens proportionally
+     * @dev distribute ethers based on score proportion
      */
     function pay(uint256[] memory tokenIds, uint256[] memory scores)
         external
@@ -291,7 +291,6 @@ contract ERC721Fundable is
             uint96 payroll = uint96((msg.value * scores[i]) / totalScore);
             _ownership[tokenIds[i]].funds += payroll;
         }
-        // require(sum == uint96(msg.value), "ERC721Fundable: insufficient ether");
         emit Payroll(msg.sender, uint96(msg.value), payrollHash);
     }
 
