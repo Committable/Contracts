@@ -279,7 +279,7 @@ contract ERC721Fundable is
         external
         payable
     {
-        require(msg.value > 0, "ERC721Fundable: zero value not allowed");
+        require(msg.value > 0, "ERC721Fundable: zero payment not allowed");
         // check and hash payroll structure
         bytes32 payrollHash = hashPayroll(tokenIds, scores);
         uint256 totalScore;
