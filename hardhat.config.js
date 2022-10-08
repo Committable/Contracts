@@ -64,6 +64,13 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY]
       
     },
+    goerli: {
+      url: process.env.ALCHEMY_GOERLI_URL,
+      gas: 3000000,
+      // gasPrice: 20000000000, // 20gwei
+      accounts: [process.env.PRIVATE_KEY]
+      
+    },
     hardhat: {
       chainId: 1337
     },

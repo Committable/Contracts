@@ -9,7 +9,7 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
 const funding = ethers.utils.parseEther("1")
 
-describe.only('Committable', function () {
+describe('Committable', function () {
     context('with deployed contracts', function () {
         beforeEach('deploy contracs', async function () {
             /* get signers */
@@ -142,16 +142,28 @@ describe.only('Committable', function () {
                 await tx.wait()
             })
             it("batch fund 4 minted", async function () {
-                let tx = await tokenProxy.pay([tokenId_0, tokenId_1, tokenId_2, tokenId_3], [1,2,3,4], { value: ethers.utils.parseEther("10") })
+                let scores = []
+                let totalScore = 0
+                let funding = ethers.utils.parseEther("10")
+                for (let i=0;i<4;i++){
+                    scores[i] = Math.floor((Math.random()*10000))
+                    // console.log(scores[i])
+                    totalScore += scores[i]
+                }
+                let tx = await tokenProxy.pay([tokenId_0, tokenId_1, tokenId_2, tokenId_3], scores, { value: funding })
                 await tx.wait()
-                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
-                expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
-                expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
-                expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
+                let expectedVal = []
+                expectedVal[0] = funding.mul(ethers.BigNumber.from(scores[0]))
+                console.log(totalScore)
+                expectedVal[0] = expectedVal[0].div(ethers.BigNumber.from(totalScore))
+                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(expectedVal[0])
+                // expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(funding*scores[1]/totalScore)
+                // expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(funding*scores[2]/totalScore)
+                // expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(funding*scores[3]/totalScore)
                 // emit event
-                let hashValue = await tokenProxy.hashPayroll([tokenId_0, tokenId_1, tokenId_2, tokenId_3], [1,2,3,4])
+                let hashValue = await tokenProxy.hashPayroll([tokenId_0, tokenId_1, tokenId_2, tokenId_3], scores)
                 await expect(tx).to.emit(tokenProxy, 'Payroll')
-                    .withArgs(signer.address, ethers.utils.parseEther("10"), hashValue);
+                    .withArgs(signer.address, funding, hashValue);
 
             })
             it("batch fund 4 un-minted", async function () {
