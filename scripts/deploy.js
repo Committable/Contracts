@@ -1,6 +1,6 @@
 
 const { ethers } = require("hardhat");
-const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
+const { NAME, SYMBOL, SIGNER_ADDRESS, BASE_URI} = require('../.config.js');
 const { Controller, ERC721Committable, Exchange, TransferProxy, Vault } = require("../utils/deployer.js")
 
 const fs = require("fs")
@@ -13,7 +13,7 @@ async function main() {
   let controller = await new Controller().deploy(SIGNER_ADDRESS)
 
   console.log("deploying erc721Committable...")
-  let erc721Committable = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
+  let erc721Committable = await new ERC721Committable(BASE_URI).deploy(NAME, SYMBOL, controller)
 
   console.log("deploying exchange...")
   let exchange = await new Exchange().deploy(controller);
