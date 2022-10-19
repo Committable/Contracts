@@ -42,8 +42,11 @@ function ERC721Committable(BASE_URI) {
             ]
         }
 
-        let tx = await tokenProxy.changeBaseURI(BASE_URI)
-        await tx
+        if (BASE_URI != null) {
+            let tx = await tokenProxy.changeBaseURI(BASE_URI)
+            await tx
+        }
+
         return tokenProxy
     }
 }
