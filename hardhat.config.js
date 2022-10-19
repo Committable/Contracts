@@ -1,5 +1,7 @@
 require("@nomiclabs/hardhat-waffle");
+
 require("hardhat-gas-reporter");
+
 require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
 const { ethers } = require("ethers");
@@ -75,14 +77,15 @@ module.exports = {
       chainId: 1337
     },
   },
-  // etherscan: {
-  //   // Your API key for Etherscan
-  //   // Obtain one at https://etherscan.io/
-  //   apiKey: ETHERSCAN_API
-  // },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: process.env.ETHERSCAN_API
+  },
   gasReporter: {
     currency: 'USD',
     coinmarketcap: process.env.COINMARKETCAP_KEY,
+    enabled: true,
   },
 
 };

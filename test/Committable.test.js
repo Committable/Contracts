@@ -130,50 +130,62 @@ describe('Committable', function () {
                 }
             })
         })
-        context("pay()", function () {
-            beforeEach("mint some tokens", async function () {
-                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0)
+        context.only("pay()", function () {
+
+            it("batch fund randomNums minted", async function () {
+                let nums = Math.floor((Math.random() * 100)) + 1
+                let tokenIds = []
+                let scores = []
+                let totalScore = 0
+                let signatures = []
+                let funding = ethers.utils.parseEther("10")
+                for (let i = 0; i < nums; i++) {
+                    tokenIds[i] = i
+                    scores[i] = Math.floor((Math.random() * 10000))
+                    totalScore += scores[i]
+                    // mint it
+                    signatures[i] = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, {
+                        creator: signer.address,
+                        tokenId: tokenIds[i],
+                    });
+                    let tx = await tokenProxy.mint(signer.address, tokenIds[i], signatures[i])
+                    await tx.wait()
+                }
+                let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
                 await tx.wait()
-                tx = await tokenProxy.mint(signer.address, tokenId_1, signature_1)
-                await tx.wait()
-                tx = await tokenProxy.mint(signer.address, tokenId_2, signature_2)
-                await tx.wait()
-                tx = await tokenProxy.mint(user.address, tokenId_3, signature_3)
-                await tx.wait()
+                let expectedVal = []
+                for (let i = 0; i < nums; i++) {
+                    expectedVal[i] = (funding.mul(ethers.BigNumber.from(scores[i]))).div(ethers.BigNumber.from(totalScore))
+                    expect(await tokenProxy.fundsOf(tokenIds[i])).to.equal(expectedVal[i])
+                }
+                console.log(expectedVal.length)
+
+
             })
-            it("batch fund 4 minted", async function () {
+
+
+
+
+            it("batch fund randomNums un-minted", async function () {
+                let nums = Math.floor((Math.random() * 100)) + 1
+                let tokenIds = []
                 let scores = []
                 let totalScore = 0
                 let funding = ethers.utils.parseEther("10")
-                for (let i=0;i<4;i++){
-                    scores[i] = Math.floor((Math.random()*10000))
-                    // console.log(scores[i])
+                for (let i = 0; i < nums; i++) {
+                    tokenIds[i] = i
+                    scores[i] = Math.floor((Math.random() * 10000))
                     totalScore += scores[i]
                 }
-                let tx = await tokenProxy.pay([tokenId_0, tokenId_1, tokenId_2, tokenId_3], scores, { value: funding })
+                let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
                 await tx.wait()
                 let expectedVal = []
-                expectedVal[0] = funding.mul(ethers.BigNumber.from(scores[0]))
-                console.log(totalScore)
-                expectedVal[0] = expectedVal[0].div(ethers.BigNumber.from(totalScore))
-                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(expectedVal[0])
-                // expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(funding*scores[1]/totalScore)
-                // expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(funding*scores[2]/totalScore)
-                // expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(funding*scores[3]/totalScore)
-                // emit event
-                let hashValue = await tokenProxy.hashPayroll([tokenId_0, tokenId_1, tokenId_2, tokenId_3], scores)
-                await expect(tx).to.emit(tokenProxy, 'Payroll')
-                    .withArgs(signer.address, funding, hashValue);
+                for (let i = 0; i < nums; i++) {
+                    expectedVal[i] = (funding.mul(ethers.BigNumber.from(scores[i]))).div(ethers.BigNumber.from(totalScore))
+                    expect(await tokenProxy.fundsOf(tokenIds[i])).to.equal(expectedVal[i])
+                }
+                console.log(expectedVal.length)
 
-            })
-            it("batch fund 4 un-minted", async function () {
-             
-                let tx = await tokenProxy.pay([1, 2, 3, 4], [1,2,3,4], { value: ethers.utils.parseEther("10") })
-                await tx.wait()
-                expect(await tokenProxy.fundsOf(1)).to.equal(ethers.utils.parseEther("1"))
-                expect(await tokenProxy.fundsOf(2)).to.equal(ethers.utils.parseEther("2"))
-                expect(await tokenProxy.fundsOf(3)).to.equal(ethers.utils.parseEther("3"))
-                expect(await tokenProxy.fundsOf(4)).to.equal(ethers.utils.parseEther("4"))
             })
 
         })
@@ -186,9 +198,9 @@ describe('Committable', function () {
                     await tx.wait()
                 })
                 it("fund and claim", async function () {
-                  
+
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -211,9 +223,9 @@ describe('Committable', function () {
                         }
                     ]
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
-                    tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -229,9 +241,9 @@ describe('Committable', function () {
                         .withArgs(signer.address, tokenId_0, changeValue);
                 })
                 it("fund, transfer and claim", async function () {
-                   
+
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // transfer
                     tx = await tokenProxy.transferFrom(signer.address, user.address, tokenId_0)
@@ -250,9 +262,9 @@ describe('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claimed by invalid user, transfer and claim", async function () {
-                   
+
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim by wrong user
                     try {
@@ -281,9 +293,9 @@ describe('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claim and claim", async function () {
-                   
+
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -308,9 +320,9 @@ describe('Committable', function () {
             })
             context("with un-minted token", function () {
                 beforeEach("fund", async function () {
-                    
+
                     // fund
-                    let tx = await tokenProxy.pay([tokenId_0],[funding], { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                 })
                 it("should fund successfully", async function () {
