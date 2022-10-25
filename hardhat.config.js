@@ -80,7 +80,25 @@ module.exports = {
   etherscan: {
     // Your API key for Etherscan
     // Obtain one at https://etherscan.io/
-    apiKey: process.env.ETHERSCAN_API
+    apiKey: process.env.ETHERSCAN_API,
+    customChains: [  // <========================= custom chains config here
+    {
+      network: 'rinkeby',
+      chainId: 4,
+      urls: {
+        apiURL: 'http://api-rinkeby.etherscan.io/api',  // https => http
+        browserURL: 'https://rinkeby.etherscan.io',
+      },
+    },
+    {
+      network: 'goerli',
+      chainId: 5,
+      urls: {
+        apiURL: 'http://api-goerli.etherscan.io/api',  // https => http
+        browserURL: 'https://goerli.etherscan.io',
+      },
+    },
+  ],
   },
   gasReporter: {
     currency: 'USD',

@@ -130,7 +130,7 @@ describe('Committable', function () {
                 }
             })
         })
-        context.only("pay()", function () {
+        context("pay()", function () {
 
             it("batch fund randomNums minted", async function () {
                 let nums = Math.floor((Math.random() * 100)) + 1
