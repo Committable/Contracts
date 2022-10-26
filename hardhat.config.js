@@ -6,7 +6,7 @@ require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
 const { ethers } = require("ethers");
 require('dotenv').config()
-
+require("solidity-coverage");
 
 
 

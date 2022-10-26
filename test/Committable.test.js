@@ -130,7 +130,7 @@ describe('Committable', function () {
                 }
             })
         })
-        context("pay()", function () {
+        context.only("pay()", function () {
 
             it("batch fund randomNums minted", async function () {
                 let nums = Math.floor((Math.random() * 100)) + 1
@@ -163,9 +163,6 @@ describe('Committable', function () {
 
             })
 
-
-
-
             it("batch fund randomNums un-minted", async function () {
                 let nums = Math.floor((Math.random() * 100)) + 1
                 let tokenIds = []
@@ -186,6 +183,20 @@ describe('Committable', function () {
                 }
                 console.log(expectedVal.length)
 
+            })
+
+            it("should revert for invalid payroll pattern", async function(){
+                let tokenIds = [1]
+                let scores = [100, 200]
+                let funding = ethers.utils.parseEther("10")
+
+                try {
+                    let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
+                    await tx.wait()
+                    throw null
+                } catch(err){
+                    expect(err.message).to.include("ERC721Fundable: invalid payroll pattern")
+                }
             })
 
         })
