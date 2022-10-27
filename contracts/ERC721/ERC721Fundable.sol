@@ -10,11 +10,6 @@ import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-/**
- * @dev Implementation of https://eips.ethereum.org/EIPS/eip-721[ERC721] Non-Fungible Token Standard, including
- * the Metadata extension, but not including the Enumerable extension, which is available separately as
- * {ERC721Enumerable}.
- */
 contract ERC721Fundable is
     Initializable,
     ContextUpgradeable,
@@ -295,7 +290,7 @@ contract ERC721Fundable is
     }
 
     /**
-     * @dev generate hash value for different payroll 
+     * @dev generate hash value for different payroll
      */
     function hashPayroll(uint256[] memory tokenIds, uint256[] memory scores)
         public

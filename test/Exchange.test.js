@@ -930,6 +930,7 @@ describe('Exchange', function () {
           await tx.wait();
         })
         context('when buy order value is modified', function () {
+       
           it('revert with ETH order', async function () {
             try {
               buy_order_0.value = '100000';
@@ -1018,6 +1019,28 @@ describe('Exchange', function () {
           })
         })
         context('when called by unexpected user', function () {
+          it('revert when exchange not approved', async function () {
+            let tx = await controller.approveOrCancel(exchange.address, false)
+            await tx.wait()
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('TransferProxy: caller not registered');
+            }
+          })
+          it('revert when transferProxy not registerred', async function () {
+            let tx = await controller.registerTransferProxy(ZERO_ADDRESS)
+            await tx.wait()
+            try {
+              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+              await tx.wait();
+              throw null;
+            } catch (err) {
+              expect(err.message).to.include('reverted');
+            }
+          })
           it('revert with buyer call erc20 standard order', async function () {
             try {
               await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);

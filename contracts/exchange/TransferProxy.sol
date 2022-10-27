@@ -17,28 +17,22 @@ contract TransferProxy {
     /**
      * @dev forward calldata on behalf of token owner
      */
-    function proxy(address target, bytes memory data)
-        external
-        returns (bool)
-    {
+    function proxy(address target, bytes memory data) external {
         require(
-            controller.isApproved(msg.sender) == true,
+            controller.isApproved(msg.sender),
             "TransferProxy: caller not registered"
         );
         (bool success, bytes memory returndata) = target.call(data);
-        if (success) {
-            return success;
-        } else {
+        if (!success) {
             // Look for revert reason and bubble it up if present
             if (returndata.length > 0) {
                 // The easiest way to bubble the revert reason is using memory via assembly
-
                 assembly {
                     let returndata_size := mload(returndata)
                     revert(add(32, returndata), returndata_size)
                 }
             } else {
-                revert("low level call failed");
+                revert("TransferProxy: low level call failed");
             }
         }
     }

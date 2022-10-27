@@ -67,7 +67,18 @@ describe('Committable', function () {
                 },
             ]
         })
+        context("initialzie()", function () {
+            it("cannot initialize twice", async function () {
+                try {
+                    let tx= await tokenProxy.initialize("name","symbol", controller.address)
+                    await tx.wait()
+                    throw null
+                } catch(err) {
+                    expect(err.message).to.include("contract is already initialized")
+                }
+            })
 
+        })
         context("[mint] function test", function () {
             context('with legitimate minting signature', function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
