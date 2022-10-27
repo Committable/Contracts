@@ -84,6 +84,28 @@ describe('Committable', function () {
                 it("should have correct totalSupply", async function () {
                     expect(await tokenProxy.totalSupply()).to.equal(4)
                 })
+                it("should revert for repeated tokenId ", async function () {
+                    try {
+                        await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721: token already minted")
+                    }
+                })
+                it("should revert for minting to address0 ", async function () {
+                    let mint_zero = {
+                        creator: ZERO_ADDRESS,
+                        tokenId: 10000,
+                    }
+                    signature_zero = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_zero);
+
+                    try {
+                        await tokenProxy.mint(ZERO_ADDRESS, 10000, signature_zero);
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721: mint to the zero address")
+                    }
+                })
 
             })
 
@@ -130,7 +152,7 @@ describe('Committable', function () {
                 }
             })
         })
-        context.only("pay()", function () {
+        context("pay()", function () {
 
             it("batch fund randomNums minted", async function () {
                 let nums = Math.floor((Math.random() * 100)) + 1
@@ -185,7 +207,7 @@ describe('Committable', function () {
 
             })
 
-            it("should revert for invalid payroll pattern", async function(){
+            it("should revert for invalid payroll pattern", async function () {
                 let tokenIds = [1]
                 let scores = [100, 200]
                 let funding = ethers.utils.parseEther("10")
@@ -194,8 +216,21 @@ describe('Committable', function () {
                     let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
                     await tx.wait()
                     throw null
-                } catch(err){
+                } catch (err) {
                     expect(err.message).to.include("ERC721Fundable: invalid payroll pattern")
+                }
+            })
+
+            it("should revert for zero balance", async function () {
+                let tokenIds = [1, 2]
+                let scores = [100, 200]
+
+                try {
+                    let tx = await tokenProxy.pay(tokenIds, scores)
+                    await tx.wait()
+                    throw null
+                } catch (err) {
+                    expect(err.message).to.include("ERC721Fundable: zero payment not allowed")
                 }
             })
 
