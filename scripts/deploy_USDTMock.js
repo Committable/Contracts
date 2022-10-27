@@ -18,12 +18,12 @@ async function main() {
 
   // We get the contract to deploy
   /* deploy controller contract */
-  // console.log('waiting for deployment: USDTMock...')
-  // let USDTMock = await ethers.getContractFactory("USDTMock");
-  // usdt = await USDTMock.deploy("USDTMock", "USDT-M");
-  // await usdt.deployed();
-  // console.log("USDTMock deployed to:", usdt.address);
-  let address = "0xD2856Dfc2948711B1659FaaBcb200e0717470E2A"
+  console.log('waiting for deployment: USDTMock...')
+  let USDTMock = await ethers.getContractFactory("USDTMock");
+  usdt = await USDTMock.deploy("USDTMock", "USDT-M");
+  await usdt.deployed();
+  console.log("USDTMock deployed to:", usdt.address);
+  let address = usdt.address
   let content = "\n******Deploying at: " + Date().toLocaleString() +
   "\nUSDTMock: " + address
   fs.appendFileSync("docs/addressList.txt", content)

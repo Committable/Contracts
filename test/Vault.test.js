@@ -20,6 +20,10 @@ describe('Vault', function () {
             exchange = await new Exchange().deploy(controller)
             vault = await new Vault().deploy(controller, exchange)
 
+            USDTMock = await ethers.getContractFactory("USDTMock")
+            usdt =await USDTMock.deploy("Tether", "USDT")
+            await usdt.deployed()
+
             value = ethers.utils.parseEther("1")
             sendValue = ethers.utils.parseEther("0.2")
             let tx = {
@@ -29,8 +33,9 @@ describe('Vault', function () {
                 value: value
 
             }
-             await owner.sendTransaction(tx)
+            await owner.sendTransaction(tx)
             // await signedTx.wait()
+            await usdt.transfer(vault.address, value)
         })
 
         context("owner should be able to use", function () {
@@ -45,8 +50,39 @@ describe('Vault', function () {
 
                 expect(await afterBalance.sub(originalBalance)).to.equal(sendValue)
             })
+            it('should have correct usdt balance', async function () {
+                expect(await usdt.balanceOf(vault.address)).to.equal(value)
+            })
+            it('should send usdt correctly', async function () {
+                let tx = await vault.sendERC20(usdt.address, receiver.address, value)
+                await tx.wait()
+                expect(await usdt.balanceOf(vault.address)).to.equal("0")
+                expect(await usdt.balanceOf(receiver.address)).to.equal(value)
 
+            })
 
+        })
+        context("non-owner request should be reverted", function () {
+            it('should revert when retreiving ethers', async function () {
+                
+                try {
+                    let tx = await vault.connect(receiver).sendEther(receiver.address, sendValue)
+                    await tx.wait()
+                    throw null
+                } catch(err) {
+                    expect(err.message).to.include("Ownable: caller is not the owner")
+                }
+            })
+            it('should revert when retreiving erc20', async function () {
+                
+                try {
+                    let tx = await vault.connect(receiver).sendERC20(usdt.address, receiver.address, sendValue)
+                    await tx.wait()
+                    throw null
+                } catch(err) {
+                    expect(err.message).to.include("Ownable: caller is not the owner")
+                }
+            })
 
 
         })

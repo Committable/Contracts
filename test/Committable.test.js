@@ -67,7 +67,18 @@ describe('Committable', function () {
                 },
             ]
         })
+        context("initialzie()", function () {
+            it("cannot initialize twice", async function () {
+                try {
+                    let tx= await tokenProxy.initialize("name","symbol", controller.address)
+                    await tx.wait()
+                    throw null
+                } catch(err) {
+                    expect(err.message).to.include("contract is already initialized")
+                }
+            })
 
+        })
         context("[mint] function test", function () {
             context('with legitimate minting signature', function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
@@ -83,6 +94,28 @@ describe('Committable', function () {
                 })
                 it("should have correct totalSupply", async function () {
                     expect(await tokenProxy.totalSupply()).to.equal(4)
+                })
+                it("should revert for repeated tokenId ", async function () {
+                    try {
+                        await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721: token already minted")
+                    }
+                })
+                it("should revert for minting to address0 ", async function () {
+                    let mint_zero = {
+                        creator: ZERO_ADDRESS,
+                        tokenId: 10000,
+                    }
+                    signature_zero = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_zero);
+
+                    try {
+                        await tokenProxy.mint(ZERO_ADDRESS, 10000, signature_zero);
+                        throw null
+                    } catch (err) {
+                        expect(err.message).to.include("ERC721: mint to the zero address")
+                    }
                 })
 
             })
@@ -130,55 +163,86 @@ describe('Committable', function () {
                 }
             })
         })
-        context("fund()", function () {
-            beforeEach("mint some tokens", async function () {
-                let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0)
+        context("pay()", function () {
+
+            it("batch fund randomNums minted", async function () {
+                let nums = Math.floor((Math.random() * 100)) + 1
+                let tokenIds = []
+                let scores = []
+                let totalScore = 0
+                let signatures = []
+                let funding = ethers.utils.parseEther("10")
+                for (let i = 0; i < nums; i++) {
+                    tokenIds[i] = i
+                    scores[i] = Math.floor((Math.random() * 10000))
+                    totalScore += scores[i]
+                    // mint it
+                    signatures[i] = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, {
+                        creator: signer.address,
+                        tokenId: tokenIds[i],
+                    });
+                    let tx = await tokenProxy.mint(signer.address, tokenIds[i], signatures[i])
+                    await tx.wait()
+                }
+                let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
                 await tx.wait()
-                tx = await tokenProxy.mint(signer.address, tokenId_1, signature_1)
-                await tx.wait()
-                tx = await tokenProxy.mint(signer.address, tokenId_2, signature_2)
-                await tx.wait()
-                tx = await tokenProxy.mint(user.address, tokenId_3, signature_3)
-                await tx.wait()
-            })
-            it("batch fund 4 minted", async function () {
-                let tx = await tokenProxy.fund(payroll, { value: ethers.utils.parseEther("10") })
-                await tx.wait()
-                expect(await tokenProxy.fundsOf(tokenId_0)).to.equal(ethers.utils.parseEther("1"))
-                expect(await tokenProxy.fundsOf(tokenId_1)).to.equal(ethers.utils.parseEther("2"))
-                expect(await tokenProxy.fundsOf(tokenId_2)).to.equal(ethers.utils.parseEther("3"))
-                expect(await tokenProxy.fundsOf(tokenId_3)).to.equal(ethers.utils.parseEther("4"))
-                 // emit event
-                 await expect(tx).to.emit(tokenProxy, 'Fund')
-                 .withArgs(signer.address, ethers.utils.parseEther("10"));
+                let expectedVal = []
+                for (let i = 0; i < nums; i++) {
+                    expectedVal[i] = (funding.mul(ethers.BigNumber.from(scores[i]))).div(ethers.BigNumber.from(totalScore))
+                    expect(await tokenProxy.fundsOf(tokenIds[i])).to.equal(expectedVal[i])
+                }
+                console.log(expectedVal.length)
+
 
             })
-            it("batch fund 4 un-minted", async function () {
-                /* create payroll */
-                payroll = [
-                    {
-                        tokenId: 1,
-                        reward: ethers.utils.parseEther("1")
-                    },
-                    {
-                        tokenId: 2,
-                        reward: ethers.utils.parseEther("2")
-                    },
-                    {
-                        tokenId: 3,
-                        reward: ethers.utils.parseEther("3")
-                    },
-                    {
-                        tokenId: 4,
-                        reward: ethers.utils.parseEther("4")
-                    },
-                ]
-                let tx = await tokenProxy.fund(payroll, { value: ethers.utils.parseEther("10") })
+
+            it("batch fund randomNums un-minted", async function () {
+                let nums = Math.floor((Math.random() * 100)) + 1
+                let tokenIds = []
+                let scores = []
+                let totalScore = 0
+                let funding = ethers.utils.parseEther("10")
+                for (let i = 0; i < nums; i++) {
+                    tokenIds[i] = i
+                    scores[i] = Math.floor((Math.random() * 10000))
+                    totalScore += scores[i]
+                }
+                let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
                 await tx.wait()
-                expect(await tokenProxy.fundsOf(1)).to.equal(ethers.utils.parseEther("1"))
-                expect(await tokenProxy.fundsOf(2)).to.equal(ethers.utils.parseEther("2"))
-                expect(await tokenProxy.fundsOf(3)).to.equal(ethers.utils.parseEther("3"))
-                expect(await tokenProxy.fundsOf(4)).to.equal(ethers.utils.parseEther("4"))
+                let expectedVal = []
+                for (let i = 0; i < nums; i++) {
+                    expectedVal[i] = (funding.mul(ethers.BigNumber.from(scores[i]))).div(ethers.BigNumber.from(totalScore))
+                    expect(await tokenProxy.fundsOf(tokenIds[i])).to.equal(expectedVal[i])
+                }
+                console.log(expectedVal.length)
+
+            })
+
+            it("should revert for invalid payroll pattern", async function () {
+                let tokenIds = [1]
+                let scores = [100, 200]
+                let funding = ethers.utils.parseEther("10")
+
+                try {
+                    let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
+                    await tx.wait()
+                    throw null
+                } catch (err) {
+                    expect(err.message).to.include("ERC721Fundable: invalid payroll pattern")
+                }
+            })
+
+            it("should revert for zero balance", async function () {
+                let tokenIds = [1, 2]
+                let scores = [100, 200]
+
+                try {
+                    let tx = await tokenProxy.pay(tokenIds, scores)
+                    await tx.wait()
+                    throw null
+                } catch (err) {
+                    expect(err.message).to.include("ERC721Fundable: zero payment not allowed")
+                }
             })
 
         })
@@ -191,15 +255,9 @@ describe('Committable', function () {
                     await tx.wait()
                 })
                 it("fund and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -222,9 +280,9 @@ describe('Committable', function () {
                         }
                     ]
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
-                    tx = await tokenProxy.fund(payroll, { value: funding })
+                    tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -240,15 +298,9 @@ describe('Committable', function () {
                         .withArgs(signer.address, tokenId_0, changeValue);
                 })
                 it("fund, transfer and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // transfer
                     tx = await tokenProxy.transferFrom(signer.address, user.address, tokenId_0)
@@ -267,15 +319,9 @@ describe('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claimed by invalid user, transfer and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim by wrong user
                     try {
@@ -304,15 +350,9 @@ describe('Committable', function () {
                         .withArgs(user.address, tokenId_0, changeValue);
                 })
                 it("fund, claim and claim", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                     // claim
                     tx = await tokenProxy.claim(tokenId_0)
@@ -337,15 +377,9 @@ describe('Committable', function () {
             })
             context("with un-minted token", function () {
                 beforeEach("fund", async function () {
-                    // create payroll
-                    let payroll = [
-                        {
-                            tokenId: tokenId_0,
-                            reward: funding
-                        }
-                    ]
+
                     // fund
-                    let tx = await tokenProxy.fund(payroll, { value: funding })
+                    let tx = await tokenProxy.pay([tokenId_0], [funding], { value: funding })
                     await tx.wait()
                 })
                 it("should fund successfully", async function () {
@@ -364,9 +398,9 @@ describe('Committable', function () {
                     // mint
                     let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
                     await tx.wait()
-                    // claim
-                    tx = await tokenProxy.claim(tokenId_0)
-                    await tx.wait()
+                    // // claim
+                    // tx = await tokenProxy.claim(tokenId_0)
+                    // await tx.wait()
                     // state change
                     expect(await tokenProxy.fundsOf(tokenId_0)).equal("0")
                     // value change

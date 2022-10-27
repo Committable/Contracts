@@ -12,7 +12,7 @@ function Controller() {
     }
 }
 
-function ERC721Committable() {
+function ERC721Committable(BASE_URI) {
     this.deploy = async function (name, symbol, controller) {
         /* deploy token logic contract */
         let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
@@ -41,6 +41,12 @@ function ERC721Committable() {
                 { name: 'tokenId', type: 'uint256' },
             ]
         }
+
+        if (BASE_URI != null) {
+            let tx = await tokenProxy.changeBaseURI(BASE_URI)
+            await tx
+        }
+
         return tokenProxy
     }
 }

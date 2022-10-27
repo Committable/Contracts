@@ -1,10 +1,12 @@
 require("@nomiclabs/hardhat-waffle");
+
 require("hardhat-gas-reporter");
+
 require("hardhat-tracer");
 require("@nomiclabs/hardhat-etherscan");
 const { ethers } = require("ethers");
 require('dotenv').config()
-
+require("solidity-coverage");
 
 
 
@@ -64,18 +66,44 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY]
       
     },
+    goerli: {
+      url: process.env.ALCHEMY_GOERLI_URL,
+      gas: 3000000,
+      // gasPrice: 20000000000, // 20gwei
+      accounts: [process.env.PRIVATE_KEY]
+      
+    },
     hardhat: {
       chainId: 1337
     },
   },
-  // etherscan: {
-  //   // Your API key for Etherscan
-  //   // Obtain one at https://etherscan.io/
-  //   apiKey: ETHERSCAN_API
-  // },
+  etherscan: {
+    // Your API key for Etherscan
+    // Obtain one at https://etherscan.io/
+    apiKey: process.env.ETHERSCAN_API,
+    customChains: [  // <========================= custom chains config here
+    {
+      network: 'rinkeby',
+      chainId: 4,
+      urls: {
+        apiURL: 'http://api-rinkeby.etherscan.io/api',  // https => http
+        browserURL: 'https://rinkeby.etherscan.io',
+      },
+    },
+    {
+      network: 'goerli',
+      chainId: 5,
+      urls: {
+        apiURL: 'http://api-goerli.etherscan.io/api',  // https => http
+        browserURL: 'https://goerli.etherscan.io',
+      },
+    },
+  ],
+  },
   gasReporter: {
     currency: 'USD',
     coinmarketcap: process.env.COINMARKETCAP_KEY,
+    enabled: true,
   },
 
 };

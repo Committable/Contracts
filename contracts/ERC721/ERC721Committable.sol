@@ -7,6 +7,10 @@ import "./ERC721Fundable.sol";
 import "../exchange/TransferProxy.sol";
 import "../Controller.sol";
 
+/**
+ * @dev Implementation of Committable ERC721 token
+ */
+
 contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     Controller internal _controller;
     uint256 internal _totalSupply;
@@ -22,7 +26,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
-        __Ownable_init();
+        __Ownable_init_unchained();
 
         _controller = Controller(controller);
         uint256 chainId;
@@ -60,7 +64,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     }
 
     /**
-     * @dev Mint a token to address with signature check
+     * @dev Mint a token to address with signature check, claim rewards if appliable when creator call this function
      */
     function mint(
         address creator,
@@ -69,6 +73,10 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
     ) public virtual {
         _verify(creator, tokenId, signature);
         _mint(creator, tokenId);
+        // claim reward if 1) msg.sender is token owner 2) have funds
+        if (msg.sender == creator && fundsOf(tokenId) > 0) {
+            claim(tokenId);
+        }
     }
 
     /**
@@ -80,7 +88,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
         bytes memory signature
     ) internal view {
         if (signature.length != 65) {
-            revert("ECDSA: invalid signature length");
+            revert("ERC721Committable: invalid signature length");
         }
 
         // Divide the signature in r, s and v variables
@@ -104,7 +112,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
         //     )
         // );
 
-         bytes32 digest = keccak256(
+        bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
@@ -120,7 +128,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
         );
         require(
             ecrecover(digest, v, r, s) == _controller.getSigner(),
-            "invalid token signature"
+            "ERC721Committable:invalid token signature"
         );
     }
 
