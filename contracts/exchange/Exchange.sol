@@ -319,11 +319,9 @@ contract Exchange is ReentrancyGuard, FeePanel {
     ) internal {
         address transferProxy = _controller.getTransferProxy();
         bytes memory data;
-        // mint first if tokenSig provided
-        // keccak256(0x00) = 0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
+        // mint first if tokenSig is valid
         if (
-            keccak256(tokenSig) !=
-            0xbc36789e7a1e281436464229828f817d6612f7b477d66591ff96a9e064bcc98a
+            tokenSig.length == 65
         ) {
             // mint token to the seller
             data = abi.encodeWithSignature(
@@ -332,8 +330,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
                 tokenId,
                 tokenSig
             );
-            // success = TransferProxy(transferProxy).proxy(contractAddress, data);
-            // require(success, "Exchange: transferProxy call failed");
             TransferProxy(transferProxy).proxy(contractAddress, data);
         }
         // standard ERC721 transfer from seller to buyer
@@ -343,8 +339,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             to,
             tokenId
         );
-        // success = TransferProxy(transferProxy).proxy(contractAddress, data);
-        // require(success, "Exchange: transferProxy call failed");
         TransferProxy(transferProxy).proxy(contractAddress, data);
     }
 }
