@@ -22,8 +22,8 @@ async function main() {
   let transferProxy = await new TransferProxy().deploy(controller)
 
 
-  console.log("deploying vault...")
-  let vault = await new Vault().deploy(controller, exchange)
+  // console.log("deploying vault...")
+  // let vault = await new Vault().deploy(controller, exchange)
 
   let content =
     "\n******Deploying at: " + Date().toLocaleString() +"************************************"
@@ -31,7 +31,7 @@ async function main() {
     + "\nERC721Committable: " + erc721Committable.address
     + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address
-    + "\nVault: " + vault.address
+    // + "\nVault: " + vault.address
     
   fs.writeFileSync("docs/addressList.txt", content)
   fs.appendFileSync("docs/details/deploymentRecord.txt", content)
