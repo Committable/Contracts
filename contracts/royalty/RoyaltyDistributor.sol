@@ -5,9 +5,10 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Vault.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RoyaltyDistributor {
-    address public wETHaddress = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6;
+contract RoyaltyDistributor is Ownable {
+    address public wehAddress = 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6;
     address public vaultAddress;
     address public committableERC721;
 
@@ -28,19 +29,29 @@ contract RoyaltyDistributor {
                 uint96(tokenId)
             );
         }
-        uint256 wethBalance = IERC20(wETHaddress).balanceOf(address(this));
+        uint256 wethBalance = IERC20(wehAddress).balanceOf(address(this));
         if (wethBalance > 0) {
-            IERC20(wETHaddress).approve(vaultAddress, wethBalance);
+            IERC20(wehAddress).approve(vaultAddress, wethBalance);
             Vault(vaultAddress).depositWithERC20(
                 uint96(tokenId),
-                wETHaddress,
+                wehAddress,
                 wethBalance
             );
         }
     }
-    // receive royalty
-    receive() external payable {
 
+    function sendEther(address recipient, uint256 value) external onlyOwner {
+        payable(recipient).transfer(value);
     }
-    
+
+    function sendERC20(
+        address recipient,
+        address tokenAddress,
+        uint256 value
+    ) external onlyOwner {
+        IERC20(tokenAddress).transfer(recipient, value);
+    }
+
+    // receive royalty
+    receive() external payable {}
 }

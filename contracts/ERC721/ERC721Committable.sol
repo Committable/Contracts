@@ -179,8 +179,8 @@ contract ERC721Committable is
     ) internal virtual override {
         address royaltyDistributorAddress = _controller.getRoyaltDistributor();
         // notify distributor transferred tokenId
-        if (royaltyDistributorAddress != address(0)){
-            RoyaltyDistributor(royaltyDistributorAddress).distribute(tokenId);
+        if (royaltyDistributorAddress != address(0) && from !=address(0)){
+            royaltyDistributorAddress.call(abi.encodeWithSignature(distribute(uint256), tokenId));
         }
         super._afterTokenTransfer(from, to, tokenId);
     }

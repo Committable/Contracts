@@ -14,7 +14,6 @@ contract Vault is ReentrancyGuardUpgradeable {
     event Deposit(uint96 indexed rid, address indexed token, uint256 amount);
 
     function initialize() public initializer {
-        __ReentrancyGuard_init();
     }
 
     function depositWithEther(uint96 rid) external payable {
