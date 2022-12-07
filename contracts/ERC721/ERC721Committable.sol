@@ -173,14 +173,17 @@ contract ERC721Committable is
     }
 
     function _afterTokenTransfer(
-        from,
-        to,
-        tokenId
+        address from,
+        address to,
+        uint256 tokenId
     ) internal virtual override {
         address royaltyDistributorAddress = _controller.getRoyaltDistributor();
         // notify distributor transferred tokenId
         if (royaltyDistributorAddress != address(0) && from !=address(0)){
-            royaltyDistributorAddress.call(abi.encodeWithSignature(distribute(uint256), tokenId));
+            (bool success , )= royaltyDistributorAddress.call(abi.encodeWithSignature("distribute(uint256)", tokenId));
+            if (success) {
+                //
+            }
         }
         super._afterTokenTransfer(from, to, tokenId);
     }
