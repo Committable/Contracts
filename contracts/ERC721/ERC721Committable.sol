@@ -7,7 +7,7 @@ import "./ERC721Fundable.sol";
 import "../exchange/TransferProxy.sol";
 import "../Controller.sol";
 import "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
-
+import "../royalty/RoyaltyDistributor.sol";
 /**
  * @dev Implementation of Committable ERC721 token
  */
@@ -170,6 +170,19 @@ contract ERC721Committable is
                 _totalSupply = _totalSupply + 1;
             }
         }
+    }
+
+    function _afterTokenTransfer(
+        from,
+        to,
+        tokenId
+    ) internal virtual override {
+        address royaltyDistributorAddress = _controller.getRoyaltDistributor();
+        // notify distributor transferred tokenId
+        if (royaltyDistributorAddress != address(0)){
+            RoyaltyDistributor(royaltyDistributorAddress).distribute(tokenId);
+        }
+        super._afterTokenTransfer(from, to, tokenId);
     }
 
     function setApprovalForAll(address operator, bool approved)

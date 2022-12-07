@@ -8,8 +8,11 @@ import "./exchange/TransferProxy.sol";
 contract Controller is ProxyAdmin {
     address private _signer;
     address private _transferProxy;
+    address private _royaltyDistributor;
     mapping(address => bool) private _isApproved;
+
     event TransferProxyRegistered(address indexed transferProxy);
+    event RoyaltyDistributorRegistered(address indexed royaltyDistributor);
     event ExchangeApprovedOrCancelled(
         address indexed exchange,
         bool authorized
@@ -25,12 +28,21 @@ contract Controller is ProxyAdmin {
         emit TransferProxyRegistered(_transferProxy);
     }
 
+    function registerRoyaltyDistributor(address royaltyDistributor) external onlyOwner {
+        _royaltyDistributor = royaltyDistributor;
+        emit RoyaltyDistributorRegistered(royaltyDistributor);
+    }
+
     function setSigner(address signer_) external onlyOwner {
         _signer = signer_;
     }
 
     function getTransferProxy() external view returns (address) {
         return _transferProxy;
+    }
+
+    function getRoyaltDistributor() external view returns(address){
+        return _royaltyDistributor;
     }
 
     function getSigner() external view returns (address) {
