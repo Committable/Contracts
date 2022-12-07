@@ -2,18 +2,17 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-contract Vault is ReentrancyGuardUpgradeable {
+contract Vault is Initializable {
     mapping(uint96 => mapping(address => uint256)) public reserve;
-
-
 
     event Deposit(uint96 indexed rid, address indexed token, uint256 amount);
 
     function initialize() public initializer {
+        //
     }
 
     function depositWithEther(uint96 rid) external payable {

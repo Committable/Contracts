@@ -8,7 +8,7 @@ ROYALTY = '1000'; // 10%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
-const { Controller, ERC721Committable, Exchange, TransferProxy, Vault } = require("../utils/deployer.js")
+const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js")
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -29,6 +29,8 @@ describe('Exchange', function () {
       tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
       exchange = await new Exchange().deploy(controller)
       transferProxy = await new TransferProxy().deploy(controller)
+      vault = await new Vault().deploy(controller, exchange)
+      royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault, controller)
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
       token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
