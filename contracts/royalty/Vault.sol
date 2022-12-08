@@ -21,14 +21,16 @@ contract Vault is Initializable {
             // overflow is literally unrealistic for ethers
             reserve[rid][address(0)] += msg.value;
         }
+
         emit Deposit(rid, address(0), msg.value);
+
     }
 
     function depositWithERC20(
         uint96 rid,
         address token,
         uint256 amount
-    ) external payable {
+    ) external  {
         reserve[rid][token] += amount;
         SafeERC20.safeTransferFrom(
             IERC20(token),

@@ -4,11 +4,12 @@ const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { projects, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
-ROYALTY = '1000'; // 10%
+ROYALTY = '250'; // 2.5%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
-const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js")
+ROYALTY_FEE = ethers.utils.parseEther('2.5').toString(); // 100*2.5%
+const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -23,7 +24,7 @@ describe('Exchange', function () {
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
 
-
+      provider = waffle.provider
 
       controller = await new Controller().deploy(seller.address)
       tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
@@ -57,6 +58,9 @@ describe('Exchange', function () {
        * order_5: lazy-mint order pairs using ERC20 without royalty
        * order_6: standard order pairs using ERC20 with royalty (Auction)
        * order_7: lazy-mint order pairs using ERC20 without royalty (Auction)
+       * 
+       * order_8: standard order pairs using ETH without royalty sent to royaltyDistributor
+       * 
        */
 
       // generate order pairs: pay eth to transfer erc721, no royalty
@@ -370,8 +374,40 @@ describe('Exchange', function () {
       buy_order_sig_7 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_7);
       sell_order_sig_7 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_7);
 
+      buy_order_8 = {
+        isBuySide: true,
+        isAuction: false,
+        maker: buyer.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyDistributor.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_0,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
 
+      sell_order_8 = {
+        isBuySide: false,
+        isAuction: false,
+        maker: seller.address,
+        paymentToken: ZERO_ADDRESS,
+        value: PRICE,
+        royaltyRecipient: royaltyDistributor.address,
+        royalty: ROYALTY,
+        target: tokenProxy.address,
+        tokenId: tokenId_0,
+        tokenSig: UINT256_ZERO,
+        start: 0,
+        end: 0,
+        salt: Math.floor(Math.random() * 10000)
+      }
 
+      buy_order_sig_8 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_8);
+      sell_order_sig_8 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_8);
 
     })
     context('with legitimate behaviors', function () {
@@ -932,7 +968,7 @@ describe('Exchange', function () {
           await tx.wait();
         })
         context('when buy order value is modified', function () {
-       
+
           it('revert with ETH order', async function () {
             try {
               buy_order_0.value = '100000';
@@ -1821,7 +1857,7 @@ describe('Exchange', function () {
               sell_order_0.royalty = newRoyalty
               sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
 
-              tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0,  { value: PRICE });
+              tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
               await tx.wait();
               throw null;
             } catch (err) {
@@ -1976,6 +2012,46 @@ describe('Exchange', function () {
           }
         })
       })
+    })
+    context.only("with royalty sent to contract", function () {
+      // generate order pairs: pay eth to transfer erc721, no royalty
+      beforeEach('with minted nft', async function () {
+        // sign some tokenId
+        let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_0
+        });
+        // // mint tokenId_0to seller
+        tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+        await tx.wait();
+
+      })
+      it("should controller get royaltyDistributor address", async function () {
+
+        expect(await controller.getRoyaltDistributor()).to.equal(royaltyDistributor.address)
+      })
+      it("should royaltyDistributor record correct erc721committable", async function () {
+        expect(await royaltyDistributor.committableERC721()).to.equal(tokenProxy.address)
+        expect(await royaltyDistributor.vaultAddress()).to.equal(vault.address)
+
+
+      })
+
+      it("should distribute royalty to vault", async function () {
+        let tx = await exchange.connect(buyer).matchOrder(buy_order_8, buy_order_sig_8, sell_order_8, sell_order_sig_8, { value: PRICE });
+        await tx.wait()
+
+        // value change
+        await expect(tx).to.changeEtherBalance(vault, ROYALTY_FEE)
+        // state change
+        expect(await vault.reserve(projects.project_a, ZERO_ADDRESS)).to.equal(ROYALTY_FEE)
+        // emit event
+        await expect(tx).to.emit(vault, 'Deposit')
+          .withArgs(projects.project_a, ZERO_ADDRESS, ROYALTY_FEE);
+      })
+
+
+
     })
   })
 })

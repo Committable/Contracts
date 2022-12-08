@@ -25,18 +25,22 @@ contract RoyaltyDistributor is Ownable {
         uint256 ethBalance = address(this).balance;
         if (ethBalance > 0) {
             // last uint96 of tokenId represents its rid
+
             Vault(vaultAddress).depositWithEther{value: ethBalance}(
                 uint96(tokenId)
             );
         }
-        uint256 wethBalance = IERC20(wehAddress).balanceOf(address(this));
-        if (wethBalance > 0) {
-            IERC20(wehAddress).approve(vaultAddress, wethBalance);
-            Vault(vaultAddress).depositWithERC20(
-                uint96(tokenId),
-                wehAddress,
-                wethBalance
-            );
+        // wont revert on test envrionment
+        if (address(wehAddress).code.length > 0) {
+            uint256 wethBalance = IERC20(wehAddress).balanceOf(address(this));
+            if (wethBalance > 0) {
+                IERC20(wehAddress).approve(vaultAddress, wethBalance);
+                Vault(vaultAddress).depositWithERC20(
+                    uint96(tokenId),
+                    wehAddress,
+                    wethBalance
+                );
+            }
         }
     }
 
