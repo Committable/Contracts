@@ -250,5 +250,5 @@ contract ERC721Committable is
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
-    uint256[46] private __gap;
+    uint256[44] private __gap;
 }
