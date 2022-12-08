@@ -6,12 +6,17 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./ERC721Fundable.sol";
 import "../exchange/TransferProxy.sol";
 import "../Controller.sol";
-
+import "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
+import "../royalty/RoyaltyDistributor.sol";
 /**
  * @dev Implementation of Committable ERC721 token
  */
 
-contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
+contract ERC721Committable is
+    ERC721Fundable,
+    OwnableUpgradeable,
+    DefaultOperatorFiltererUpgradeable
+{
     Controller internal _controller;
     uint256 internal _totalSupply;
     string public baseURI;
@@ -27,7 +32,7 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __Ownable_init_unchained();
-
+        __DefaultOperatorFilterer_init();
         _controller = Controller(controller);
         uint256 chainId;
         assembly {
@@ -165,6 +170,63 @@ contract ERC721Committable is ERC721Fundable, OwnableUpgradeable {
                 _totalSupply = _totalSupply + 1;
             }
         }
+    }
+
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal virtual override {
+        address royaltyDistributorAddress = _controller.getRoyaltDistributor();
+        // notify distributor transferred tokenId
+        if (royaltyDistributorAddress != address(0) && from !=address(0)){
+            (bool success , )= royaltyDistributorAddress.call(abi.encodeWithSignature("distribute(uint256)", tokenId));
+            if (success) {
+                //
+            }
+        }
+        super._afterTokenTransfer(from, to, tokenId);
+    }
+
+    function setApprovalForAll(address operator, bool approved)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.setApprovalForAll(operator, approved);
+    }
+
+    function approve(address operator, uint256 tokenId)
+        public
+        override
+        onlyAllowedOperatorApproval(operator)
+    {
+        super.approve(operator, tokenId);
+    }
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator(from) {
+        super.transferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId);
+    }
+
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public override onlyAllowedOperator(from) {
+        super.safeTransferFrom(from, to, tokenId, data);
     }
 
     uint256[46] private __gap;

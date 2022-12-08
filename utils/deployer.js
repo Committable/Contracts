@@ -149,5 +149,17 @@ function Vault() {
     }
 }
 
+function RoyaltyDistributor() {
+    this.deploy = async function (erc721Committable, vault, controller) {
+        let RoyaltyDistributor = await ethers.getContractFactory("RoyaltyDistributor")
+        let royaltyDistributor = await RoyaltyDistributor.deploy(erc721Committable.address, vault.address)
+        await royaltyDistributor.deployed()
 
-module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, Vault }
+        let tx = await controller.registerRoyaltyDistributor(royaltyDistributor.address);
+        await tx.wait()
+        return royaltyDistributor
+    }
+}
+
+
+module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, Vault, RoyaltyDistributor}

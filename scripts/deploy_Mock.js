@@ -13,7 +13,7 @@ async function main() {
   let controller = await new Controller().deploy(SIGNER_ADDRESS)
 
   console.log("deploying erc721Committable...")
-  let erc721Committable = await new ERC721Committable(BASE_URI).deploy(NAME, SYMBOL, controller)
+  let erc721CommittableMock = await new ERC721CommittableMock(BASE_URI).deploy(NAME, SYMBOL, controller)
 
   console.log("deploying exchange...")
   let exchange = await new Exchange().deploy(controller);
@@ -24,20 +24,17 @@ async function main() {
   console.log("deploying vault...")
   let vault = await new Vault().deploy(controller, exchange)
 
-
-
   console.log("deploying royaltyDistributor...")
   let royaltyDistributor = await new RoyaltyDistributor().deploy(erc721Committable, vault, controller)
 
   let content =
     "\n******Deploying at: " + Date().toLocaleString() +"************************************"
     + "\nController: " + controller.address
-    + "\nERC721Committable: " + erc721Committable.address
+    + "\nERC721CommittableMock: " + erc721CommittableMock.address
     + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address
     + "\nVault: " + vault.address
     + "\nRoyaltyDistributor: " + royaltyDistributor.address
-
 
     
   fs.writeFileSync("docs/addressList.txt", content)
