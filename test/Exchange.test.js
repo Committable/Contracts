@@ -4,11 +4,11 @@ const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { projects, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
-ROYALTY = '250'; // 2.5%
+ROYALTY = '500'; // 5%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
-ROYALTY_FEE = ethers.utils.parseEther('2.5').toString(); // 100*2.5%
+REPO_ROYALTY = ethers.utils.parseEther('2.5').toString(); // 100*5%*50%
 const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
 
 DEADLINE = 0;
@@ -22,7 +22,7 @@ describe('Exchange', function () {
     beforeEach(async function () {
 
       /* get signers */
-      [seller, buyer, royaltyRecipient, recipient, newRecipient, operator, ...others] = await ethers.getSigners();
+      [seller, buyer, royaltyRecipient, recipient, newRecipient, dev, ...others] = await ethers.getSigners();
 
       provider = waffle.provider
 
@@ -46,7 +46,8 @@ describe('Exchange', function () {
       await tx.wait()
       tx = await exchange.changeRecipient(recipient.address);
       await tx.wait()
-
+      tx = await royaltyDistributor.changeDevAddress(dev.address);
+      await tx.wait()
 
       /**
        * Below we create multiple exchange.types of order pairs:
@@ -2013,7 +2014,7 @@ describe('Exchange', function () {
         })
       })
     })
-    context.only("with royalty sent to contract", function () {
+    context("with royalty sent to contract", function () {
       // generate order pairs: pay eth to transfer erc721, no royalty
       beforeEach('with minted nft', async function () {
         // sign some tokenId
@@ -2042,12 +2043,14 @@ describe('Exchange', function () {
         await tx.wait()
 
         // value change
-        await expect(tx).to.changeEtherBalance(vault, ROYALTY_FEE)
+        await expect(tx).to.changeEtherBalance(vault, REPO_ROYALTY)
+        await expect(tx).to.changeEtherBalance(dev, REPO_ROYALTY)
+
         // state change
-        expect(await vault.reserve(projects.project_a, ZERO_ADDRESS)).to.equal(ROYALTY_FEE)
+        expect(await vault.reserve(projects.project_a, ZERO_ADDRESS)).to.equal(REPO_ROYALTY)
         // emit event
         await expect(tx).to.emit(vault, 'Deposit')
-          .withArgs(projects.project_a, ZERO_ADDRESS, ROYALTY_FEE);
+          .withArgs(projects.project_a, ZERO_ADDRESS, REPO_ROYALTY);
       })
 
 
