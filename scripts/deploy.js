@@ -24,6 +24,8 @@ async function main() {
   console.log("deploying vault...")
   let vault = await new Vault().deploy(controller, exchange)
 
+
+
   console.log("deploying royaltyDistributor...")
   let royaltyDistributor = await new RoyaltyDistributor().deploy(erc721Committable, vault, controller)
 
@@ -35,6 +37,7 @@ async function main() {
     + "\nExchange: " + exchange.address
     + "\nVault: " + vault.address
     + "\nRoyaltyDistributor: " + royaltyDistributor.address
+
 
     
   fs.writeFileSync("docs/addressList.txt", content)
