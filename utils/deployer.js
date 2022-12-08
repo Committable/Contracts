@@ -4,25 +4,25 @@ const { ethers } = require("hardhat");
 
 
 function Controller() {
-    this.deploy = async function (signerAddress) {
+    this.deploy = async function () {
         let Controller = await ethers.getContractFactory("Controller");
-        let controller = await Controller.deploy(signerAddress); // set signer
+        let controller = await Controller.deploy(); // set signer
         await controller.deployed();
         return controller
     }
 }
 
 function ERC721Committable(BASE_URI) {
-    this.deploy = async function (name, symbol, controller) {
+    this.deploy = async function (name, symbol, signer, distributor) {
         /* deploy token logic contract */
         let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
         let erc721Committable = await ERC721Committable.deploy();
         await erc721Committable.deployed();
         /* deploy token proxy contract */
         let CommittableProxy = await ethers.getContractFactory("CommittableProxy");
-        let ABI = ["function initialize(string,string,address)"];
+        let ABI = ["function initialize(string,string,address,address)"];
         let iface = new ethers.utils.Interface(ABI);
-        let calldata = iface.encodeFunctionData("initialize", [name, symbol, controller.address]);
+        let calldata = iface.encodeFunctionData("initialize", [name, symbol, signer, distributor]);
         CommittableProxy = await CommittableProxy.deploy(erc721Committable.address, controller.address, calldata);
         await CommittableProxy.deployed();
         /* attach proxy address with logic instance */
@@ -50,23 +50,12 @@ function ERC721Committable(BASE_URI) {
         return tokenProxy
     }
 }
-function TransferProxy() {
-    this.deploy = async function (controller) {
-        /* deploy transferProxy contract */
-        let TransferProxy = await ethers.getContractFactory("TransferProxy");
-        let transferProxy = await TransferProxy.deploy(controller.address);
-        await transferProxy.deployed();
-        /* enable transferProxy contract in controller */
-        tx = await controller.registerTransferProxy(transferProxy.address);
-        await tx.wait();
-        return transferProxy
-    }
-}
-function Exchange() {
-    this.deploy = async function (controller) {
+
+function Exchange(erc721Committable) {
+    this.deploy = async function () {
         /* deploy exchange contract */
         let Exchange = await ethers.getContractFactory("Exchange");
-        let exchange = await Exchange.deploy(controller.address);
+        let exchange = await Exchange.deploy();
         await exchange.deployed();
         exchange.domain =
         {
@@ -117,7 +106,9 @@ function Exchange() {
 
         }
         /* approve exchange */
-        tx = await controller.approveOrCancel(exchange.address, true);
+        // tx = await controller.approveOrCancel(exchange.address, true);
+        /* register exchange */
+        tx = await erc721Committable.registerOperator(exchange.address, true)
         await tx.wait();
 
 
@@ -128,7 +119,7 @@ function Exchange() {
 
 
 function Vault() {
-    this.deploy = async function (controller, exchange) {
+    this.deploy = async function (controller) {
         /* deploy Vault logic contract */
         let Vault = await ethers.getContractFactory("Vault");
         let vault = await Vault.deploy();
@@ -142,7 +133,7 @@ function Vault() {
         /* attach token proxy contract with logic contract abi */
         vault = await Vault.attach(vaultProxy.address);
         /* set vault address in exchange */
-        let tx = await exchange.changeRecipient(vault.address);
+        // let tx = await exchange.changeRecipient(vault.address);
         await tx.wait()
 
         return vault
@@ -150,16 +141,16 @@ function Vault() {
 }
 
 function RoyaltyDistributor() {
-    this.deploy = async function (erc721Committable, vault, controller) {
+    this.deploy = async function (erc721Committable, vault) {
         let RoyaltyDistributor = await ethers.getContractFactory("RoyaltyDistributor")
         let royaltyDistributor = await RoyaltyDistributor.deploy(erc721Committable.address, vault.address)
         await royaltyDistributor.deployed()
 
-        let tx = await controller.registerRoyaltyDistributor(royaltyDistributor.address);
+        let tx = await erc721Committable.changeRoyaltyDistributor(royaltyDistributor.address);
         await tx.wait()
         return royaltyDistributor
     }
 }
 
 
-module.exports = { Controller, ERC721Committable, TransferProxy, Exchange, Vault, RoyaltyDistributor}
+module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor }

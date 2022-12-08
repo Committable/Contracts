@@ -15,8 +15,8 @@ describe('Committable', function () {
             /* get signers */
             [signer, user, ...others] = await ethers.getSigners();
             /* deploy contracts */
-            controller = await new Controller().deploy(signer.address)
-            tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
+            controller = await new Controller().deploy()
+            tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, signer.address, ZERO_ADDRESS)
             // provider =  waffle.provider;
 
 
@@ -70,7 +70,7 @@ describe('Committable', function () {
         context("initialzie()", function () {
             it("cannot initialize twice", async function () {
                 try {
-                    let tx= await tokenProxy.initialize("name","symbol", controller.address)
+                    let tx= await tokenProxy.initialize("name","symbol", signer.address, ZERO_ADDRESS)
                     await tx.wait()
                     throw null
                 } catch(err) {

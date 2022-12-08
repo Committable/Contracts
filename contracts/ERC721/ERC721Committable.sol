@@ -4,10 +4,10 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./ERC721Fundable.sol";
-import "../exchange/TransferProxy.sol";
 import "../Controller.sol";
 import "operator-filter-registry/src/upgradeable/DefaultOperatorFiltererUpgradeable.sol";
 import "../royalty/RoyaltyDistributor.sol";
+
 /**
  * @dev Implementation of Committable ERC721 token
  */
@@ -17,23 +17,27 @@ contract ERC721Committable is
     OwnableUpgradeable,
     DefaultOperatorFiltererUpgradeable
 {
-    Controller internal _controller;
     uint256 internal _totalSupply;
     string public baseURI;
+    address public signer;
+    address public royaltyDistributor;
+    mapping(address => bool) public whitelisted;
     // solhint-disable-next-line
     bytes32 public DOMAIN_SEPARATOR;
 
     function initialize(
         string memory _name,
         string memory _symbol,
-        address controller
+        address _signer,
+        address _royaltyDistributor
     ) public initializer {
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC721_init_unchained(_name, _symbol);
         __Ownable_init_unchained();
         __DefaultOperatorFilterer_init();
-        _controller = Controller(controller);
+        signer = _signer;
+        royaltyDistributor = _royaltyDistributor;
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -68,6 +72,20 @@ contract ERC721Committable is
         baseURI = newURI;
     }
 
+    function changeSigner(address newSigner) external onlyOwner {
+        require(signer != newSigner, "ERC721Committable: duplicate signer");
+        signer = newSigner;
+    }
+
+    function registerOperator(address operator, bool ok) external onlyOwner {
+        whitelisted[operator] = ok;
+    }
+
+    function changeRoyaltyDistributor(address newRoyaltyDistributor) external onlyOwner {
+        require(royaltyDistributor  !=newRoyaltyDistributor, "ERC721Committable: duplicate distributor");
+        royaltyDistributor = newRoyaltyDistributor;
+    }
+
     /**
      * @dev Mint a token to address with signature check, claim rewards if appliable when creator call this function
      */
@@ -76,7 +94,9 @@ contract ERC721Committable is
         uint256 tokenId,
         bytes memory signature
     ) public virtual {
-        _verify(creator, tokenId, signature);
+        if (signer != address(0)) {
+            _verify(creator, tokenId, signature);
+        }
         _mint(creator, tokenId);
         // claim reward if 1) msg.sender is token owner 2) have funds
         if (msg.sender == creator && fundsOf(tokenId) > 0) {
@@ -132,7 +152,7 @@ contract ERC721Committable is
             )
         );
         require(
-            ecrecover(digest, v, r, s) == _controller.getSigner(),
+            ecrecover(digest, v, r, s) == signer,
             "ERC721Committable:invalid token signature"
         );
     }
@@ -147,7 +167,7 @@ contract ERC721Committable is
         returns (bool)
     {
         // Whitelist transferProxy for easy trading.
-        if (address(_controller.getTransferProxy()) == operator) {
+        if (whitelisted[operator] == true) {
             return true;
         }
 
@@ -177,10 +197,11 @@ contract ERC721Committable is
         address to,
         uint256 tokenId
     ) internal virtual override {
-        address royaltyDistributorAddress = _controller.getRoyaltDistributor();
         // notify distributor transferred tokenId
-        if (royaltyDistributorAddress != address(0) && from !=address(0)){
-            (bool success , )= royaltyDistributorAddress.call(abi.encodeWithSignature("distribute(uint256)", tokenId));
+        if (royaltyDistributor != address(0) && from != address(0)) {
+            (bool success, ) = royaltyDistributor.call(
+                abi.encodeWithSignature("distribute(uint256)", tokenId)
+            );
             if (success) {
                 //
             }
