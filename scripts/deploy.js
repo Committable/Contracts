@@ -18,9 +18,6 @@ async function main() {
   console.log("deploying exchange...")
   let exchange = await new Exchange(erc721Committable).deploy();
 
-  console.log("deploying transferProxy...")
-  let transferProxy = await new TransferProxy().deploy(controller)
-
   console.log("deploying vault...")
   let vault = await new Vault().deploy(controller)
 
@@ -31,7 +28,6 @@ async function main() {
     "\n******Deploying at: " + Date().toLocaleString() +"************************************"
     + "\nController: " + controller.address
     + "\nERC721Committable: " + erc721Committable.address
-    + "\nTransferProxy: " + transferProxy.address
     + "\nExchange: " + exchange.address
     + "\nVault: " + vault.address
     + "\nRoyaltyDistributor: " + royaltyDistributor.address

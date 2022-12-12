@@ -123,6 +123,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         );
         _beforeTransfer(buyOrder, sellOrder);
         _transferPaymentToken(buyOrder, sellOrder);
+        // transfer from sell order maker to buy order maker
         _transferERC721(
             sellOrder.maker,
             buyOrder.maker,
