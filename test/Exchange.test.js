@@ -10,6 +10,10 @@ FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 REPO_ROYALTY = ethers.utils.parseEther('2.5').toString(); // 100*5%*50%
 const { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -23,6 +27,10 @@ describe('Exchange', function () {
 
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, dev, ...others] = await ethers.getSigners();
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
 
       provider = waffle.provider
 
@@ -31,6 +39,10 @@ describe('Exchange', function () {
       exchange = await new Exchange(tokenProxy).deploy()
       vault = await new Vault().deploy(controller)
       royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
       token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
@@ -2029,7 +2041,13 @@ describe('Exchange', function () {
       })
       it("should controller get royaltyDistributor address", async function () {
 
+<<<<<<< HEAD
         expect(await tokenProxy.royaltyDistributor()).to.equal(royaltyDistributor.address)
+=======
+
+        expect(await tokenProxy.royaltyDistributor()).to.equal(royaltyDistributor.address)
+
+>>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
       })
       it("should royaltyDistributor record correct erc721committable", async function () {
         expect(await royaltyDistributor.committableERC721()).to.equal(tokenProxy.address)

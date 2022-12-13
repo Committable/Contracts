@@ -153,5 +153,11 @@ function RoyaltyDistributor() {
     }
 }
 
+<<<<<<< HEAD
 
 module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor }
+=======
+
+module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor }
+
+>>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
