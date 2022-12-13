@@ -11,6 +11,7 @@ PRICE = ethers.utils.parseEther('100').toString();
 REPO_ROYALTY = ethers.utils.parseEther('2.5').toString(); // 100*5%*50%
 const { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
 
+
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
 UINT256_ZERO = '0x00'
@@ -24,6 +25,7 @@ describe('Exchange', function () {
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, dev, ...others] = await ethers.getSigners();
 
+
       provider = waffle.provider
 
       controller = await new Controller().deploy()
@@ -31,6 +33,7 @@ describe('Exchange', function () {
       exchange = await new Exchange(tokenProxy).deploy()
       vault = await new Vault().deploy(controller)
       royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault)
+
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
       token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
@@ -2029,7 +2032,9 @@ describe('Exchange', function () {
       })
       it("should controller get royaltyDistributor address", async function () {
 
+
         expect(await tokenProxy.royaltyDistributor()).to.equal(royaltyDistributor.address)
+
       })
       it("should royaltyDistributor record correct erc721committable", async function () {
         expect(await royaltyDistributor.committableERC721()).to.equal(tokenProxy.address)
