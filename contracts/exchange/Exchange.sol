@@ -4,8 +4,7 @@ pragma solidity ^0.8.0;
 
 import "./OrderUtils.sol";
 import "./FeePanel.sol";
-import "../Controller.sol";
-import "./TransferProxy.sol";
+import "../ERC721/ERC721Committable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -18,7 +17,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
 
     string public name = "Exchange";
     mapping(bytes32 => bool) private _isCancelledOrFinished;
-    Controller _controller;
+    // Controller _controller;
     event OrderMatched(
         bytes32 buyOrderHash,
         bytes32 sellOrderHash,
@@ -32,8 +31,8 @@ contract Exchange is ReentrancyGuard, FeePanel {
 
     event OrderCancelled(bytes32 orderHash, address indexed maker);
 
-    constructor(address _address) {
-        _controller = Controller(_address);
+    constructor() {
+        // _controller = Controller(_address);
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -124,6 +123,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         );
         _beforeTransfer(buyOrder, sellOrder);
         _transferPaymentToken(buyOrder, sellOrder);
+        // transfer from sell order maker to buy order maker
         _transferERC721(
             sellOrder.maker,
             buyOrder.maker,
@@ -317,28 +317,15 @@ contract Exchange is ReentrancyGuard, FeePanel {
         uint256 tokenId,
         bytes memory tokenSig
     ) internal {
-        address transferProxy = _controller.getTransferProxy();
-        bytes memory data;
+
         // mint first if tokenSig is valid
-        if (
-            tokenSig.length == 65
-        ) {
-            // mint token to the seller
-            data = abi.encodeWithSignature(
-                "mint(address,uint256,bytes)",
-                from,
-                tokenId,
-                tokenSig
-            );
-            TransferProxy(transferProxy).proxy(contractAddress, data);
+        if (tokenSig.length == 65) {
+       
+            ERC721Committable(contractAddress).mint(from, tokenId, tokenSig);
+            // address(contractAddress).call(data);
         }
         // standard ERC721 transfer from seller to buyer
-        data = abi.encodeWithSignature(
-            "transferFrom(address,address,uint256)",
-            from,
-            to,
-            tokenId
-        );
-        TransferProxy(transferProxy).proxy(contractAddress, data);
+        ERC721Committable(contractAddress).transferFrom(from, to, tokenId);
+
     }
 }

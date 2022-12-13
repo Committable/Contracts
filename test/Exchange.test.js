@@ -9,7 +9,8 @@ const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 REPO_ROYALTY = ethers.utils.parseEther('2.5').toString(); // 100*5%*50%
-const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
+const { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
+
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -24,14 +25,15 @@ describe('Exchange', function () {
       /* get signers */
       [seller, buyer, royaltyRecipient, recipient, newRecipient, dev, ...others] = await ethers.getSigners();
 
+
       provider = waffle.provider
 
-      controller = await new Controller().deploy(seller.address)
-      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, controller)
-      exchange = await new Exchange().deploy(controller)
-      transferProxy = await new TransferProxy().deploy(controller)
-      vault = await new Vault().deploy(controller, exchange)
-      royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault, controller)
+      controller = await new Controller().deploy()
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, seller.address, ZERO_ADDRESS, controller)
+      exchange = await new Exchange(tokenProxy).deploy()
+      vault = await new Vault().deploy(controller)
+      royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault)
+
       /* deploy erc20 and approve for test */
       let ERC20 = await ethers.getContractFactory("USDTMock");
       token = await ERC20.connect(buyer).deploy("USDTMock", "USDT-M");
@@ -1058,28 +1060,18 @@ describe('Exchange', function () {
           })
         })
         context('when called by unexpected user', function () {
-          it('revert when exchange not approved', async function () {
-            let tx = await controller.approveOrCancel(exchange.address, false)
+          it('revert when operator not registerred', async function () {
+            let tx = await tokenProxy.registerOperator(exchange.address, false)
             await tx.wait()
             try {
               let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
               await tx.wait();
               throw null;
             } catch (err) {
-              expect(err.message).to.include('TransferProxy: caller not registered');
+              expect(err.message).to.include('ERC721: transfer caller is not owner nor approved');
             }
           })
-          it('revert when transferProxy not registerred', async function () {
-            let tx = await controller.registerTransferProxy(ZERO_ADDRESS)
-            await tx.wait()
-            try {
-              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-              await tx.wait();
-              throw null;
-            } catch (err) {
-              expect(err.message).to.include('reverted');
-            }
-          })
+       
           it('revert with buyer call erc20 standard order', async function () {
             try {
               await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
@@ -1868,7 +1860,7 @@ describe('Exchange', function () {
         })
         context('when seller does not own the token', function () {
           it('revert when the seller does not own the token', async function () {
-            let tx = await tokenProxy.transferFrom(seller.address, buyer.address, tokenId_0);
+            let tx = await tokenProxy.transferFrom(seller.address, recipient.address, tokenId_0);
             await tx.wait();
 
             try {
@@ -1937,6 +1929,17 @@ describe('Exchange', function () {
             throw null;
           } catch (err) {
             expect(err.message).to.include('must be called by legit user');
+          }
+        })
+        it('should revert when exchange not registered', async function () {
+          let tx =await tokenProxy.registerOperator(exchange.address, false)
+          await tx.wait()
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            await tx.wait();
+            throw null;
+          }catch(err) {
+            expect(err.message).to.include("ERC721: operator query for nonexistent token")
           }
         })
       })
@@ -2029,7 +2032,9 @@ describe('Exchange', function () {
       })
       it("should controller get royaltyDistributor address", async function () {
 
-        expect(await controller.getRoyaltDistributor()).to.equal(royaltyDistributor.address)
+
+        expect(await tokenProxy.royaltyDistributor()).to.equal(royaltyDistributor.address)
+
       })
       it("should royaltyDistributor record correct erc721committable", async function () {
         expect(await royaltyDistributor.committableERC721()).to.equal(tokenProxy.address)
