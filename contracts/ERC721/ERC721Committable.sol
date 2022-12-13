@@ -17,7 +17,6 @@ contract ERC721Committable is
     OwnableUpgradeable,
     DefaultOperatorFiltererUpgradeable
 {
-
     uint256 internal _totalSupply;
     string public baseURI;
     address public signer;
@@ -39,7 +38,6 @@ contract ERC721Committable is
         __DefaultOperatorFilterer_init();
         signer = _signer;
         royaltyDistributor = _royaltyDistributor;
-
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -204,7 +202,6 @@ contract ERC721Committable is
             (bool success, ) = royaltyDistributor.call(
                 abi.encodeWithSignature("distribute(uint256)", tokenId)
             );
-
             if (success) {
                 //
             }
@@ -254,5 +251,4 @@ contract ERC721Committable is
     }
 
     uint256[44] private __gap;
-
 }
