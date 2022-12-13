@@ -317,11 +317,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         uint256 tokenId,
         bytes memory tokenSig
     ) internal {
-<<<<<<< HEAD
-=======
-
->>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
-        // mint first if tokenSig is valid
+         // mint first if tokenSig is valid
         if (tokenSig.length == 65) {
        
             ERC721Committable(contractAddress).mint(from, tokenId, tokenSig);
@@ -329,9 +325,5 @@ contract Exchange is ReentrancyGuard, FeePanel {
         }
         // standard ERC721 transfer from seller to buyer
         ERC721Committable(contractAddress).transferFrom(from, to, tokenId);
-<<<<<<< HEAD
-=======
-
->>>>>>> 6a3ce7e84257ab7ae6716ca5ab1c864f9fac15b0
-    }
+          } 
 }
