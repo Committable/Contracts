@@ -13,7 +13,7 @@ describe('ERC721', function () {
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
 
       controller = await new Controller().deploy()
-      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, owner.address, ZERO_ADDRESS )
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, owner.address, ZERO_ADDRESS, controller )
       
       /* sign some tokenId */
       /* caculate tokenProxy.domain seperator and type */

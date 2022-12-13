@@ -13,10 +13,11 @@ function Controller() {
 }
 
 function ERC721Committable(BASE_URI) {
-    this.deploy = async function (name, symbol, signer, distributor) {
+    this.deploy = async function (name, symbol, signer, distributor, controller) {
         /* deploy token logic contract */
         let ERC721Committable = await ethers.getContractFactory("ERC721Committable");
         let erc721Committable = await ERC721Committable.deploy();
+
         await erc721Committable.deployed();
         /* deploy token proxy contract */
         let CommittableProxy = await ethers.getContractFactory("CommittableProxy");

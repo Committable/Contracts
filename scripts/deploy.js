@@ -13,7 +13,7 @@ async function main() {
   let controller = await new Controller().deploy()
 
   console.log("deploying erc721Committable...")
-  let erc721Committable = await new ERC721Committable(BASE_URI).deploy(NAME, SYMBOL, SIGNER_ADDRESS, ZERO_ADDRESS)
+  let erc721Committable = await new ERC721Committable(BASE_URI).deploy(NAME, SYMBOL, SIGNER_ADDRESS, ZERO_ADDRESS, controller)
 
   console.log("deploying exchange...")
   let exchange = await new Exchange(erc721Committable).deploy();

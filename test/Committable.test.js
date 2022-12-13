@@ -16,7 +16,7 @@ describe('Committable', function () {
             [signer, user, ...others] = await ethers.getSigners();
             /* deploy contracts */
             controller = await new Controller().deploy()
-            tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, signer.address, ZERO_ADDRESS)
+            tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, signer.address, ZERO_ADDRESS, controller)
             // provider =  waffle.provider;
 
 
@@ -79,6 +79,8 @@ describe('Committable', function () {
             })
 
         })
+    
+
         context("[mint] function test", function () {
             context('with legitimate minting signature', function () {
                 beforeEach('mint tokens with legitimate signature', async function () {

@@ -9,7 +9,7 @@ const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
 PRICE = ethers.utils.parseEther('100').toString();
 REPO_ROYALTY = ethers.utils.parseEther('2.5').toString(); // 100*5%*50%
-const { Controller, ERC721Committable, Exchange, TransferProxy, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
+const { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor } = require("../utils/deployer.js");
 
 DEADLINE = 0;
 UINT256_MAX = '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
@@ -27,7 +27,7 @@ describe('Exchange', function () {
       provider = waffle.provider
 
       controller = await new Controller().deploy()
-      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, seller.address, ZERO_ADDRESS)
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, seller.address, ZERO_ADDRESS, controller)
       exchange = await new Exchange(tokenProxy).deploy()
       vault = await new Vault().deploy(controller)
       royaltyDistributor = await new RoyaltyDistributor().deploy(tokenProxy, vault)
@@ -1926,6 +1926,17 @@ describe('Exchange', function () {
             throw null;
           } catch (err) {
             expect(err.message).to.include('must be called by legit user');
+          }
+        })
+        it('should revert when exchange not registered', async function () {
+          let tx =await tokenProxy.registerOperator(exchange.address, false)
+          await tx.wait()
+          try {
+            let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
+            await tx.wait();
+            throw null;
+          }catch(err) {
+            expect(err.message).to.include("ERC721: operator query for nonexistent token")
           }
         })
       })
