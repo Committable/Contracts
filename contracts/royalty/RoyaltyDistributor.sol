@@ -26,7 +26,7 @@ contract RoyaltyDistributor is Ownable {
         );
         uint256 ethBalance = address(this).balance;
         if (ethBalance > 0) {
-            // 50% of royalty is sent to repo vault, another 50% is sent to committable
+            // 50% of royalty is sent to repo vault, another 50% is sent to dev
             uint256 repoRoyalty = ethBalance / 2;
             // last uint96 of tokenId represents its rid
             Vault(vaultAddress).depositWithEther{value: repoRoyalty}(
