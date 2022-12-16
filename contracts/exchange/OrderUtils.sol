@@ -22,8 +22,6 @@ library OrderUtils {
         address target;
         // tokenId to transfer
         uint256 tokenId;
-        // tokenSig required for minting a new token, sentinel value for transfer
-        bytes tokenSig;
         // timestamp for the beginning for executing this order
         uint256 start;
         // timestamp for the deadline for executing this order
@@ -38,8 +36,8 @@ library OrderUtils {
         return
             keccak256(
                 abi.encode(
-                    // keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,bytes tokenSig,uint256 start,uint256 end,uint256 salt)"),
-                    0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252,
+                    // keccak256("Order(bool isBuySide,bool isAuction,address maker,address paymentToken,uint256 value,address royaltyRecipient,uint256 royalty,address target,uint256 tokenId,uint256 start,uint256 end,uint256 salt)"),
+                    0x0e6d10e3410480287f7da74700fffd3978667772bdd833a68a905a27645320d1,
                     order.isBuySide,
                     order.isAuction,
                     order.maker,
@@ -49,7 +47,6 @@ library OrderUtils {
                     order.royalty,
                     order.target,
                     order.tokenId,
-                    keccak256(order.tokenSig),
                     order.start,
                     order.end,
                     order.salt

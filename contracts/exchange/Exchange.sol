@@ -81,18 +81,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev support transfer unminted tokens with token signature
-     */
-    function transferERC721(
-        address to,
-        address contractAddress,
-        uint256 tokenId,
-        bytes memory tokenSig
-    ) external {
-        _transferERC721(msg.sender, to, contractAddress, tokenId, tokenSig);
-    }
-
-    /**
      * @dev match orders, transfer tokens and trigger state transition
      * @param buyOrder - buy order struct
      * @param buyOrderSig - buy order signature (must be signed by buy order maker)
@@ -128,8 +116,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
             sellOrder.maker,
             buyOrder.maker,
             sellOrder.target,
-            sellOrder.tokenId,
-            sellOrder.tokenSig
+            sellOrder.tokenId
         );
     }
 
@@ -183,10 +170,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
             // buy order value must large or equal to sell order value
             (buyOrder.value >= sellOrder.value) &&
-            // // royaltyRecipient must match
-            // (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
-            // // royalty must match
-            // (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             (sellOrder.royalty <= 1000) &&
             // must match target
@@ -308,22 +291,14 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev trigger state transition (message call to router)
+     * @dev transfer ERC721
      */
     function _transferERC721(
         address from,
         address to,
         address contractAddress,
-        uint256 tokenId,
-        bytes memory tokenSig
+        uint256 tokenId
     ) internal {
-         // mint first if tokenSig is valid
-        if (tokenSig.length == 65) {
-       
-            ERC721Committable(contractAddress).mint(from, tokenId, tokenSig);
-            // address(contractAddress).call(data);
-        }
-        // standard ERC721 transfer from seller to buyer
         ERC721Committable(contractAddress).transferFrom(from, to, tokenId);
-          } 
+    }
 }
