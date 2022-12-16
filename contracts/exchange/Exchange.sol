@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 
 import "./OrderUtils.sol";
 import "./FeePanel.sol";
-import "../ERC721/ERC721Committable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -299,6 +298,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
         address contractAddress,
         uint256 tokenId
     ) internal {
-        ERC721Committable(contractAddress).transferFrom(from, to, tokenId);
+        IERC721(contractAddress).transferFrom(from, to, tokenId);
     }
 }

@@ -86,7 +86,7 @@ function Exchange(erc721Committable) {
             let abiCoder = new ethers.utils.AbiCoder();
             let order_encode =
                 abiCoder.encode(['bytes32', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256'],
-                    ['0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252',
+                    ['0x0e6d10e3410480287f7da74700fffd3978667772bdd833a68a905a27645320d1',
                         order.isBuySide,
                         order.isAuction,
                         order.maker,
