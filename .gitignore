@@ -2,6 +2,7 @@ node_modules
 .env
 docs
 scripts/interact.js
+scripts/upgrade.js
 utils/argument.js
 coverage
 coverage.json
