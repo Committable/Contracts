@@ -4,13 +4,12 @@ pragma solidity ^0.8.0;
 
 import "./OrderUtils.sol";
 import "./FeePanel.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Exchange is ReentrancyGuard, FeePanel {
+contract Exchange is FeePanel {
     // solhint-disable-next-line
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -87,6 +86,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @param sellOrderSig - - buy order signature (must be signed by sell order maker)
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
+     * - reentrancy is literally impossible
      * - Emits an {orderMatched} event.
      */
     function matchOrder(
@@ -94,7 +94,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         bytes memory buyOrderSig,
         OrderUtils.Order memory sellOrder,
         bytes memory sellOrderSig
-    ) external payable nonReentrant {
+    ) external payable {
         require(
             _orderSigValidation(buyOrder, buyOrderSig) &&
                 _orderSigValidation(sellOrder, sellOrderSig),
@@ -109,14 +109,13 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "Exchange: must be called by legit user"
         );
         _beforeTransfer(buyOrder, sellOrder);
-        _transferPaymentToken(buyOrder, sellOrder);
-        // transfer from sell order maker to buy order maker
         _transferERC721(
             sellOrder.maker,
             buyOrder.maker,
             sellOrder.target,
             sellOrder.tokenId
         );
+        _transferPaymentToken(buyOrder, sellOrder);
     }
 
     /**

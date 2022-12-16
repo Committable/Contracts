@@ -1277,14 +1277,39 @@ describe('Exchange', function () {
     context("with royalty sent to contract", function () {
       // generate order pairs: pay eth to transfer erc721, no royalty
       beforeEach('with minted nft', async function () {
-        // sign some tokenId
-        let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-          creator: seller.address,
-          tokenId: tokenId_0
-        });
-        // // mint tokenId_0to seller
-        tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
-        await tx.wait();
+           // sign some tokenId
+           let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+            creator: seller.address,
+            tokenId: tokenId_0
+          });
+          let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+            creator: seller.address,
+            tokenId: tokenId_1
+          });
+          let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+            creator: seller.address,
+            tokenId: tokenId_2
+          });
+          let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+            creator: seller.address,
+            tokenId: tokenId_3
+          });
+          let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+            creator: seller.address,
+            tokenId: tokenId_6
+          });
+
+          // // mint tokenId_0, 1, 2 to seller
+          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
+          await tx.wait();
+          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
+          await tx.wait();
 
       })
       it("should controller get royaltyDistributor address", async function () {
@@ -1301,7 +1326,8 @@ describe('Exchange', function () {
       it("should distribute royalty to vault", async function () {
         let tx = await exchange.connect(buyer).matchOrder(buy_order_8, buy_order_sig_8, sell_order_8, sell_order_sig_8, { value: PRICE });
         await tx.wait()
-
+        // distribute royalty in next tx
+        tx = await exchange.connect(buyer).matchOrder(buy_order_2, buy_order_sig_2, sell_order_2, sell_order_sig_2)
         // value change
         await expect(tx).to.changeEtherBalance(vault, REPO_ROYALTY)
         await expect(tx).to.changeEtherBalance(dev, REPO_ROYALTY)

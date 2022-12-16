@@ -130,13 +130,6 @@ contract ERC721Committable is
             v := byte(0, mload(add(signature, 0x60)))
         }
 
-        // bytes32 digest = keccak256(
-        //     abi.encodePacked(
-        //         "\x19Ethereum Signed Message:\n32",
-        //         keccak256(abi.encode(creator, tokenId))
-        //     )
-        // );
-
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -200,7 +193,7 @@ contract ERC721Committable is
         // notify distributor transferred tokenId
         if (royaltyDistributor != address(0) && from != address(0)) {
             (bool success, ) = royaltyDistributor.call(
-                abi.encodeWithSignature("distribute(uint256)", tokenId)
+                abi.encodeWithSignature("update(uint256)", tokenId)
             );
             if (success) {
                 //
