@@ -7,6 +7,7 @@
 - Implementation of ERC721Upgradeable with [Transparent proxy pattern](https://blog.openzeppelin.com/the-transparent-proxy-pattern/).
 - Flexible and secure proxy scheme that allows smooth transfer and role-based permissions.
 - Robust exchange protocol that can verify and execute off-chain generated order pairs.
+- Dynamic royalty distribution strategy
 
 ## Overview
 
