@@ -3,8 +3,10 @@ const { ethers } = require("hardhat");
 const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-const { tokenIds } = require('./tokenId.js');
+const { tokenIds, repoIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
+const { repoId_a, repoId_b } = repoIds;
+
 
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
 const funding = ethers.utils.parseEther("1")
@@ -25,18 +27,24 @@ describe('Committable', function () {
             mint_0 = {
                 creator: signer.address,
                 tokenId: tokenId_0,
+                repoId: repoId_a
             }
             mint_1 = {
                 creator: signer.address,
                 tokenId: tokenId_1,
+                repoId: repoId_a
+
             }
             mint_2 = {
                 creator: signer.address,
                 tokenId: tokenId_2,
+                repoId: repoId_a
+
             }
             mint_3 = {
                 creator: user.address,
                 tokenId: tokenId_3,
+                repoId: repoId_a
             }
 
             /* sign some tokenId */
@@ -45,7 +53,6 @@ describe('Committable', function () {
             signature_1 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_1);
             signature_2 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_2);
             signature_3 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_3);
-
 
             /* create payroll */
             payroll = [
@@ -70,25 +77,25 @@ describe('Committable', function () {
         context("initialzie()", function () {
             it("cannot initialize twice", async function () {
                 try {
-                    let tx= await tokenProxy.initialize("name","symbol", signer.address, ZERO_ADDRESS)
+                    let tx = await tokenProxy.initialize("name", "symbol", signer.address, ZERO_ADDRESS)
                     await tx.wait()
                     throw null
-                } catch(err) {
+                } catch (err) {
                     expect(err.message).to.include("contract is already initialized")
                 }
             })
 
         })
-    
+
 
         context("[mint] function test", function () {
             context('with legitimate minting signature', function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
                     /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-                    await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-                    await tokenProxy.mint(signer.address, tokenId_1, signature_1);
-                    await tokenProxy.mint(signer.address, tokenId_2, signature_2);
-                    await tokenProxy.mint(user.address, tokenId_3, signature_3);
+                    await tokenProxy.mint(signer.address, tokenId_0, repoId_a, signature_0);
+                    await tokenProxy.mint(signer.address, tokenId_1, repoId_a, signature_1);
+                    await tokenProxy.mint(signer.address, tokenId_2, repoId_a, signature_2);
+                    await tokenProxy.mint(user.address, tokenId_3, repoId_a, signature_3);
                 })
                 it("should mint successfully", async function () {
                     expect(await tokenProxy.ownerOf(tokenId_0)).to.equal(signer.address)
@@ -97,9 +104,16 @@ describe('Committable', function () {
                 it("should have correct totalSupply", async function () {
                     expect(await tokenProxy.totalSupply()).to.equal(4)
                 })
+                it("should have correct repoId", async function () {
+                    expect(await tokenProxy.repoIdOf(tokenId_0)).to.equal(repoId_a)
+                    expect(await tokenProxy.repoIdOf(tokenId_1)).to.equal(repoId_a)
+                    expect(await tokenProxy.repoIdOf(tokenId_2)).to.equal(repoId_a)
+                    expect(await tokenProxy.repoIdOf(tokenId_3)).to.equal(repoId_a)
+
+                })
                 it("should revert for repeated tokenId ", async function () {
                     try {
-                        await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                        await tokenProxy.mint(signer.address, tokenId_0, repoId_a, signature_0);
                         throw null
                     } catch (err) {
                         expect(err.message).to.include("ERC721: token already minted")
@@ -109,11 +123,12 @@ describe('Committable', function () {
                     let mint_zero = {
                         creator: ZERO_ADDRESS,
                         tokenId: 10000,
+                        repoId:repoId_a
                     }
                     signature_zero = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_zero);
 
                     try {
-                        await tokenProxy.mint(ZERO_ADDRESS, 10000, signature_zero);
+                        await tokenProxy.mint(ZERO_ADDRESS, 10000, repoId_a, signature_zero);
                         throw null
                     } catch (err) {
                         expect(err.message).to.include("ERC721: mint to the zero address")
@@ -128,7 +143,7 @@ describe('Committable', function () {
                         let abiCoder = new ethers.utils.AbiCoder;
                         signature_0 = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, mint_0);
 
-                        await tokenProxy.mint(signer.address, tokenId_1, signature_0);
+                        await tokenProxy.mint(signer.address, tokenId_1, repoId_a, signature_0);
                         throw null;
                     } catch (err) {
                         expect(err.message).to.include("invalid token signature");
@@ -142,10 +157,10 @@ describe('Committable', function () {
         context("ownership test", function () {
             beforeEach('mint tokens with legitimate signature', async function () {
                 /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-                await tokenProxy.mint(signer.address, tokenId_0, signature_0);
-                await tokenProxy.mint(signer.address, tokenId_1, signature_1);
-                await tokenProxy.mint(signer.address, tokenId_2, signature_2);
-                await tokenProxy.mint(user.address, tokenId_3, signature_3);
+                await tokenProxy.mint(signer.address, tokenId_0, repoId_a, signature_0);
+                await tokenProxy.mint(signer.address, tokenId_1, repoId_a, signature_1);
+                await tokenProxy.mint(signer.address, tokenId_2, repoId_a, signature_2);
+                await tokenProxy.mint(user.address, tokenId_3, repoId_a, signature_3);
             })
             it("owner can change baseuri", async function () {
                 let tx = await tokenProxy.connect(signer).changeBaseURI("http://www.google.com/")
@@ -182,8 +197,9 @@ describe('Committable', function () {
                     signatures[i] = await signer._signTypedData(tokenProxy.domain, tokenProxy.types, {
                         creator: signer.address,
                         tokenId: tokenIds[i],
+                        repoId:repoId_a
                     });
-                    let tx = await tokenProxy.mint(signer.address, tokenIds[i], signatures[i])
+                    let tx = await tokenProxy.mint(signer.address, tokenIds[i],repoId_a, signatures[i])
                     await tx.wait()
                 }
                 let tx = await tokenProxy.pay(tokenIds, scores, { value: funding })
@@ -253,7 +269,7 @@ describe('Committable', function () {
             context("with minted token", function () {
                 beforeEach('mint tokens with legitimate signature', async function () {
                     /* mint tokenId_0, tokenId_1, tokenId_2 to signer, tokenId_3 to user */
-                    let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                    let tx = await tokenProxy.mint(signer.address, tokenId_0,repoId_a, signature_0);
                     await tx.wait()
                 })
                 it("fund and claim", async function () {
@@ -398,7 +414,7 @@ describe('Committable', function () {
                 })
                 it("mint and claim", async function () {
                     // mint
-                    let tx = await tokenProxy.mint(signer.address, tokenId_0, signature_0);
+                    let tx = await tokenProxy.mint(signer.address, tokenId_0,repoId_a, signature_0);
                     await tx.wait()
                     // // claim
                     // tx = await tokenProxy.claim(tokenId_0)

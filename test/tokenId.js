@@ -11,23 +11,31 @@ const commit_5 = '0x521f4d0aac73309294cdaf9deddb945f17323ced';
 const commit_6 = '0x621f4d0aac73309294cdaf9deddb945f17323ced';
 const commit_7 = '0x721f4d0aac73309294cdaf9deddb945f17323ced';
 
-const project_a = '0x00000000000000000000000a';
-const project_b = '0x00000000000000000000000b';
+const repoId_a = 'R_kgDOG9XOKQ';
+const repoId_b = 'R_kgDOG9XOKW';
 
 // -------------------
-const tokenId_0 = ethers.utils.hexConcat([commit_0, project_a]);
-const tokenId_1 = ethers.utils.hexConcat([commit_1, project_b]);
-const tokenId_2 = ethers.utils.hexConcat([commit_2, project_a]);
-const tokenId_3 = ethers.utils.hexConcat([commit_3, project_a]);
-const tokenId_4 = ethers.utils.hexConcat([commit_4, project_b]);
-const tokenId_5 = ethers.utils.hexConcat([commit_5, project_a]);
-const tokenId_6 = ethers.utils.hexConcat([commit_6, project_b]);
-const tokenId_7 = ethers.utils.hexConcat([commit_6, project_a]);
+// const tokenId_0 = ethers.utils.hexConcat([commit_0, project_a]);
+// const tokenId_1 = ethers.utils.hexConcat([commit_1, project_b]);
+// const tokenId_2 = ethers.utils.hexConcat([commit_2, project_a]);
+// const tokenId_3 = ethers.utils.hexConcat([commit_3, project_a]);
+// const tokenId_4 = ethers.utils.hexConcat([commit_4, project_b]);
+// const tokenId_5 = ethers.utils.hexConcat([commit_5, project_a]);
+// const tokenId_6 = ethers.utils.hexConcat([commit_6, project_b]);
+// const tokenId_7 = ethers.utils.hexConcat([commit_6, project_a]);
+const tokenId_0 = commit_0
+const tokenId_1 = commit_1
+const tokenId_2 = commit_2
+const tokenId_3 = commit_3
+const tokenId_4 = commit_4
+const tokenId_5 = commit_5
+const tokenId_6 = commit_6
+const tokenId_7 = commit_7
 
 
-projects = {
-    project_a: project_a,
-    project_b: project_b
+repoIds = {
+    repoId_a: repoId_a,
+    repoId_b: repoId_b
 }
 commits = {
     commit_0: commit_0,
@@ -50,4 +58,4 @@ tokenIds = {
     tokenId_7: tokenId_7
 }
 
-module.exports = { projects, commits, tokenIds };
+module.exports = { repoIds, commits, tokenIds };

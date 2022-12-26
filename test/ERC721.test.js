@@ -2,8 +2,9 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const { tokenIds, projects, commits } = require('./tokenId.js');
+const { tokenIds, repoIds, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
+const { repoId_a, repoId_b } = repoIds
 const { Controller, ERC721Committable } = require("../utils/deployer.js")
 
 describe('ERC721', function () {
@@ -13,18 +14,20 @@ describe('ERC721', function () {
       [owner, recipient, approved, operator, batchOwner, ...others] = await ethers.getSigners();
 
       controller = await new Controller().deploy()
-      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, owner.address, ZERO_ADDRESS, controller )
-      
+      tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, owner.address, ZERO_ADDRESS, controller)
+
       /* sign some tokenId */
       /* caculate tokenProxy.domain seperator and type */
 
       mint_0 = {
         creator: owner.address,
         tokenId: tokenId_0,
+        repoId: repoId_a
       }
       mint_1 = {
         creator: owner.address,
         tokenId: tokenId_1,
+        repoId: repoId_a
       }
 
 
@@ -33,10 +36,11 @@ describe('ERC721', function () {
       signature_0 = await owner._signTypedData(tokenProxy.domain, tokenProxy.types, mint_0);
       signature_1 = await owner._signTypedData(tokenProxy.domain, tokenProxy.types, mint_1);
 
+
       /* mint tokenId_0, tokenId_1 to owner */
-      let tx = await tokenProxy.mint(owner.address, tokenId_0, signature_0);
+      let tx = await tokenProxy.mint(owner.address, tokenId_0, repoId_a, signature_0);
       await tx.wait();
-      tx = await tokenProxy.mint(owner.address, tokenId_1, signature_1);
+      tx = await tokenProxy.mint(owner.address, tokenId_1, repoId_a, signature_1);
       await tx.wait();
     })
     context("when initialized", function () {

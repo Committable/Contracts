@@ -2,8 +2,9 @@ const { expect } = require("chai");
 const { ethers, waffle } = require("hardhat");
 const { NAME, SYMBOL } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
-const { projects, commits, tokenIds } = require('./tokenId.js');
+const { repoIds, commits, tokenIds } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4, tokenId_5, tokenId_6, tokenId_7 } = tokenIds;
+const { repoId_a, repoId_b } = repoIds
 ROYALTY = '500'; // 5%
 const life_span = 60 * 60 * 24 * 7 // one week
 FEE = '1000' // 10%
@@ -274,35 +275,40 @@ describe('Exchange', function () {
           // sign some tokenId
           let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_0
+            tokenId: tokenId_0,
+            repoId: repoId_a
           });
           let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_1
+            tokenId: tokenId_1,
+            repoId: repoId_a
           });
           let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_2
+            tokenId: tokenId_2,
+            repoId: repoId_a
           });
           let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_3
+            tokenId: tokenId_3,
+            repoId: repoId_a
           });
           let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_6
+            tokenId: tokenId_6,
+            repoId: repoId_a
           });
 
           // // mint tokenId_0, 1, 2 to seller
-          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+          tx = await tokenProxy.mint(seller.address, tokenId_0, repoId_a, signature_0);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
+          tx = await tokenProxy.mint(seller.address, tokenId_1, repoId_a, signature_1);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
+          tx = await tokenProxy.mint(seller.address, tokenId_2, repoId_a, signature_2);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
+          tx = await tokenProxy.mint(seller.address, tokenId_3, repoId_a, signature_3);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
+          tx = await tokenProxy.mint(seller.address, tokenId_6, repoId_a, signature_6);
           await tx.wait();
           // deploy Helper for test
 
@@ -617,36 +623,41 @@ describe('Exchange', function () {
           // sign some tokenId
           let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_0
+            tokenId: tokenId_0,
+            repoId:repoId_a
           });
           let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_1
+            tokenId: tokenId_1,
+            repoId:repoId_a
           });
           let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_2
+            tokenId: tokenId_2,
+            repoId:repoId_a
           });
           let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_3
+            tokenId: tokenId_3,
+            repoId:repoId_a
           });
           let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
             creator: seller.address,
-            tokenId: tokenId_6
+            tokenId: tokenId_6,
+            repoId:repoId_a
           });
 
 
           // mint tokenId_0, 1, 2 to seller
-          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
+          tx = await tokenProxy.mint(seller.address, tokenId_0,repoId_a, signature_0);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
+          tx = await tokenProxy.mint(seller.address, tokenId_1,repoId_a,  signature_1);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
+          tx = await tokenProxy.mint(seller.address, tokenId_2,repoId_a,  signature_2);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
+          tx = await tokenProxy.mint(seller.address, tokenId_3,repoId_a,  signature_3);
           await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
+          tx = await tokenProxy.mint(seller.address, tokenId_6,repoId_a,  signature_6);
           await tx.wait();
         })
         context('when buy order value is modified', function () {
@@ -709,7 +720,7 @@ describe('Exchange', function () {
               expect(err.message).to.include('ERC721: transfer caller is not owner nor approved');
             }
           })
-       
+
           it('revert with buyer call erc20 standard order', async function () {
             try {
               await exchange.connect(buyer).matchOrder(buy_order_6, buy_order_sig_6, sell_order_6, sell_order_sig_6);
@@ -718,7 +729,7 @@ describe('Exchange', function () {
               expect(err.message).to.include("must be called by legit user")
             }
           })
-      
+
         })
         context('when buy order exchange address does not match', function () {
           it('revert with ETH standard orders', async function () {
@@ -745,8 +756,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order signature');
             }
           })
-         
-        
+
+
 
         })
         context('when sell order exchange address does not match', function () {
@@ -774,7 +785,7 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order signature');
             }
           })
-     
+
         })
         context('when pair two buy orders', function () {
           it('revert with ETH standard orders', async function () {
@@ -795,7 +806,7 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-    
+
         })
         context('when pair two sell orders', function () {
           it('revert with ETH standard orders', async function () {
@@ -816,8 +827,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-        
-  
+
+
         })
 
         context('when order payment token does not match', function () {
@@ -856,8 +867,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-         
-    
+
+
         })
         context('when nft contract address does not match', function () {
           it('revert with ETH standard order', async function () {
@@ -884,8 +895,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-      
-       
+
+
         })
         context('when tokenID does not match', function () {
           it('revert with ETH standard order', async function () {
@@ -912,8 +923,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-       
-         
+
+
         })
         context('when buy order start time has not reached yet', function () {
           it('revert with ETH standard order', async function () {
@@ -940,8 +951,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-       
-       
+
+
         })
         context('when buy order has expired', function () {
           it('revert with ETH standard order', async function () {
@@ -968,8 +979,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-       
-       
+
+
         })
         context('when sell order has expired', function () {
           it('revert with ETH standard order', async function () {
@@ -996,7 +1007,7 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-    
+
         })
         context('when execute finished order', function () {
           it('revert with ETH standard order', async function () {
@@ -1021,7 +1032,7 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-      
+
         })
         context('when execute cancelled buy order', function () {
           it('revert with ETH order', async function () {
@@ -1047,8 +1058,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-        
-         
+
+
         })
         context('when execute cancelled sell order', function () {
           it('revert with ETH order', async function () {
@@ -1074,8 +1085,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-          
-         
+
+
         })
 
         context('with other malicious order behaviors', function () {
@@ -1261,13 +1272,13 @@ describe('Exchange', function () {
           }
         })
         it('should revert when exchange not registered', async function () {
-          let tx =await tokenProxy.registerOperator(exchange.address, false)
+          let tx = await tokenProxy.registerOperator(exchange.address, false)
           await tx.wait()
           try {
             let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
             await tx.wait();
             throw null;
-          }catch(err) {
+          } catch (err) {
             expect(err.message).to.include("ERC721: operator query for nonexistent token")
           }
         })
@@ -1277,39 +1288,44 @@ describe('Exchange', function () {
     context("with royalty sent to contract", function () {
       // generate order pairs: pay eth to transfer erc721, no royalty
       beforeEach('with minted nft', async function () {
-           // sign some tokenId
-           let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_0
-          });
-          let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_1
-          });
-          let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_2
-          });
-          let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_3
-          });
-          let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_6
-          });
+        // sign some tokenId
+        let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_0,
+          repoId: repoId_a,
+        });
+        let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_1,
+          repoId: repoId_a,
+        });
+        let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_2,
+          repoId: repoId_a,
+        });
+        let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_3,
+          repoId: repoId_a,
+        });
+        let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
+          creator: seller.address,
+          tokenId: tokenId_6,
+          repoId: repoId_a,
+        });
 
-          // // mint tokenId_0, 1, 2 to seller
-          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
-          await tx.wait();
+        // // mint tokenId_0, 1, 2 to seller
+        tx = await tokenProxy.mint(seller.address, tokenId_0, repoId_a, signature_0);
+        await tx.wait();
+        tx = await tokenProxy.mint(seller.address, tokenId_1, repoId_a, signature_1);
+        await tx.wait();
+        tx = await tokenProxy.mint(seller.address, tokenId_2, repoId_a, signature_2);
+        await tx.wait();
+        tx = await tokenProxy.mint(seller.address, tokenId_3, repoId_a, signature_3);
+        await tx.wait();
+        tx = await tokenProxy.mint(seller.address, tokenId_6, repoId_a, signature_6);
+        await tx.wait();
 
       })
       it("should controller get royaltyDistributor address", async function () {
@@ -1333,10 +1349,10 @@ describe('Exchange', function () {
         await expect(tx).to.changeEtherBalance(dev, REPO_ROYALTY)
 
         // state change
-        expect(await vault.reserve(projects.project_a, ZERO_ADDRESS)).to.equal(REPO_ROYALTY)
+        expect(await vault.reserve(repoId_a, ZERO_ADDRESS)).to.equal(REPO_ROYALTY)
         // emit event
         await expect(tx).to.emit(vault, 'Deposit')
-          .withArgs(projects.project_a, ZERO_ADDRESS, REPO_ROYALTY);
+          .withArgs(repoId_a, ZERO_ADDRESS, REPO_ROYALTY);
       })
 
 

@@ -5,6 +5,7 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./Vault.sol";
+import "../ERC721/ERC721Committable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -36,12 +37,15 @@ contract RoyaltyDistributor is Ownable {
     function _distribute(uint256 tokenId) internal {
         if (tokenId != 0) {
             uint256 ethBalance = address(this).balance;
+            // read repoId of a token
+            string memory repoId = ERC721Committable(committableERC721)
+                .repoIdOf(tokenId);
             if (ethBalance > 0) {
                 // 50% of royalty is sent to repo vault, another 50% is sent to dev
                 uint256 repoRoyalty = ethBalance / 2;
                 // last uint96 of tokenId represents its rid
                 Vault(vaultAddress).depositWithEther{value: repoRoyalty}(
-                    uint96(tokenId)
+                    repoId
                 );
                 // prevent re-entrancy
                 payable(dev).transfer(ethBalance - repoRoyalty);
@@ -57,7 +61,7 @@ contract RoyaltyDistributor is Ownable {
                     uint256 repoRoyalty = wethBalance / 2;
                     // last uint96 of tokenId represents its rid
                     Vault(vaultAddress).depositWithERC20(
-                        uint96(tokenId),
+                        repoId,
                         wethAddress,
                         repoRoyalty
                     );
