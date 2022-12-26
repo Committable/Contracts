@@ -727,70 +727,10 @@ describe('Exchange', function () {
               throw null;
             } catch (err) {
               expect(err.message).to.include("must be called by legit user")
-<<<<<<< HEAD
-=======
-            }
-          })
-      
-        })
-        context('when buy order exchange address does not match', function () {
-          it('revert with ETH standard orders', async function () {
-            try {
-              exchange.domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_0 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_0);
-
-              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-              await tx.wait();
-              throw null;
-            } catch (err) {
-              expect(err.message).to.include('invalid order signature');
-            }
-          })
-          it('revert with ERC20 standard orders', async function () {
-            try {
-              exchange.domain.verifyingContract = ZERO_ADDRESS;
-              buy_order_sig_3 = await buyer._signTypedData(exchange.domain, exchange.types, buy_order_3);
-
-              let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
-              await tx.wait();
-              throw null;
-            } catch (err) {
-              expect(err.message).to.include('invalid order signature');
-            }
-          })
-         
-        
-
-        })
-        context('when sell order exchange address does not match', function () {
-          it('revert with ETH standard orders', async function () {
-            try {
-              exchange.domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_0 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_0);
-
-              let tx = await exchange.connect(buyer).matchOrder(buy_order_0, buy_order_sig_0, sell_order_0, sell_order_sig_0, { value: PRICE });
-              await tx.wait();
-              throw null;
-            } catch (err) {
-              expect(err.message).to.include('invalid order signature');
-            }
-          })
-          it('revert with ERC20 standard orders', async function () {
-            try {
-              exchange.domain.verifyingContract = ZERO_ADDRESS;
-              sell_order_sig_3 = await seller._signTypedData(exchange.domain, exchange.types, sell_order_3);
-
-              let tx = await exchange.connect(buyer).matchOrder(buy_order_3, buy_order_sig_3, sell_order_3, sell_order_sig_3, { value: PRICE });
-              await tx.wait();
-              throw null;
-            } catch (err) {
-              expect(err.message).to.include('invalid order signature');
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
             }
           })
      
         })
-<<<<<<< HEAD
         context('when buy order exchange address does not match', function () {
           it('revert with ETH standard orders', async function () {
             try {
@@ -847,8 +787,6 @@ describe('Exchange', function () {
           })
 
         })
-=======
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         context('when pair two buy orders', function () {
           it('revert with ETH standard orders', async function () {
             try {
@@ -868,11 +806,6 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when pair two sell orders', function () {
           it('revert with ETH standard orders', async function () {
@@ -893,13 +826,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-        
-  
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
 
         context('when order payment token does not match', function () {
@@ -938,13 +866,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-         
-    
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when nft contract address does not match', function () {
           it('revert with ETH standard order', async function () {
@@ -971,13 +894,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-      
-       
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when tokenID does not match', function () {
           it('revert with ETH standard order', async function () {
@@ -1004,13 +922,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-       
-         
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when buy order start time has not reached yet', function () {
           it('revert with ETH standard order', async function () {
@@ -1037,13 +950,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-       
-       
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when buy order has expired', function () {
           it('revert with ETH standard order', async function () {
@@ -1070,13 +978,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-       
-       
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when sell order has expired', function () {
           it('revert with ETH standard order', async function () {
@@ -1103,11 +1006,6 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
-
-=======
-    
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when execute finished order', function () {
           it('revert with ETH standard order', async function () {
@@ -1132,11 +1030,6 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
-
-=======
-      
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when execute cancelled buy order', function () {
           it('revert with ETH order', async function () {
@@ -1162,13 +1055,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-        
-         
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
         context('when execute cancelled sell order', function () {
           it('revert with ETH order', async function () {
@@ -1194,13 +1082,8 @@ describe('Exchange', function () {
               expect(err.message).to.include('invalid order parameters');
             }
           })
-<<<<<<< HEAD
 
 
-=======
-          
-         
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
         })
 
         context('with other malicious order behaviors', function () {
@@ -1398,7 +1281,6 @@ describe('Exchange', function () {
         })
       })
     })
-<<<<<<< HEAD
 
     context("with royalty sent to contract", function () {
       // generate order pairs: pay eth to transfer erc721, no royalty
@@ -1441,45 +1323,6 @@ describe('Exchange', function () {
         await tx.wait();
         tx = await tokenProxy.mint(seller.address, tokenId_6, repoId_a, signature_6);
         await tx.wait();
-=======
-
-    context("with royalty sent to contract", function () {
-      // generate order pairs: pay eth to transfer erc721, no royalty
-      beforeEach('with minted nft', async function () {
-           // sign some tokenId
-           let signature_0 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_0
-          });
-          let signature_1 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_1
-          });
-          let signature_2 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_2
-          });
-          let signature_3 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_3
-          });
-          let signature_6 = await seller._signTypedData(tokenProxy.domain, tokenProxy.types, {
-            creator: seller.address,
-            tokenId: tokenId_6
-          });
-
-          // // mint tokenId_0, 1, 2 to seller
-          tx = await tokenProxy.mint(seller.address, tokenId_0, signature_0);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_1, signature_1);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_2, signature_2);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_3, signature_3);
-          await tx.wait();
-          tx = await tokenProxy.mint(seller.address, tokenId_6, signature_6);
-          await tx.wait();
->>>>>>> e03f64dc2496b3078faa10e4be3d3ff7fba24660
 
       })
       it("should controller get royaltyDistributor address", async function () {
