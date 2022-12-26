@@ -1,4 +1,4 @@
-# Committable | contracts
+# Committable | smart contracts
 
  ![](https://img.shields.io/badge/npm-8.0.0-blue)  ![](https://img.shields.io/badge/node-16.11.4-green)
 
