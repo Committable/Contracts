@@ -4,14 +4,12 @@ pragma solidity ^0.8.0;
 
 import "./OrderUtils.sol";
 import "./FeePanel.sol";
-import "../ERC721/ERC721Committable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Exchange is ReentrancyGuard, FeePanel {
+contract Exchange is FeePanel {
     // solhint-disable-next-line
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -81,18 +79,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev support transfer unminted tokens with token signature
-     */
-    function transferERC721(
-        address to,
-        address contractAddress,
-        uint256 tokenId,
-        bytes memory tokenSig
-    ) external {
-        _transferERC721(msg.sender, to, contractAddress, tokenId, tokenSig);
-    }
-
-    /**
      * @dev match orders, transfer tokens and trigger state transition
      * @param buyOrder - buy order struct
      * @param buyOrderSig - buy order signature (must be signed by buy order maker)
@@ -100,6 +86,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
      * @param sellOrderSig - - buy order signature (must be signed by sell order maker)
      * - buy order and sell order must pass signature verification
      * - buy order and sell order params must match with each other
+     * - reentrancy is literally impossible
      * - Emits an {orderMatched} event.
      */
     function matchOrder(
@@ -107,7 +94,7 @@ contract Exchange is ReentrancyGuard, FeePanel {
         bytes memory buyOrderSig,
         OrderUtils.Order memory sellOrder,
         bytes memory sellOrderSig
-    ) external payable nonReentrant {
+    ) external payable {
         require(
             _orderSigValidation(buyOrder, buyOrderSig) &&
                 _orderSigValidation(sellOrder, sellOrderSig),
@@ -122,15 +109,13 @@ contract Exchange is ReentrancyGuard, FeePanel {
             "Exchange: must be called by legit user"
         );
         _beforeTransfer(buyOrder, sellOrder);
-        _transferPaymentToken(buyOrder, sellOrder);
-        // transfer from sell order maker to buy order maker
         _transferERC721(
             sellOrder.maker,
             buyOrder.maker,
             sellOrder.target,
-            sellOrder.tokenId,
-            sellOrder.tokenSig
+            sellOrder.tokenId
         );
+        _transferPaymentToken(buyOrder, sellOrder);
     }
 
     /**
@@ -183,10 +168,6 @@ contract Exchange is ReentrancyGuard, FeePanel {
             (buyOrder.paymentToken == sellOrder.paymentToken) &&
             // buy order value must large or equal to sell order value
             (buyOrder.value >= sellOrder.value) &&
-            // // royaltyRecipient must match
-            // (buyOrder.royaltyRecipient == sellOrder.royaltyRecipient) &&
-            // // royalty must match
-            // (buyOrder.royalty == sellOrder.royalty) &&
             // royalty must be a rational value
             (sellOrder.royalty <= 1000) &&
             // must match target
@@ -308,22 +289,14 @@ contract Exchange is ReentrancyGuard, FeePanel {
     }
 
     /**
-     * @dev trigger state transition (message call to router)
+     * @dev transfer ERC721
      */
     function _transferERC721(
         address from,
         address to,
         address contractAddress,
-        uint256 tokenId,
-        bytes memory tokenSig
+        uint256 tokenId
     ) internal {
-         // mint first if tokenSig is valid
-        if (tokenSig.length == 65) {
-       
-            ERC721Committable(contractAddress).mint(from, tokenId, tokenSig);
-            // address(contractAddress).call(data);
-        }
-        // standard ERC721 transfer from seller to buyer
-        ERC721Committable(contractAddress).transferFrom(from, to, tokenId);
-          } 
+        IERC721(contractAddress).transferFrom(from, to, tokenId);
+    }
 }

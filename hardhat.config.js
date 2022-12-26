@@ -69,7 +69,6 @@ module.exports = {
     goerli: {
       url: process.env.ALCHEMY_GOERLI_URL,
       gas: 3000000,
-      gasPrice: 100000000, // 0.1gwei
       accounts: [process.env.PRIVATE_KEY]
       
     },

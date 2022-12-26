@@ -77,7 +77,6 @@ function Exchange(erc721Committable) {
                 { name: 'royalty', type: 'uint256' },
                 { name: 'target', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
-                { name: 'tokenSig', type: 'bytes' },
                 { name: 'start', type: 'uint256' },
                 { name: 'end', type: 'uint256' },
                 { name: 'salt', type: 'uint256' },
@@ -86,8 +85,8 @@ function Exchange(erc721Committable) {
         exchange.hashOrder = function (order) {
             let abiCoder = new ethers.utils.AbiCoder();
             let order_encode =
-                abiCoder.encode(['bytes32', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'uint256', 'bytes32', 'uint256', 'uint256', 'uint256'],
-                    ['0x27032b6564c9c203f2bd0f0ccd36b2529e0811ecf18a68db0e2c9c09315bd252',
+                abiCoder.encode(['bytes32', 'bool', 'bool', 'address', 'address', 'uint256', 'address', 'uint256', 'address', 'uint256', 'uint256', 'uint256', 'uint256'],
+                    ['0x0e6d10e3410480287f7da74700fffd3978667772bdd833a68a905a27645320d1',
                         order.isBuySide,
                         order.isAuction,
                         order.maker,
@@ -97,7 +96,6 @@ function Exchange(erc721Committable) {
                         order.royalty,
                         order.target,
                         order.tokenId,
-                        ethers.utils.keccak256(order.tokenSig),
                         order.start,
                         order.end,
                         order.salt
