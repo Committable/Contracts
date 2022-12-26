@@ -40,6 +40,7 @@ function ERC721Committable(BASE_URI) {
             Mint: [
                 { name: 'creator', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
+                { name: 'repoId', type: 'string'},
             ]
         }
 

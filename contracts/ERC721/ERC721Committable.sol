@@ -22,6 +22,7 @@ contract ERC721Committable is
     address public signer;
     address public royaltyDistributor;
     mapping(address => bool) public whitelisted;
+    mapping(uint256 => string) _repoIdOf;
     // solhint-disable-next-line
     bytes32 public DOMAIN_SEPARATOR;
 
@@ -65,6 +66,10 @@ contract ERC721Committable is
         return baseURI;
     }
 
+    function repoIdOf(uint256 tokenId) public view returns (string memory) {
+        return _repoIdOf[tokenId];
+    }
+
     /**
      * @dev owner can change baseURI
      */
@@ -81,8 +86,14 @@ contract ERC721Committable is
         whitelisted[operator] = ok;
     }
 
-    function changeRoyaltyDistributor(address newRoyaltyDistributor) external onlyOwner {
-        require(royaltyDistributor  !=newRoyaltyDistributor, "ERC721Committable: duplicate distributor");
+    function changeRoyaltyDistributor(address newRoyaltyDistributor)
+        external
+        onlyOwner
+    {
+        require(
+            royaltyDistributor != newRoyaltyDistributor,
+            "ERC721Committable: duplicate distributor"
+        );
         royaltyDistributor = newRoyaltyDistributor;
     }
 
@@ -92,12 +103,14 @@ contract ERC721Committable is
     function mint(
         address creator,
         uint256 tokenId,
+        string memory repoId,
         bytes memory signature
     ) public virtual {
         if (signer != address(0)) {
-            _verify(creator, tokenId, signature);
+            _verify(creator, tokenId, repoId, signature);
         }
         _mint(creator, tokenId);
+        _repoIdOf[tokenId] = repoId;
         // claim reward if 1) msg.sender is token owner 2) have funds
         if (msg.sender == creator && fundsOf(tokenId) > 0) {
             claim(tokenId);
@@ -110,6 +123,7 @@ contract ERC721Committable is
     function _verify(
         address creator,
         uint256 tokenId,
+        string memory repoId,
         bytes memory signature
     ) internal view {
         if (signature.length != 65) {
@@ -136,10 +150,11 @@ contract ERC721Committable is
                 DOMAIN_SEPARATOR,
                 keccak256(
                     abi.encode(
-                        //keccak256("Mint(address creator,uint256 tokenId)")
-                        0xe6c296e11cbaaec3fa9033cd6f86ffb254e2601a752ff969259c9aa361b35d89,
+                        //keccak256("Mint(address creator,uint256 tokenId,string repoId)")=849dfddc8875ac2808c93be5d68a750a8a2f58b5bf6148be1cdd14f5bc3ac72f
+                        0x849dfddc8875ac2808c93be5d68a750a8a2f58b5bf6148be1cdd14f5bc3ac72f,
                         creator,
-                        tokenId
+                        tokenId,
+                        keccak256(abi.encodePacked(repoId))
                     )
                 )
             )
@@ -243,5 +258,5 @@ contract ERC721Committable is
         super.safeTransferFrom(from, to, tokenId, data);
     }
 
-    uint256[44] private __gap;
+    uint256[43] private __gap;
 }
