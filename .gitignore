@@ -10,4 +10,3 @@ coverage.json
 cache
 artifacts
 .interface
-hardhat.config.js
