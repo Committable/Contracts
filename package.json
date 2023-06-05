@@ -11,6 +11,7 @@
     "ropsten": "hardhat run --network ropsten",
     "rinkeby": "hardhat run --network rinkeby",
     "goerli": "hardhat run --network goerli",
+    "sepolia": "hardhat run --network sepolia",
     "lint:js": "eslint './test/*.js'",
     "lint:js:fix": "eslint './test/*.js' --fix",
     "lint:sol": "npx solhint 'contracts/**/*.sol' && prettier -c 'contracts/**/*.sol'",

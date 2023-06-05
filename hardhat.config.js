@@ -59,12 +59,16 @@ module.exports = {
     //     mnemonic: MNEMONIC
     //   }
     // },
+    sepolia: {
+      url: process.env.ALCHEMY_SEPOLIA_URL,
+      gas: 3000000,
+      accounts: [process.env.PRIVATE_KEY]
+    },
     rinkeby: {
       url: process.env.ALCHEMY_RINKEBY_URL,
       gas: 3000000,
       gasPrice: 20000000000, // 20gwei
       accounts: [process.env.PRIVATE_KEY]
-      
     },
     goerli: {
       url: process.env.ALCHEMY_GOERLI_URL,
