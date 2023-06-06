@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 pragma solidity ^0.8.0;
 
 /**
  * @dev Implementation of lightweight identity
  */
-contract DevIdentity {
+contract DevIdentity is Initializable {
     mapping(address => address) _identityOwner;
     mapping(address => uint256) _previousChange;
 
@@ -22,13 +23,19 @@ contract DevIdentity {
         uint256 validTo,
         uint256 previousChange
     );
+
+    function initialize() public initializer {
+        //
+    }
+
     //get owner of the identity
     function identityOwner(address identity) public view returns (address) {
-        if (_identityOwner[identity] == address(0)){
+        if (_identityOwner[identity] == address(0)) {
             return identity;
         }
         return _identityOwner[identity];
     }
+
     //change owner of the identity
     function changeOwner(address identity, address newOwner) public {
         require(
@@ -40,7 +47,8 @@ contract DevIdentity {
         emit DIDOwnerChanged(identity, newOwner, _previousChange[identity]);
         _previousChange[identity] = block.number;
     }
-    // change owner of the identity, signed by owner 
+
+    // change owner of the identity, signed by owner
     function changeOwnerSigned(
         address identity,
         uint8 sigV,
@@ -66,6 +74,7 @@ contract DevIdentity {
         emit DIDOwnerChanged(identity, newOwner, _previousChange[identity]);
         _previousChange[identity] = block.number;
     }
+
     // change attribute of the identity with a validity of seconds
     function setAttribute(
         address identity,
@@ -86,6 +95,7 @@ contract DevIdentity {
         );
         _previousChange[identity] = block.number;
     }
+
     // change attribute of the identity with a validity of seconds, signed by the owner
     function setAttributeSigned(
         address identity,
