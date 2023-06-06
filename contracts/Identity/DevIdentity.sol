@@ -24,6 +24,9 @@ contract DevIdentity {
     );
     //get owner of the identity
     function identityOwner(address identity) public view returns (address) {
+        if (_identityOwner[identity] == address(0)){
+            return identity;
+        }
         return _identityOwner[identity];
     }
     //change owner of the identity
