@@ -16,25 +16,48 @@ describe('ERC721', function () {
       controller = await new Controller().deploy()
       devIdentity = await new DevIdentity().deploy(controller)
 
-      
+
 
     })
     context("when initialized", function () {
       it("returns the correct admin address", async function () {
-        expect(await controller.getProxyAdmin(devIdentity.address)).to.equal(controller.address)    
+        expect(await controller.getProxyAdmin(devIdentity.address)).to.equal(controller.address)
       })
     })
 
-    context("when deployed", function (){
-      it("returns the correct identity owner", async function(){
+    context("when deployed", function () {
+      it("getOwner()", async function () {
         expect(await devIdentity.identityOwner(account1.address)).to.equal(account1.address)
+      })
+      it("changeOwner()", async function () {
         let tx = await devIdentity.connect(account1).changeOwner(account1.address, account2.address)
         tx.wait()
         expect(await devIdentity.identityOwner(account1.address)).to.equal(account2.address)
 
+        try {
+          let tx = await devIdentity.connect(account1).changeOwner(account1.address, account1.address)
+          tx.wait()
+          throw null
+        } catch (err) {
+          expect(err.message).to.include('DevIdentity: invalid caller');
+        }
+      })
+      it("setAttribute()", async function () {
+        let name = ethers.utils.formatBytes32String("bio")
+        let value = ethers.utils.toUtf8Bytes("software develoepr")
+        console.log(name)
+        console.log(value)
+
+        let tx = await devIdentity.setAttribute(account1.address, name, value, 1000)
+        tx.wait()
+        await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
+        .withArgs(account1.address, name, value, 1000, 0);
       })
     })
- 
+
+
+
+
   })
 
 
