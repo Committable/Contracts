@@ -39,7 +39,7 @@ contract DevIdentity is Initializable {
     //change owner of the identity
     function changeOwner(address identity, address newOwner) public {
         require(
-            msg.sender == _identityOwner[identity],
+            msg.sender == identityOwner(identity),
             "DevIdentity: invalid caller"
         );
         require(newOwner != address(0), "DevIdentity: invalid newOwner");
@@ -68,7 +68,7 @@ contract DevIdentity is Initializable {
             abi.encodePacked("\x19Ethereum Signed Message:\n32", hashValue)
         );
         require(
-            _identityOwner[identity] == ecrecover(salt, sigV, sigR, sigS),
+            identityOwner(identity) == ecrecover(salt, sigV, sigR, sigS),
             "DevIdentity: Invalid signature"
         );
         emit DIDOwnerChanged(identity, newOwner, _previousChange[identity]);
@@ -83,7 +83,7 @@ contract DevIdentity is Initializable {
         uint256 validity
     ) public {
         require(
-            msg.sender == _identityOwner[identity],
+            msg.sender == identityOwner(identity),
             "DevIdentity: invalid caller"
         );
         emit DIDAttributeChanged(

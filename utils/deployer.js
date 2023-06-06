@@ -157,6 +157,7 @@ function DevIdentity() {
         let DevIdentity = await ethers.getContractFactory("DevIdentity");
         let devIdentity = await DevIdentity.deploy()
         await devIdentity.deployed()
+        let implementation = devIdentity.address
         /* deploy Vault proxy contract */
         CommittableProxy = await ethers.getContractFactory("CommittableProxy");
         let ABI = ["function initialize()"];
@@ -165,7 +166,7 @@ function DevIdentity() {
         identityProxy = await CommittableProxy.deploy(devIdentity.address, controller.address, calldata);
         /* attach token proxy contract with logic contract abi */
         devIdentity = await DevIdentity.attach(identityProxy.address);
-        
+        devIdentity.implementation = implementation
         return devIdentity
 
 
