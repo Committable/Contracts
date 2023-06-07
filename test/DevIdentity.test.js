@@ -5,13 +5,15 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { tokenIds, repoIds, commits } = require('./tokenId.js');
 const { tokenId_0, tokenId_1, tokenId_2, tokenId_3, tokenId_4 } = tokenIds;
 const { repoId_a, repoId_b } = repoIds
-const { Controller, DevIdentity } = require("../utils/deployer.js")
+const { Controller, DevIdentity } = require("../utils/deployer.js");
+const { time } = require("console");
 // const {CommittableProxy} = require("../contracts/proxy/CommittableProxy.sol")
 describe('ERC721', function () {
   context('with minted tokens and initialized values', function () {
     beforeEach(async function () {
       /* get signers */
       [account1, account2] = await ethers.getSigners();
+      provider = waffle.provider
 
       controller = await new Controller().deploy()
       devIdentity = await new DevIdentity().deploy(controller)
@@ -31,27 +33,39 @@ describe('ERC721', function () {
       })
       it("changeOwner()", async function () {
         let tx = await devIdentity.connect(account1).changeOwner(account1.address, account2.address)
-        tx.wait()
+        await tx.wait()
         expect(await devIdentity.identityOwner(account1.address)).to.equal(account2.address)
 
         try {
           let tx = await devIdentity.connect(account1).changeOwner(account1.address, account1.address)
-          tx.wait()
+          await tx.wait()
           throw null
         } catch (err) {
           expect(err.message).to.include('DevIdentity: invalid caller');
         }
       })
       it("setAttribute()", async function () {
+        let previousBlock = 0
         let name = ethers.utils.formatBytes32String("bio")
-        let value = ethers.utils.toUtf8Bytes("software develoepr")
-        console.log(name)
-        console.log(value)
+        let value = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("software develoepr"))
+        let validity = 60*60*24*30 // one month
+        let tx = await devIdentity.setAttribute(account1.address, name, value, validity)
+        let receipt = await tx.wait()
+        // console.log(receipt)
+        let timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
+      
 
-        let tx = await devIdentity.setAttribute(account1.address, name, value, 1000)
-        tx.wait()
         await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
-        .withArgs(account1.address, name, value, 1000, 0);
+          .withArgs(account1.address, name, value, timestamp+validity, previousBlock);
+        
+        previousBlock = receipt.blockNumber
+        value = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("senior develoepr"))
+        tx = await devIdentity.setAttribute(account1.address, name, value, validity)
+        receipt = await tx.wait()
+        timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
+        await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
+          .withArgs(account1.address, name, value, timestamp+validity, previousBlock);
+
       })
     })
 
