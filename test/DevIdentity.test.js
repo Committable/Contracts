@@ -51,10 +51,7 @@ describe('ERC721', function () {
         let validity = 60*60*24*30 // one month
         let tx = await devIdentity.setAttribute(account1.address, name, value, validity)
         let receipt = await tx.wait()
-        // console.log(receipt)
         let timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
-      
-
         await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
           .withArgs(account1.address, name, value, timestamp+validity, previousBlock);
         
@@ -64,8 +61,7 @@ describe('ERC721', function () {
         receipt = await tx.wait()
         timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
         await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
-          .withArgs(account1.address, name, value, timestamp+validity, previousBlock);
-
+          .withArgs(account1.address, name, value, timestamp+validity, previousBlock);        
       })
     })
 

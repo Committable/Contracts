@@ -90,7 +90,7 @@ contract DevIdentity is Initializable {
             identity,
             name,
             value,
-            uint256(block.timestamp)+validity,
+            uint256(block.timestamp) + validity,
             _previousChange[identity]
         );
         _previousChange[identity] = block.number;
@@ -118,7 +118,7 @@ contract DevIdentity is Initializable {
             identity,
             name,
             value,
-            uint256(block.timestamp)+validity,
+            uint256(block.timestamp) + validity,
             _previousChange[identity]
         );
         _previousChange[identity] = block.number;
