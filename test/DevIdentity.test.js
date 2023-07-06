@@ -48,14 +48,42 @@ describe('ERC721', function () {
         let previousBlock = 0
         let name = ethers.utils.formatBytes32String("bio")
         let value = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("software develoepr"))
-        let validity = 60*60*24*30 // one month
+        let validity = 60 * 60 * 24 * 30 // one month
         let tx = await devIdentity.setAttribute(account1.address, name, value, validity)
         let receipt = await tx.wait()
         let timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
         await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
-          .withArgs(account1.address, name, value, timestamp+validity, previousBlock);
-        
+          .withArgs(account1.address, name, value, timestamp + validity, previousBlock);
+
         previousBlock = receipt.blockNumber
+        value = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("senior develoepr"))
+        tx = await devIdentity.setAttribute(account1.address, name, value, validity)
+        receipt = await tx.wait()
+        timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
+        await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
+          .withArgs(account1.address, name, value, timestamp + validity, previousBlock);
+      })
+
+      it("setAttributes()", async function () {
+        let previousBlock = 0
+        let names = [ethers.utils.formatBytes32String("nickname"), ethers.utils.formatBytes32String("avatar"), ethers.utils.formatBytes32String("email"), ethers.utils.formatBytes32String("bio"), ethers.utils.formatBytes32String("skill")]
+        let values = [ethers.utils.hexlify(ethers.utils.toUtf8Bytes("22")), ethers.utils.hexlify(ethers.utils.toUtf8Bytes("11")), ethers.utils.hexlify(ethers.utils.toUtf8Bytes("44")),ethers.utils.hexlify(ethers.utils.toUtf8Bytes("33")),ethers.utils.hexlify(ethers.utils.toUtf8Bytes("tag,tag1"))]
+        console.log(names)
+        console.log(values)
+
+        
+        let validity = 60 * 60 * 24 * 30 // one month
+        let tx = await devIdentity.setAttributes(account1.address, names, values, validity)
+        let receipt = await tx.wait()
+        let timestamp = (await provider.getBlock(receipt.blockNumber)).timestamp;
+        for (let i = 0; i < 3; i++) {
+          await expect(tx).to.emit(devIdentity, 'DIDAttributeChanged')
+            .withArgs(account1.address, names[i], values[i], timestamp + validity, previousBlock);
+        }
+       
+
+        previousBlock = receipt.blockNumber
+        name = ethers.utils.formatBytes32String("bio")
         value = ethers.utils.hexlify(ethers.utils.toUtf8Bytes("senior develoepr"))
         tx = await devIdentity.setAttribute(account1.address, name, value, validity)
         receipt = await tx.wait()

@@ -123,4 +123,31 @@ contract DevIdentity is Initializable {
         );
         _previousChange[identity] = block.number;
     }
+    // change attributes of the identity with a validity of seconds
+    function setAttributes(
+        address identity,
+        bytes32[] memory names,
+        bytes[] memory values,
+        uint256 validity
+    ) external {
+        require(
+            msg.sender == identityOwner(identity),
+            "DevIdentity: invalid caller"
+        );
+        uint256 length = names.length;
+        require(length == values.length, "DevIdentity: invalid data");
+        uint256 i;
+        uint256 validTo = uint256(block.timestamp) + validity;
+        uint256 previousBlock = _previousChange[identity];
+        for (i = 0; i < length; i++) {
+            emit DIDAttributeChanged(
+                identity,
+                names[i],
+                values[i],
+                validTo,
+                previousBlock
+            );
+        }
+        _previousChange[identity] = block.number;
+    }
 }
