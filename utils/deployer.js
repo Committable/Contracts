@@ -28,6 +28,7 @@ function ERC721Committable(BASE_URI) {
         await CommittableProxy.deployed();
         /* attach proxy address with logic instance */
         let tokenProxy = ERC721Committable.attach(CommittableProxy.address)
+        tokenProxy.implementation = erc721Committable.address
         tokenProxy.domain =
         {
             name: 'ERC721Committable',
@@ -40,7 +41,7 @@ function ERC721Committable(BASE_URI) {
             Mint: [
                 { name: 'creator', type: 'address' },
                 { name: 'tokenId', type: 'uint256' },
-                { name: 'repoId', type: 'string'},
+                { name: 'repoId', type: 'string' },
             ]
         }
 
@@ -151,4 +152,27 @@ function RoyaltyDistributor() {
         return royaltyDistributor
     }
 }
-module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor }
+
+function DevIdentity() {
+    this.deploy = async function (controller) {
+        let DevIdentity = await ethers.getContractFactory("DevIdentity");
+        let devIdentity = await DevIdentity.deploy()
+        await devIdentity.deployed()
+        let implementation = devIdentity.address
+        /* deploy Vault proxy contract */
+        CommittableProxy = await ethers.getContractFactory("CommittableProxy");
+        let ABI = ["function initialize()"];
+        let iface = new ethers.utils.Interface(ABI);
+        calldata = iface.encodeFunctionData("initialize");
+        identityProxy = await CommittableProxy.deploy(devIdentity.address, controller.address, calldata);
+        /* attach token proxy contract with logic contract abi */
+        devIdentity = await DevIdentity.attach(identityProxy.address);
+        devIdentity.implementation = implementation
+        return devIdentity
+
+
+    }
+
+
+}
+module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor, DevIdentity }

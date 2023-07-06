@@ -23,14 +23,13 @@ contract Vault is Initializable {
         }
 
         emit Deposit(repoId, address(0), msg.value);
-
     }
 
     function depositWithERC20(
         string memory repoId,
         address token,
         uint256 amount
-    ) external  {
+    ) external {
         reserve[repoId][token] += amount;
         SafeERC20.safeTransferFrom(
             IERC20(token),
@@ -39,7 +38,6 @@ contract Vault is Initializable {
             amount
         );
         emit Deposit(repoId, token, amount);
-
     }
 
     uint256[49] private __gap;

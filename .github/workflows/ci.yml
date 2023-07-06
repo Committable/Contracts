@@ -33,6 +33,7 @@ jobs:
           echo PRIVATE_KEY=${{ secrets.PRIVATE_KEY }} >> .env
           echo COINMARKETCAP_KEY=${{ secrets.COINMARKETCAP_KEY }} >> .env
           echo ALCHEMY_GOERLI_URL=${{ secrets.ALCHEMY_GOERLI_URL }} >> .env
+          echo ALCHEMY_SEPOLIA_URL=${{ secrets.ALCHEMY_SEPOLIA_URL }} >> .env
           cat .env
     - run: npm install
     - run: npm run test
