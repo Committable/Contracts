@@ -28,6 +28,7 @@ function ERC721Committable(BASE_URI) {
         await CommittableProxy.deployed();
         /* attach proxy address with logic instance */
         let tokenProxy = ERC721Committable.attach(CommittableProxy.address)
+        tokenProxy.implementation = erc721Committable.address
         tokenProxy.domain =
         {
             name: 'ERC721Committable',

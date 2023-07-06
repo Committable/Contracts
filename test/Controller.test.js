@@ -21,7 +21,7 @@ describe('Controller', function () {
         context("should get admin", function () {
             it("should return correct admin and implementation", async function () {
                 expect(await controller.getProxyAdmin(devIdentity.address)).to.equal(controller.address);
-                expect(await controller.getImplementation(devIdentity.address)).to.equal(devIdentity.implementation);
+                expect(await controller.getProxyImplementation(devIdentity.address)).to.equal(devIdentity.implementation);
             })
         })
     })
