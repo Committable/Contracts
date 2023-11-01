@@ -172,7 +172,17 @@ function DevIdentity() {
 
 
     }
-
-
 }
-module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor, DevIdentity }
+
+function DEVNETBadge() {
+    this.deploy = async function (name, symbol) {
+        let DEVNETBadge = await ethers.getContractFactory("DEVNETBadge")
+        let devnetBadge = await DEVNETBadge.deploy(name, symbol)
+        await devnetBadge.deployed()
+
+        // let tx = await erc721Committable.changeRoyaltyDistributor(royaltyDistributor.address);
+        // await tx.wait()
+        return devnetBadge
+    }
+}
+module.exports = { Controller, ERC721Committable, Exchange, Vault, RoyaltyDistributor, DevIdentity,  DEVNETBadge }
