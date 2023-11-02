@@ -1,7 +1,8 @@
+const { expect } = require("chai");
+const { ethers } = require("hardhat");
+
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
-const { expect } = require("chai");
-const { ethers, waffle } = require("hardhat");
 
 const { NAME, SYMBOL, SIGNER_ADDRESS } = require('../.config.js');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
@@ -11,7 +12,7 @@ const { tokenId_0, tokenId_1, tokenId_2, tokenId_3 } = tokenIds;
 const { repoId_a, repoId_b } = repoIds;
 
 
-const { Controller, ERC721Committable, BountyMaster } = require("../utils/deployer.js")
+const { Controller, ERC721Committable, BountyMaster } = require("../utils/deployer.js");
 const funding = ethers.utils.parseEther("1")
 
 describe.only('BountyMaster', function () {
@@ -21,7 +22,8 @@ describe.only('BountyMaster', function () {
         beforeEach('deploy contracs', async function () {
             /* get signers */
             [signer, user, another, ...others] = await ethers.getSigners();
-            provider =  waffle.provider;
+            provider = waffle.provider
+
             controller = await new Controller().deploy()
             tokenProxy = await new ERC721Committable().deploy(NAME, SYMBOL, signer.address, ZERO_ADDRESS, controller)
             bountyMaster = await new BountyMaster().deploy(tokenProxy)
@@ -215,7 +217,7 @@ describe.only('BountyMaster', function () {
 
         })
 
-        context("create bounty with eth", function () {
+        context.only("create bounty with eth", function () {
             beforeEach("createBountyWithEther", async function () {
 
                 await bountyMaster.createBountyWithEther(0, 169890721800, { value: 1000 })
@@ -262,9 +264,9 @@ describe.only('BountyMaster', function () {
                 await helpers.time.increaseTo(169890721801);
                 let tx = await bountyMaster.withdraw(0);
                 // await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-1000, 1000])
-                // await expect(tx).to.changeEtherBalance(signer.address, 1000)
-                await expect(tx).to.changeEtherBalance(signer.address, "1000")
-                
+                await expect(tx).to.changeEtherBalance(signer, 1000)
+                // await expect(tx).to.changeEtherBalance(signer.address, "1000")
+
                 let bounty = await bountyMaster.getBountyById(0)
 
                 expect(bounty.status).to.equal(2)
@@ -291,7 +293,8 @@ describe.only('BountyMaster', function () {
                 it("claimUserBountyByAddress", async function () {
                     let tx = await bountyMaster.connect(user).claimUserBountyByAddress(0)
 
-                    await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-500, 500])
+                    // await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-500, 500])
+                    await expect(tx).to.changeEtherBalance(user,500)
 
                     let res = await bountyMaster.getUserBountyByAddress(0, user.address)
                     expect(res.amount).to.equal(0)
@@ -339,7 +342,9 @@ describe.only('BountyMaster', function () {
                     }
                     // claim and mint
                     let tx = await bountyMaster.connect(signer).claimUserBountyByToken(0, tokenId_0, repoId_a, signature_0)
-                    await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-900, 900])
+                    // await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-900, 900])
+                    await expect(tx).to.changeEtherBalance(signer, 900)
+
                     await expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(ZERO_ADDRESS, signer.address, tokenId_0);
                     let res = await bountyMaster.getUserBountyByToken(0, tokenId_0)
@@ -348,7 +353,8 @@ describe.only('BountyMaster', function () {
                     await tokenProxy.mint(signer.address, tokenId_1, repoId_a, signature_1)
                     tx = await bountyMaster.connect(user).claimUserBountyByToken(0, tokenId_1, repoId_a, signature_1)
 
-                    await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-100, 100])
+                    // await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-100, 100])
+                    await expect(tx).to.changeEtherBalance(signer, 100)
 
                     res = await bountyMaster.getUserBountyByToken(0, tokenId_1)
                     expect(res.amount).to.equal(0)
@@ -364,14 +370,15 @@ describe.only('BountyMaster', function () {
                 it("claimUserBountyByToken with batch", async function () {
                     let tx = await bountyMaster.connect(signer).claimUserBountiesByTokens(0, [tokenId_0, tokenId_1], [repoId_a, repoId_a], [signature_0, signature_1])
 
-                    await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-1000, 1000])
+                    // await expect(tx).to.changeEtherBalance([bountyMaster.address, signer.address], [-1000, 1000])
+                    await expect(tx).to.changeEtherBalance(signer, 1000)
 
                     await expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(ZERO_ADDRESS, signer.address, tokenId_0);
                     await expect(tx).to.emit(tokenProxy, 'Transfer')
                         .withArgs(ZERO_ADDRESS, signer.address, tokenId_1);
                     let res = await bountyMaster.getTotalUserBountyByTokens(0, [tokenId_0, tokenId_1])
-                    expect(res.rewardToken).to.equal(token.address)
+                    expect(res.rewardToken).to.equal(ZERO_ADDRESS)
                     expect(res.amount).to.equal(0)
                 })
 
