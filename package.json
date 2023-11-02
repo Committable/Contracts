@@ -39,6 +39,7 @@
     "prettier-plugin-solidity": "^1.0.0-beta.17"
   },
   "dependencies": {
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.9",
     "dotenv": "^16.0.2",
     "ethers-eip712": "^0.2.0",
     "hardhat-gas-reporter": "^1.0.9",

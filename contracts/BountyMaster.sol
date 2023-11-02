@@ -61,7 +61,7 @@ contract BountyMaster {
         uint256 amount,
         uint160 deadline
     ) external {
-        require(bounties[id].owner != address(0), "Bounty: id already existed");
+        require(bounties[id].owner == address(0), "Bounty: id already existed");
         require(
             rewardToken != address(0),
             "Bounty: invalid rewardToken contract"
@@ -90,7 +90,7 @@ contract BountyMaster {
         uint96 id,
         uint160 deadline
     ) external payable {
-        require(bounties[id].owner != address(0), "Bounty: id already existed");
+        require(bounties[id].owner == address(0), "Bounty: id already existed");
         Bounty memory newBounty = Bounty(
             id,
             msg.sender,
@@ -120,7 +120,7 @@ contract BountyMaster {
         } else {
             IERC20(rewardToken).transfer(msg.sender, amount);
         }
-        bounties[id].status == 2;
+        bounties[id].status = 2;
         emit BountyWithdrawed(id, msg.sender, rewardToken, amount);
     }
 
@@ -147,7 +147,7 @@ contract BountyMaster {
             UserBounty memory userBounty = UserBounty(rewardToken, amountToPay);
             addressBounties[id][users[i]] = userBounty;
         }
-        bounties[id].status == 1;
+        bounties[id].status = 1;
 
         emit BountyAccepted(id, msg.sender);
     }
@@ -175,9 +175,15 @@ contract BountyMaster {
             UserBounty memory userBounty = UserBounty(rewardToken, amountToPay);
             tokenBounties[id][tokenIds[i]] = userBounty;
         }
-        bounties[id].status == 1;
+        bounties[id].status = 1;
 
         emit BountyAccepted(id, msg.sender);
+    }
+
+    function getBountyById(
+        uint96 id
+    ) external view returns (Bounty memory bounty) {
+        bounty = bounties[id];
     }
 
     function getUserBountyByAddress(
@@ -219,14 +225,17 @@ contract BountyMaster {
         UserBounty memory userBounty = getUserBountyByAddress(id, msg.sender);
         uint256 amount = userBounty.amount;
         address rewardToken = userBounty.rewardToken;
-        if (amount != 0) {
-            userBounty.amount = 0;
-            if (rewardToken == address(0)) {
-                payable(msg.sender).transfer(amount);
-            } else {
-                SafeERC20.safeTransfer(IERC20(rewardToken), msg.sender, amount);
-            }
+        require(amount != 0, "BountyMaster: zero balance");
+
+        userBounty.amount = 0;
+        addressBounties[id][msg.sender] = userBounty;
+
+        if (rewardToken == address(0)) {
+            payable(msg.sender).transfer(amount);
+        } else {
+            SafeERC20.safeTransfer(IERC20(rewardToken), msg.sender, amount);
         }
+
         emit BountyClaimed(id, msg.sender, rewardToken, amount);
     }
 
@@ -240,22 +249,25 @@ contract BountyMaster {
         UserBounty memory userBounty = getUserBountyByToken(id, tokenId);
         uint256 amount = userBounty.amount;
         address rewardToken = userBounty.rewardToken;
+        address tokenOwner;
+        require(amount != 0, "BountyMaster: zero balance");
 
-        address tokenOwner = erc721Committable.ownerOf(tokenId);
-        // mint COMMIT if not exist
-        if (tokenOwner == address(0)) {
+        try erc721Committable.ownerOf(tokenId) returns (address owner) {
+            tokenOwner = owner;
+        } catch {
             erc721Committable.mint(msg.sender, tokenId, repoId, tokenSig);
             tokenOwner = msg.sender;
         }
-        // distribute bounties
-        if (amount != 0) {
-            userBounty.amount = 0;
-            if (rewardToken == address(0)) {
-                payable(tokenOwner).transfer(amount);
-            } else {
-                SafeERC20.safeTransfer(IERC20(rewardToken), tokenOwner, amount);
-            }
+
+        userBounty.amount = 0;
+        tokenBounties[id][tokenId] = userBounty;
+
+        if (rewardToken == address(0)) {
+            payable(tokenOwner).transfer(amount);
+        } else {
+            SafeERC20.safeTransfer(IERC20(rewardToken), tokenOwner, amount);
         }
+
         emit BountyClaimed(id, tokenOwner, rewardToken, amount);
     }
 
