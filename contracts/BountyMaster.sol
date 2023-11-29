@@ -43,7 +43,9 @@ contract BountyMaster {
         address rewardToken,
         uint256 amount
     );
-    event BountyAccepted(uint96 indexed id, address indexed owner);
+    event BountyAccepted(uint96 indexed id, address indexed owner, uint256 indexed typeNum);
+    // 0 for pay to address
+    // 1 for pay to token
     event BountyClaimed(
         uint96 indexed id,
         address indexed user,
@@ -108,10 +110,10 @@ contract BountyMaster {
             msg.sender == bounties[id].owner,
             "BountyMaster: invalid caller"
         );
-        require(
-            block.timestamp > bounties[id].deadline,
-            "BountyMaster: invalid time"
-        );
+        // require(
+        //     block.timestamp > bounties[id].deadline,
+        //     "BountyMaster: invalid time"
+        // );
         require(bounties[id].status == 0, "BountyMaster: invalid status");
         address rewardToken = bounties[id].rewardToken;
         uint256 amount = bounties[id].amount;
@@ -149,7 +151,7 @@ contract BountyMaster {
         }
         bounties[id].status = 1;
 
-        emit BountyAccepted(id, msg.sender);
+        emit BountyAccepted(id, msg.sender, 0);
     }
 
     // attach reward to address
@@ -177,7 +179,7 @@ contract BountyMaster {
         }
         bounties[id].status = 1;
 
-        emit BountyAccepted(id, msg.sender);
+        emit BountyAccepted(id, msg.sender, 1);
     }
 
     function getBountyById(

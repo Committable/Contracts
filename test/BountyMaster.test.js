@@ -75,12 +75,12 @@ describe.only('BountyMaster', function () {
 
             })
             it("withdraw()", async function () {
-                try {
-                    await bountyMaster.withdraw(0);
-                    throw null
-                } catch (err) {
-                    expect(err.message).to.include("BountyMaster: invalid time")
-                }
+                // try {
+                //     await bountyMaster.withdraw(0);
+                //     throw null
+                // } catch (err) {
+                //     expect(err.message).to.include("BountyMaster: invalid time")
+                // }
                 try {
                     await bountyMaster.withdraw(1);
                     throw null
@@ -242,12 +242,12 @@ describe.only('BountyMaster', function () {
             })
             it("withdraw()", async function () {
 
-                try {
-                    await bountyMaster.withdraw(0);
-                    throw null
-                } catch (err) {
-                    expect(err.message).to.include("BountyMaster: invalid time")
-                }
+                // try {
+                //     await bountyMaster.withdraw(0);
+                //     throw null
+                // } catch (err) {
+                //     expect(err.message).to.include("BountyMaster: invalid time")
+                // }
                 try {
                     await bountyMaster.withdraw(1);
                     throw null

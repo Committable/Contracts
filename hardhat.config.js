@@ -7,6 +7,7 @@ require("@nomiclabs/hardhat-etherscan");
 const { ethers } = require("ethers");
 require('dotenv').config()
 require("solidity-coverage");
+require("hardhat-gas-reporter");
 
 
 
@@ -28,6 +29,11 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
+  gasReporter: {
+    enabled: true,
+    currency: 'USD',
+    gasPrice: 21
+  },
   solidity: {
     compilers: [
       {
